@@ -460,3 +460,119 @@ console.log(initial.concat(otherObject))
 //["foo"]
 
 8.Symbol.iterator
+
+表示：
+一个方法，该方法返回对象默认的迭代器。由for-of语句使用，换句话说这个符号实现迭代器api的函数
+
+class Foo{
+  *[Symbol.iterator](){}
+}
+
+let f = new Foo();
+console.log(f[Symbol.iterator]());
+//Generator {<suspended>}
+
+class Emitter {
+  constructor(max){
+    this.max = max;
+    this.idx = 0;
+  }
+
+  *[Symbol.iterator](){
+    while(this.idx < this.max){
+      yield this.idx++;
+    }
+  }
+}
+
+function count(){
+  let emitter = new Emitter(5);
+
+  for(const x of emitter){
+    console.log(x)
+  }
+}
+
+count()
+//0
+//1
+//2
+//3
+//4
+
+9.Symbol.match
+表示：一个正则表达式，该方法用正则表达式去匹配字符串。由String.prototype.match()方法使用。
+
+String.prototype.match()方法会使用以Symbol.match为键的函数来对正则表达式求值。正则表达式
+的原型上默认由这个函数的定义，因此所有正则表达式实例默认市这个string方法的有效参数
+
+console.log(RegExp.prototype[Symbol.match])
+//ƒ [Symbol.match]() { [native code] }
+
+console.log('foobar'.match(/bar/));
+//["bar", index: 3, input: "foobar", groups: undefined]
+
+给这个方法传入非正则表达式值会导致该值被转换为RegExp对象。如果想改变这种行为，让方法直接使用参数
+则可以重新定义Symbol。match函数以取代默认正则表达式求值的行为，从而让match()方法使用非正则表达式
+实例。Symbol.match函数接收一个参数，就是调用match()方法的字符串实例。返回的值没有限制
+
+class FooMatcher{
+  static [Symbol.match](target){
+    return target.includes('foo');
+  }
+}
+console.log('foobar'.match(FooMatcher)); //true
+console.log('barbaz'.match(FooMatcher)); //false
+
+class StringMatcher{
+  constructor(str){
+    this.str = str;
+  }
+
+  [Symbol.match](target){
+    return target.includes(this.str)
+  }
+}
+
+console.log('foobar'.match(new StringMatcher('foo'))) //true
+console.log('barbaz'.match(new StringMatcher('qux'))) //false
+
+
+10.Symbol.replace
+表示：一个正则表达式方法，该方法替代一个字符串中匹配的子串。由String.prototype.replace()方法会使用以Symbol
+String.prototype.replace()方法会使用以Symbole.replace为键的函数来对正则表达式求值。正则表达式的原型
+默认有这各函数的定义，因此所有 正则表达式实例默认市这个String方法的有效参数
+
+console.log(RegExp.prototype[Symbol.replace])
+//ƒ [Symbol.replace]() { [native code] }
+
+console.log('foobarbaz'.replace(/bar/, 'qux'))
+//fooquxbaz
+
+给这个方法传入非正则表达式会导致被转换为RegExp对象。如果想改变这种行为，让方法直接使用参数，可以
+重新定义Symbol.replace函数以取代默认对正则表达式求值的行为，从而让replace()方法使用非正则表达式
+实例。Symbol.replace函数接收两个参数，即调用replace（）方法的字符串实例和替换字符串。返回值没有限制
+
+class FooReplacer{
+  static [Symbol.replace](target, replacement){
+    return target.split('foo').join(replacement)
+  }
+}
+
+console.log('barfoobaz'.replace(FooReplacer, 'qux'))
+//barquxbaz
+
+class StringReplacer{
+  constructor(str){
+    this.str = str;
+  }
+
+  [Symbol.replace](target, replacement){
+    return target.split(this.str).join(replacement)
+  }
+}
+
+console.log('barfoobaz'.replace(new StringReplacer('foo'), 'qux'))
+//barquxbaz
+
+11.Symbol.search
