@@ -576,3 +576,137 @@ console.log('barfoobaz'.replace(new StringReplacer('foo'), 'qux'))
 //barquxbaz
 
 11.Symbol.search
+表示：一个正则表达式方法，该方法返回字符串中匹配正则表达式的索引。由String.prototype.search()方法
+使用。String.prototype.search()方法会使用以Symbol.search为键的函数来对正则表达式求值。正则表达式
+的原型上默认由这个函数的定义，因此所有正则表达式实例默认是这个String方法的有效参数
+
+console.log(RegExp.prototype[Symbol.search])
+//ƒ [Symbol.search]() { [native code] }
+
+console.log('foobar'.search(/bar/))
+//3
+
+给这个方法传入非正则表达式值会导致该值被转换为RegExp对象。如果想改变这种行为，让方法直接使用参数，
+可以重新定义Symbol.search函数以取代默认对正则表达式求值的行为，从而让search()方法使用非正则表达
+式实例。
+class FooSearcher{
+  static [Symbol.search](target){
+    return target.indexOf('foo')
+  }
+}
+console.log('foobar'.search(FooSearcher)) //0
+console.log('barfoo'.search(FooSearcher)) //3
+console.log('barbaz'.search(FooSearcher)) //-1
+
+class StringSearcher{
+  constructor(str){
+    this.str = str;
+  }
+
+  [Symbol.search](target){
+    return target.indexOf(this.str)
+  }
+}
+
+console.log('foobar'.search(new StringSearcher('foo'))) //0
+console.log('barfoo'.search(new StringSearcher('foo'))) //3
+console.log('barbaz'.search(new StringSearcher('qux'))) //-1
+
+12.Symbol.species
+表示：一个函数值，该函数作为创建派生对象的构造函数。这个属性在内置类型中最常用，用于对内置类型实例
+方法的返回值暴露实例化派生对象的方法。用Symbol.species定义静态的获取器（getter）方法，可以覆盖新
+创建实例的原型定义：
+
+class Bar extends Array{} 
+class Baz extends Array{
+  static get [Symbol.species](){
+    return Array;
+  }
+}
+
+let bar = new Bar();
+console.log(bar instanceof Array)   //true
+console.log(bar instanceof Bar)     //true
+
+bar = bar.concat('bar')
+console.log(bar instanceof Array)   //true
+console.log(bar instanceof Bar)     //true
+
+let baz = new Baz();
+console.log(baz instanceof Array);  //true
+console.log(baz instanceof Baz);    //true
+baz = baz.concat('baz')
+console.log(baz instanceof Array)   //true
+console.log(baz instanceof Baz);    //false
+
+13.Symbol.split
+表示：一个正则表达式方法，该方法在匹配正则表达式的索引位置拆分字符串。由String.prototype.split()
+方法使用。String.prototype.split()方法会使用以Symbol.split为键的函数来对正则表达式求值。正则
+表达式的原型上默认有这个函数的定义，因此所有正则表达式实例默认式这个String方法的有效参数
+
+console.log(RegExp.prototype[Symbol.split])
+//ƒ [Symbol.split]() { [native code] }
+
+console.log('foobarbaz'.split(/bar/))
+//(2) ["foo", "baz"]
+
+给这个方法传入非正则表达式值会导致该值被转换为RegExp对象。如果想改变这种行为，让方法直接使用参数，
+可以重新定义Symbol.split函数以取代默认对正则表达式求值的行为，从而让split()方法使用非正则表达式
+实例。Symbol.split函数接收一个参数，就是调用match()方法的字符串实例。
+
+class FooSplitter{
+  static [Symbol.split](target){
+    return target.split('foo')
+  }
+}
+
+console.log('barfoobaz'.split(FooSplitter))
+//(2) ["bar", "baz"]
+
+class StringSplitter{
+  constructor(str){
+    this.str = str;
+  }
+
+  [Symbol.split](target){
+    return target.split(this.str)
+  }
+}
+
+console.log('barfoobaz'.split(new StringSplitter('foo')))
+//(2) ["bar", "baz"]
+
+14.Symbol.toPrimitive
+表示：一个方法，该方法将对象转换 为相应的原始值。由ToPrimitive抽象操作使用。很多内置操作都会尝试
+强制将对象转换为原始值，包括字符串、数值和未指定的原始类型。对于一个自定义对象实例，通过在这个实例
+的Symbol.toPrimitive属性上定义一个函数可以改变默认行为。
+
+class Foo{}
+let foo = new Foo();
+
+console.log(3 + foo)      //3[object Object]
+console.log(3 - foo)      //NaN
+console.log(String(foo))  //[object Object]
+
+class Bar{
+  constructor(){
+    this[Symbol.toPrimitive] = function(hint){
+      switch(hint){
+        case 'number':
+          return 3;
+        case 'string':
+          return 'string bar'
+        case 'default':
+          return 'default bar'
+      }
+    }
+  }
+}
+
+let bar = new Bar();
+console.log(3 + bar);     //3default bar
+console.log(3 - bar);     //0
+console.log(String(bar)); //string bar
+
+
+14.Symbol.toStringTag
