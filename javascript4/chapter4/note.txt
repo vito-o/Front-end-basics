@@ -1,0 +1,139 @@
+变量、作用域和内存
+
+4.1 原始值与引用值
+ECMAScript可以包含两种不同类型的数据：原始值和引用值
+原始值（primitive value）：就是最简单的数据
+引用值（reference value）:则是由多个值构成的对象
+
+在把一个值赋给变量时：javascript引擎必须确定这个值是原始值还是引用值。
+6中原始值 Null undefined boolean number string symbol
+保存原始值的变量是按值访问的，因为我们操作的就是存储在变量中的实际值
+引用值是保存在内存中的对象。与其他语言不同，js不允许直接访问内存位置，因此也就不能直接操作对象
+所在的内存空间。在操作对象时，实际上操作的是对该对象的引用而非实际对象本身。为此，保存引用值得变量
+是按引用访问得。
+注: 在很多语言中，字符串是使用对象表示的，因此被认为是引用类型，ECMAScript打破了这个惯例
+4.1.1 动态属性
+
+原始值和引用值的定义方式很类似，都是创建一个变量，然后给他赋一个值。不过，在变量保存了这个值之后
+可以对这个值作什么，则大有不同。对于引用值而言，可以随时添加、修改和删除其属性和方法。
+如：let person = new Object()
+person.name = 'nichalas'
+console.log(person.name)  //nichalas
+这里首先创建了一个对象，并把它保存在变量person中。然后，给这个对象添加一个名为name的属性，并
+给这个属性赋值了一个字符串“Nicholas”。在此之后，就可以访问这个新属性，直到对象被销毁或属性被显式
+地删除
+原始值不能有属性，尽管尝试给原始值添加属性不会报错
+let name = 'Nicholas'
+name.age = 18
+console.log(name.age)
+注意：原始类型的初始化只使用原始字面量形式。如果使用的是new关键字，则js会创建一个object类型的实例
+但行为类似原始值。
+let name1 = 'Nicholas'
+let name2 = new String('Matt')
+name1.age = 27
+name2.age = 22
+console.log(name1.age)    //undefined
+console.log(name2.age)    //22
+console.log(typeof name1)   //string
+console.log(typeof name2)   //object
+4.1.2 复制值
+除了存储方式不同，原始值和引用值在通过变量复制时也有所不同。在通过变量把一个原始值赋值给另一个变量
+时，原始值会被复制到新变量的位置。
+let num = 1
+let num2 = num;
+这里，num包含数值1，把num2初始化为num时，num2也会得到数值1.这个值跟存储在num中的1是完全独立的，
+因为他是那个值的副本
+两个变量可以独立使用
+在把引用值从一个变量赋值给另一个变量时，存储在变量中的值也被复制到新变量所在的位置。区别在于，这里
+复制的值实际上是一个指针，它指向存储在堆内存中的对象。操作完成后，两个变量实际上指向同一个对象，
+因此一个对象上面的变化会在另一个对象上反映出来
+let obj1 = new Object();
+let obj2 = obj1;
+obj1.name = 'Nicholas'
+console.log(obj2.name) //nicholas
+
+
+4.1.3 传递参数
+
+ECMAScript中所有的参数都是按值传递的。这意味着函数之外的值会被复制到函数内部的参数中，就像
+从一个变量复制到另一个变量一样。如果是原始值，那么就跟原始值变量的赋值一样，如果是引用值，那么
+就跟引用值变量的赋值一样。对很多开发者来说，这一块可能会不好理解，毕竟变量有按值和按引用访问，
+而传参则只有按值传递。
+
+在按值传递参数时，值会被复制到一个局部变量（即一个命名参数，或者用ECMAScript的话来说，就是arguments
+对象中的一个槽位）。
+在按引用传递参数时，值在内存中的位置会被保存在一个局部变量，这意味着对本地变量的修改会反映到
+外部函数。（这在ECMAScript中是不可能的）
+
+例：
+function addTen(num){
+  num += 10;
+  return num;
+}
+
+let count = 20;
+
+let result = addTen(count)
+console.log(count)      //20
+console.log(result)     //30
+
+这里，函数addTen() 有一个参数num，他其实是一个局部变量。在调用时候，变量count作为参数传入。count
+的值是20，这个值被复制到参数num以便在addTen()内部使用。在函数内部，参数num被加上10，但这不会影响
+函数外部的原始变量count。参数num和变量count互不干扰，他们只不过碰巧保存了一样的值。如果num是
+按照引用传递的，那么count的值也会被修改为30.这个事实在使用数值这样的原始值是非常明显的。但是，
+如果变量中传递的是对象，就没有那么清楚了。
+
+function setName(obj){
+  obj.name = 'nicholas'
+}
+let persion = new Object();
+setName(persion);
+console.log(persion.name) //nicholas
+
+这一次，我们创建了一个对象并把它保存在变量person中。然后，这个对象被传为setName()方法，并被复制
+到参数obj中。在函数内部，obj和person都指向同一个对象。结果就是，即使对象是按值传进函数的，obj也
+会通过引用访问对象。党函数内部给obj设置了name属性时，函数外部的对象也会反映这个变化，因为obj指向
+的对象保存在全局作用域的堆内存上。很多开发者错误地认为，当在局部作用域中修改对象而变化反映到全局时
+就意味着参数时按引用传递的。为证明对象是按值传递的，我们看个例子
+
+function setName(obj){
+  obj.name = 'nicholas'
+  obj = new Object();
+  obj.name = 'Greg'
+}
+
+let person = new Object();
+setName(person);
+console.log(person.name)  //nicholas
+
+这个例子前后唯一的变化就是setName()中多了两行代码，将obj重新定义为一个有着不通name的新对象。当
+person传入setName()是，其name属性被设置为nicholas。然后变量obj被设置为一个新对象且name属性被
+设置为Greg。如果person是按引用传递的，那么person应自动将指针改为指向name为greg的对象。可是，当
+我们再次访问person.name时，它的值是nicholas，这表明函数中参数的值改变之后，原始的引用任然没有变
+当obj在函数内部被重写时，它变成了一个指向本地对象的指针。而那个本地对象在函数执行结束时就被销毁了
+
+共享传递----引用副本
+
+注意：ECMAScript中函数的参数就是局部变量
+
+4.1.4 确定类型
+typeof
+
+基础类型
+let s = 'nicholas'
+console.log(typeof s) //string
+
+instanceof
+引用类型
+let p = new Object()
+let a = new Array()
+let r = new RegExp(/a/);
+console.log(p instanceof Object)  //true
+console.log(p instanceof Array)   //false
+console.log(r instanceof RegExp)  //true
+
+
+按照定义，所有引用值都是Object的实例，因此通过instanceof操作符检测任何引用值和Object构造函数
+都会返回true。类似地，如果用instanceof检测原始值，则始终返回false，因为原始值不是对象。
+
+4.2 执行上下文与作用域
