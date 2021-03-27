@@ -382,6 +382,28 @@ console.log(falseValue instanceof Boolean)  //false
 
 5.3.2 Number
 
+Number是对应数值的引用类型。要创建一个Number对象，就是用Number构造函数并传入数值，例如：
+let numberObject = new Number(10)
 
+与Boolean类型一样，Number类型重写了valueOf(), toLocaleString()和toString()方法。valueOf()
+方法返回Number对象表示的原始数值，另外两个方法返回数值字符串。toString()方法可选择的接收一个表示
+基数的参数，并返回相应基数形式的数值字符串
+let num = 10;
+console.log(num.toString())     //10
+console.log(num.toString(2))    //1010
+console.log(num.toString(8))    //12
+console.log(num.toString(10))   //10
+console.log(num.toString(16))   //a
+let num1 = new Number(10)
+
+除了继承的方法，Number类型还提供了几个用于将数值格式转换为字符串的方法。
+toFixed()方法返回包含指定小数点位数的数值字符串，如：
+let num = 10
+console.log(num.toFixed(2))   //10.00  是字符串
+
+这里的toFied()方法接收了参数2，表示返回的数值字符串要包含两位小数。结果返回值为“10.00”，小数
+位填充了0.如果数值本身的小数位超过了参数指定的位数，则四舍五入到最接近的小数位：
+let num = 10.005
+console.log(num.toFixed(2)) //10.01
 
 
