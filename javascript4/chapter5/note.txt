@@ -404,6 +404,89 @@ console.log(num.toFixed(2))   //10.00  是字符串
 这里的toFied()方法接收了参数2，表示返回的数值字符串要包含两位小数。结果返回值为“10.00”，小数
 位填充了0.如果数值本身的小数位超过了参数指定的位数，则四舍五入到最接近的小数位：
 let num = 10.005
-console.log(num.toFixed(2)) //10.01
+console.log(num.toFixed(2)) //'10.01'
 
+toFixed()自动舍入的特点可以用于处理货币。不过要注意的是，多个浮点数值的计算不一定得到精确的结果
+比如,0.1 + 0.2 = 0.300000000000004
 
+注意： toFixed()方法可以表示有0~20个小数位的数值。某些浏览器可能支持更大的范围，但这是通常被支持
+的范围。
+
+另一个用于格式化数值的方法是toExponential()，返回以科学计数法（也称为指数计数法）表示的数值字符串
+与toFixed()一样，toExponential()也接收一个参数，表示结果中小数的位数
+let num = 10;
+console.log(num.toExponential(1))   //'1.0e+1'
+
+一般来说，这么小的数不用表示位科学计数法形式。如果项得到数值最适合的形式，那么可以使用toPrecision()
+let num = 99;
+console.log(num.toPrecision(1)) //1e+2
+console.log(num.toPrecision(2)) //99
+console.log(num.toPrecision(3)) //99.0
+
+isInteger()方法与安全整数
+ES6新增了Number.isInteger()方法，用于辨别一个数值是否存为整数。有时候，小数位的0可能会让人误认为
+是一个浮点数：
+console.log(Number.isInteger(1));     //true
+console.log(Number.isInteger(1.00));  //true
+console.log(Number.isInteger(1.01));  //false
+
+IEEE754数值格式有一个特殊的数值范围，在这个范围内二进制值可以表示一个整数值。这个数值范围从
+Number.MIN_SAFE_INTEGER(-2^53+1)到Number.MAX_SAFE_INTEGER(2^53-1)。对超出这个范围的数值
+即使尝试保存位整数，IEEE754编码格式也意味着二进制值可能会表示一个完全不同的数值。为了鉴别整数
+是否在这个范围，可以使用Number.isSafeInteger()方法：
+
+console.log(Number.isSafeInteger(-1 * (2 ** 53)));      //false
+console.log(Number.isSafeInteger(-1 * (2 ** 53) + 1));  //true
+
+5.3.3 String
+
+String是对应字符串的引用类型。要创建一个String对象，使用String构造函数并传入一个数值，如下例所示：
+let stringObject = new sTRING('hello world');
+
+String对象的方法可以在所有字符串原始值上调用。3个继承的方法valueOf()、toLocaleString()和toString()
+都返回对象的原始字符串值。
+
+每个String对象都有一个length属性，表示字符串中字符的数量。
+let stringValue = 'hello world';
+console.log(stringValue.length) //11
+
+这个例子输出了字符串'hello world'中包含的字符数量：11.注意字符串中包含双字节符（而不是单字节的ASCII
+字符），也仍然会按单字符来计算。
+string类型提供了很多方法来解析和操作字符串。
+
+1.javascript字符
+
+javascript字符串由16位码元(code unit)组成。对多字符来说，每16位码元对应一个字符。换句话说，字符串
+的length属性表示字符串包含多少16位码元：
+let message = 'abcde'
+console.log(message.length) //5
+
+此外，charAt()方法返回给定索引位置的字符，由传给方法的整数参数指定。具体来说，这个方法查找指定索引
+位置的16位码元，并返回该码对应的字符
+
+let message = 'abcde'
+console.log(message.charAt(2))
+
+javascript字符串使用了两种Unicode编码混合的策略：UCS-2和UTF-16。对于可以采用16位编码的字符
+(U+0000~U+FFFF)，这两种编码实际上是一样的。
+
+注意：要深入了解关于字符串编码的内容
+
+使用charCodeAt()方法可以查看指定码元的字符编码。这个方法返回指定索引位置的码元值，索引以整数指定。
+let message = 'abcde'
+console.log(message.charCodeAt(2))    //99
+
+console.log(99 === 0x63)              //true
+
+fromCharCode()方法用于根据给定的UTF-16码元创建字符串中的字符。这个方法可以接收任意多个数值，
+并返回将所有数值对应的字符拼接起来的字符串
+
+//Unicode 'Latin small letter A'的编码是U+0061
+//Unicode 'Latin small letter B'的编码是U+0062
+
+console.log(String.fromCharCode(0x61, 0x62, 0x63, 0x64, 0x65))    //'abcde'
+console.log(String.fromCharCode(97, 98, 99, 100, 101))            //'abcde'
+
+对于U+0000~U+FFFF范围内的字符，length、charAt()、charCodeAt()和fromCharCode()返回的结果都跟预期
+是一样的。这是因为在这个范围内，每个字符都是用16位表示的，而这几个方法也都是基于16位码元完成操作。
+只要字符编码大小与码元大小一一对应，这些方法就能如期工作。
