@@ -582,3 +582,142 @@ let matches = text.match(pattern)
 
 
 5.4 单例内置对象
+
+ECMAS-262对内置对象的定义是“任何由ECMAScript实现提供、与宿主环境无关，并在ECMAScript程序开始执行
+时就存在的对象”这就意味着，开发者不用显式地实例化内置对象，因为他们已经实例化好了。前面我们已经接触
+了大部分内置对象，包括object、Array和String。本节介绍ECMA-262定义的另外两个单例内置对象：global
+和Math。
+
+5.4.1 Global
+Global对象是ECMAScript中最特别的对象，因为代码不会显式地访问它。ECMA-262规定Global对象为一种兜底
+对象，它所针对的是不属于任何对象的属性和方法。事实上，不尊在全局变量或全局函数这种东西。在全局作用域
+中定义的变量和函数都会变成Global对象的属性。本书前面介绍的函数，包括isNaN()、isFinite()、parseInt()
+和parseFloat(),实际上都是Global对象的方法。除了这些，Global对象上还有另外一些方法。
+
+1.URL编码方法
+
+encodeURI()和encodeURIComponent()方法用于编码统一资源标识符(URI)，以便传给浏览器。有效的URI不能
+包含某些字符，比如空格。使用URI编码方法来编码URI可以让浏览器能够理解他们，同时又以特殊的UTF-8编码
+替换掉所有无效字符
+
+encodeURI()方法用于对整个URI进行编码，比如“www.wrox.com/illegal value.js”而encodeURIComponent()
+方法用于编码URI中单独的组件，比如前面URL中的“illegal value.js”
+
+这两个方法的主要区别是，encodeURI()不会编码属于URL组件的特殊字符，比如冒号、斜杠、问好、井号，
+而encodeURIComponent()会编码它发现的所有非标准字符
+例：
+let uri = "http://www.wrox.com/illegal value.js#start"
+
+console.log(encodeURI(uri))
+//http://www.wrox.com/illegal%20value.js#start
+
+console.log(encodeURIComponent(uri))
+//http%3A%2F%2Fwww.wrox.com%2Fillegal%20value.js%23start
+
+这里使用encodeURI()编码后，除了空格被替换为%20 之外，没有任何变化，而encodeURIComponent()方法
+将所有非字母字符都替换成了相应的编码形式。这就是使用encodeURI()编码整个URI，但只使用encodeURIComponent()
+编码哪些会追加到已有uri后面的字符串的原因
+
+注意： 一搬来说，使用encodeURIComponent()应该比使用encodeURI()的频率更高，这是因为编码查询字符串
+参数比编码基准URI的次数更多。
+
+与encodeURI()和encodeURIComponent()相对的是decodeURI()和decodeURIComponent()。decodeURI()
+值对使用encodeURI()编码过的字符解码。例如，%20会被替换为空格，但%23不会被替换为井号(#),因为井号
+不是由encodeURI()替换的。类似地，decodeURIComponent()编码所有被encodeURIComponent()编码的字符
+基本上就是解码所有特殊值。
+
+let uri = "http%3A%2F%2Fwww.wrox.com%2Fillegal%20value.js%23start";
+
+console.log(decodeURI(uri))
+//http%3A%2F%2Fwww.wrox.com%2Fillegal value.js%23start
+
+console.log(decodeURIComponent(uri))
+//http://www.wrox.com/illegal value.js#start
+
+这里uri变量中包含一个使用encodeURIComponent()编码过的字符串。首先输出的是使用decodeURI()解码的
+结果，可以看到只用空格替换了%20.ranhou shi shiyong decodeURIComponent()解码的结果，其中替换了
+所有特殊字符，并输出了没有包含任何转义的字符串（这个字符串不是有效的URL）
+
+2.eval()方法
+
+最后一个方法可能是整个ECMAScript语言中最强大的了，它就是eval()。这个方法就是一个完整的ECMAScript
+解释器，它接收一个参数，即一个要执行的ECMAScript字符串。
+例：
+eval('console.log("hi")')
+
+当解释器发现eval()调用时，会将参数解释为实际的ECMAScript语句，然后将其插入到该位置。通过eval()
+执行的代码属于该调用所在上下文，被执行的代码与该上下文拥有相同的作用域。这意味着定义在包含上下文
+中的变量可以在eval()调用内部被引用，比如下面这个例子：
+let msg = 'hello world'
+eval('console.log(msg)')
+
+这里，变量msg是在eval()调用的外部上下文中定义的，而console.log()显式了文本“hello world”。这是因为
+第二行代码被替换成一行正在的函数调用代码。类似地，可以在eval()内部定义一个函数或变量，然后再外部代码
+中引用，如下
+eval('function sayHi(){console.log('hi')}')
+sayHi();
+
+这里，函数sayHi()是再eval()内部定义的。因为该调用会被替换为真正的函数定义，所以才可能再下一行代码
+中调用sayHi()。对于变量也是一样的。
+
+eval("let msg = 'hello world'")
+console.log(msg)
+通过eval()定义的任何变量和函数都不会被提升，这是因为再解析代码的时候，他们是被包含再一个字符串中的。
+他们只是再eval()执行的时候才被创建。
+
+在严格模式下，在eval()内部创建的变量和函数无法被外部访问。换句话说，最后两个例子会报错。同样在严格模式
+下，赋值给eval也会导致错误：
+"use strict"
+eval = 'hi'
+
+3. Global对象属性
+
+Global对象由很多属性，其中一些我们已经提到过了。项undefined、NaN和Infinity等特殊值都是Global对象
+的属性。此外，所有原生引用类型构造函数，比如object和function，也都是global对象的属性。
+
+4.window对象
+
+虽然ECMA-262没有规定直接访问Global对象的方式，但浏览器将window对象实现为Global对象的代理。因此，所有
+全局作用域中声明的变量和函数都变成了window的属性。
+var color = 'red'
+function sayColor(){
+  console.log(window.color)
+}
+
+window.sayColor() //red
+
+这里定义了一个名为color的全局变量和一个名为sayColor()的全局函数。在sayColor()内部，通过window.color
+访问了color变量，说明全局变量变成了window的属性。接着，由通过window对象直接调用了window.sayColor()
+函数，从而输出字符串
+注意：window对象在javascript中远不止实现了ECMAScript的Global对象那么简单。
+
+另一种获取Global对象的方式是使用如下的代码：
+let global = function(){
+  return this;
+}();
+
+这段代码创建一个立即调用的函数表达式，返回了this的值。如前所述，当一个函数在没有明确（通过成为某个对象
+的方法，或通过call()/apply()）指定this值得情况下执行时，this值定于Global对象。因此，调用一个简单
+返回this的函数是在任何执行上下文中获取Global对象的通用方式。
+
+5.4.2 Math
+
+5.5 小结
+
+javascript中的对象称为引用值，集中内置的引用类型可用于创建特定类型的对像。
+·引用值与传统面向对象编程语言中的类相似，但实现不同。
+·Date类型特工关于日期和时间的信息，包括当前日期、时间及相关计算
+·RegExp类型是ECMAScript支持正则表达式的接口，提供了大多数基础和部分高级正则表达式功能。
+javascript比较独特的一点是，函数实际上是Function类型的实例，也就是说函数也是对象。因为函数也是对象，
+所以函数也有方法，可用用于增强其能力
+
+由于原始值包装类型的存在，javascript中的原始值可以被当成对象来使用。由3中原始值包装类型：Boolean、
+Number和String。他们都具备如下特点。
+
+·每种包装类型都映射到同名的原始类型
+·以读模式访问原始值时，后台会实例化一个原始值包装类型的对象，借助这个对象可用操作相应的数据。
+·涉及原始值的语句执行完毕后，包装对象就会被销毁。
+
+当代码开始执行时，全局上下文中会存在两个内置对象：Global和Math。其中，Global对象在大多数ECMAScript
+实现中无法直接访问。不过，浏览器将其实现为window对象。所有全局对象和函数都是Global对象的属性。
+Math对象包含辅助完成复杂计算的属性和方法。
