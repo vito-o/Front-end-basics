@@ -183,3 +183,173 @@ console.log(colors, colors[2])    //(2) ["red", "blue"] undefined
 let colors = ['red', 'blue', 'green']
 colors.length = 5;
 console.log(colors)     //(5) ["red", "blue", "green", empty × 2]
+
+使用Length属性可以方便地向数组末尾添加元素，如下：
+let colors = ['red', 'blue', 'green']
+colors[colors.length] = 'black';
+colors[colors.length] = 'brown';  
+//(5) ["red", "blue", "green", "black", "brown"]
+
+注意：数组最多可以包含4 294 967 295个元素，这对于大多数编程任务应该足够了。如果尝试添加更多项，
+会导致抛出错误。以这个最大值作为初始值创建数组，可能导致脚本允许时间过长的错误。
+
+6.2.4 检测数组
+
+一个经典的ECMAScript问题是判断一个对象是不是数组。只有在一个网页（因而只有一个全局作用域）的情况下
+使用Instanceof操作符就足矣：
+
+if(value instanceof Array){
+  //操作数组
+}
+
+使用instanceof的问题是假定只有一个全局执行上下文。如果网页里面有多个框架，则可能涉及两个不同的全局
+执行上下文，因此就会有两个不同版本的Array构造函数。如果要把数组从一个框架传给另一个框架，则这个数组
+的构造函数将有别于第二个框架内本地创建的数组
+
+为了解决这个问题，ECMAScript提供了Array.isArray()方法。这个方法的目的就是确定一个值是否为数组，而
+不用管它是在哪个全局执行上下文中创建的。
+Array.isArray(value)
+
+6.2.5 迭代器方法
+
+在ES6中，Array的原型上暴露了3个用于检索数组内容的方法：keys()、 values()和entries()。keys()返回数组索引的迭代器，values()
+返回数组元素的迭代器，而entries()返回索引/值的迭代器：
+//因为这些二方法都返回迭代器，所以可以将他们的内容通过Array.from()直接转换为数组实例
+const a = ['foo', 'bar', 'baz', 'qux']
+const aKeys = Array.from(a.keys())
+const aValues = Array.from(a.values())
+const aEntries = Array.from(a.entries())
+
+console.log(aKeys)      //(4) [0, 1, 2, 3]
+console.log(aValues)    //(4) ["foo", "bar", "baz", "qux"]
+console.log(aEntries)
+// 0: (2) [0, "foo"]
+// 1: (2) [1, "bar"]
+// 2: (2) [2, "baz"]
+// 3: (2) [3, "qux"]
+
+使用ES6的结构可以非常容易地在拳皇中拆分键/值对：
+const a = ['foo', 'bar', 'baz', 'qux']
+for( const [idx, element] of a.entries()){
+  console.log(idx, element)
+}
+// 0 "foo"
+// 1 "bar"
+// 2 "baz"
+// 3 "qux"
+
+6.2.6 赋值和填充方法
+
+ES6新增了两个方法：批量复制方法copyWithin()，以及填充数组方法fill()。这两个方法的函数签名类似，
+都需要指定既有数组实例上的一个范围，包含开始索引，不包含结束索引。使用这个方法不会改变数组的大小。
+
+使用fill()方法可以向一个已有的数组中插入全部或部分相同的值。开始索引用于指定开始填充的位置，它是
+可选的。如果不提供结束索引，则一直填充到数组末尾。负值索引从数组末尾开始计算。也可以将负索引想象
+成数组长度加上它得到得一个正索引；
+
+const zeroes = [0, 0, 0, 0, 0]
+
+zeroes.fill(5)
+console.log(zeroes) //(5) [5, 5, 5, 5, 5]
+zeroes.fill(0)
+console.log(zeroes) //(5) [0, 0, 0, 0, 0]
+
+//用6填充索引大于等于3得元素
+zeroes.fill(6, 3)
+console.log(zeroes) //(5) [0, 0, 0, 6, 6]
+zeroes.fill(0)
+console.log(zeroes) //(5) [0, 0, 0, 0, 0]
+//用7填充索引大于等于1且小于3的元素
+zeroes.fill(7, 1, 3)
+console.log(zeroes) //(5) [0, 7, 7, 0, 0]
+zeroes.fill(0)
+console.log(zeroes) //(5) [0, 0, 0, 0, 0]
+//用8填充索引大于等于1且小于4的元素
+//(-4 + zeroes.length = 1)
+//(-1 + zeroes.length = 4)
+zeroes.fill(8, -4, -1);
+console.log(zeroes) //(5) [0, 8, 8, 8, 0]
+
+fill()静默忽略超出数组边界、零长度即方向相反的索引范围
+
+const zeroes = [0, 0, 0, 0, 0]
+//索引过低，忽略
+zeroes.fill(1, -10, -6);
+console.log(zeroes) //[0, 0, 0, 0, 0]
+
+//索引过高，忽略
+zeroes.fill(1, 10, 15);
+console.log(zeroes) //[0, 0, 0, 0, 0]
+
+//索引反向，忽略
+zeroes.fill(2, 4, 2)
+console.log(zeroes) //[0, 0, 0, 0, 0]
+
+//所有部分可用，填充可用部分
+zeroes.fill(4, 3, 10)
+console.log(zeroes) //[0, 0, 0, 4, 4]
+
+与fill()不同，copyWithin()会按照指定范围浅复制数组中的部分内容，然后将他们插入到指定所有开始的位置
+开始索引和结束索引则于fill()使用同样的计算方法。
+
+copyWithin(x, y, z)
+x(必填)：表示要替换的位置，从该位置开始替换，负数的话就到数
+y(可选)：表示该位置开始读取元素，那这个位置的元素去换，负数的话就到数
+z(可选)：表示该位置结束读取元素，拿到这个位置的元素去换，负数的话就到数。
+
+let ints, 
+    reset = () => ints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+reset();
+//从ints中复制索引0开始的内容，插入到索引5开始的位置
+//在源索引或目标索引到达数组边界时停止
+ints.copyWithin(5)
+console.log(ints)   //(10) [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]
+reset();
+
+//从ints中复制索引5开始的内容，插入到索引0开始的位置
+ints.copyWithin(0, 5)
+console.log(ints)   //(10) [5, 6, 7, 8, 9, 5, 6, 7, 8, 9]
+reset();
+
+//从ints中复制索引0开始到索引3结束的内容
+//插入到索引4开始的位置
+ints.copyWithin(4, 0, 3)
+console.log(ints)
+reset();
+
+javascript引擎在插值前会完整复制范围内的值
+//因此复制期间不存在重写的风险
+ints.copyWithin(2, 0, 6)
+console.log(ints)     //(10) [0, 1, 0, 1, 2, 3, 4, 5, 8, 9]
+reset()
+//支持负索引值，于fill()相对于数组末尾计算正向索引的过程是一样的
+//(-4 + ints.length = 6)
+//(-7 + ints.length = 3)
+//(-3 + ints.length = 7)
+ints.copyWithin(-4, -7, -3);
+console.log(ints)     //(10) [0, 1, 2, 3, 4, 5, 3, 4, 5, 6]
+
+copyWithin()静默忽略超出数组边界、零长度及方向相反的索引范围：
+let ints, 
+    reset = () => ints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+reset();
+
+//索引过低，忽略
+ints.copyWithin(1, -15, -12)
+console.log(ints);  //[0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+reset()
+
+//索引过高，忽略
+ints.copyWithin(1, 12, 15)
+console.log(ints);  //[0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+reset()
+
+//索引相反，忽略
+ints.copyWithin(2, 4, 2)
+console.log(ints);  //[0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+reset()
+//索引部分可用，复制、填充可用部分
+ints.copyWithin(4, 7, 10)
+console.log(ints)   //(10) [0, 1, 2, 3, 7, 8, 9, 7, 8, 9]
+
+6.2.7 转换方法
