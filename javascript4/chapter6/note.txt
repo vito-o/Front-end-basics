@@ -467,5 +467,131 @@ let colors2 = colors.concat('yellow', newColors);
 //强制打平类数组对象
 let colors3 = colors.concat(moreNewColors)
 
+slice()
+//用于创建一个包含原由数组中一个或多个元素的新数组。slice()方法可以接收一个或两个参数：返回元素
+的开始索引和结束索引。操作不影响原数组
+let colors = ['red', 'green', 'blue', 'yellow', 'purple']
+let colors2 = colors.slice(1)
+let colors3 = colors.slice(1, 4)
 
+console.log(colors2)    //["green", "blue", "yellow", "purple"]
+console.log(colors3)    //["green", "blue", "yellow"]
 
+注意：如果slice()的参数有负值，那么就以数值长度加上这个负值的结果确定位置
+比如：5个元素 slice(-2, -1)，就相当于调用slice(3, 4)
+
+splice()
+·删除 需要给splice()传入两个参数：要删除的第一个元素的位置和要删除的元素数量。可以从数组中删除任意
+      多个元素.比如splice(0, 2)会删除前两个元素
+·插入 需要给splice()传入3个参数：开始位置、0（要山粗的元素数量）和要插入的元素，可以在以数组中指定
+      的位置插入元素。第三个参数之后换可以传入第四个、第五个参数，乃至任意多个要插入的元素。
+      比如.splice(2, 0, 'red', 'green')会从数组位置2开始插入字符串'red'和'green'
+·替换 splice()在删除元素的同时可以在指定位置插入新元素，同样要传入3个参数：开始位置、要删除元素的数量
+      和要插入的任意多个元素。要插入的元素数量不一定跟删除的元素数量一致。
+      比如splice(2, 1, 'red', 'green')会在位置2删除一个元素，然后从该位置开始向数组中插入'red'和
+      'green'
+      splice返回数组中被删除的元素（如果没有删除的元素，则返回空数组）
+let colors = ['red', 'blue', 'green'];
+let res = colors.splice(1, 1, 'grep', 'cray')
+console.log(colors) //(4) ["red", "grep", "cray", "green"]
+console.log(res)    //['blue']
+
+6.2.12 搜索和位置方法
+
+ECMAScript提供两类搜索数组的方法：按严格相等搜索和按断言函数搜索
+
+1.严格相等
+
+ECMAScript提供了3个严格相等的搜索方法：indexOf()、lastIndexOf()和includes()。其中，前两个方法
+在所有版本中都可以用，而第三个方法是ECMAScript7新增的。这些方法都接收两个参数：要查找的元素和一个
+可选的起始搜索位置。indexOf()和includes()方法从数组前面开始向后搜索，而lastIndexOf()从数组末尾
+开始向前搜索。
+
+indexOf()和lastIndexOf()都返回要查找的元素在数组中的位置，如果没有找到则返回-1.
+includes()返回布尔值，表示是否至少找到一个与指定元素匹配的项。在比较第一个参数跟数组每一项时，会使用
+全等（===）比较，也就是说两项必须严格相等。
+let numbers = [1, 2, 3, 4, 5, 4, 3, 2, 1]
+console.log(numbers.indexOf(4))     //3
+console.log(numbers.lastIndexOf(4)) //5
+console.log(numbers.includes(4))    //true
+
+console.log(numbers.indexOf(4, 4))     //5
+console.log(numbers.lastIndexOf(4, 4)) //3
+console.log(numbers.includes(4, 7))    //false
+
+let person = {name: 'Nicholas'};
+let people = [{name: 'Nicholas'}];
+let morePeople = [person];
+
+console.log(people.indexOf(person))       //-1
+console.log(morePeople.indexOf(person))   //0
+console.log(people.includes(person))      //false
+console.log(morePeople.includes(person))  //true
+
+2.断言函数
+
+ECMAScript也允许按照定义的断言函数搜索数组，每个索引都会调用这个函数。断言函数的返回值决定了相应索引
+元素是否被认为匹配。
+
+断言函数接收3个参数：元素、索引和数组本身。其中元素是数组中当前所示的元素，索引是当前元素的索引，而
+数组就是正在搜索的数组。断言函数返回真值，表示是否匹配
+
+find()和findIndex()方法使用了断言函数。这两个方法都从数组的最小索引开始。find()返回第一个匹配的
+元素，findIndex()返回第一个匹配元素的索引。这两个方法也都接收第二个可选的参数，用于指定断言函数
+内部this的值。
+
+const people = [
+  {name: 'Matt', age: 27},
+  {name: 'Nicholas', age: 29},
+]
+
+console.log(people.find((element, index, array) => element.age < 28))
+//{name: "Matt", age: 27}
+
+console.log(people.findIndex((element, index, array) => element.age < 28))
+//0
+
+找到匹配项后，这两个方法都不在继续搜索。
+const evens = [2, 4, 6]
+
+evens.find((element, index, array) => {
+  console.log(element, index, array)
+  return element === 4;
+})
+//2 0 [2, 4, 6]
+//4 1 [2, 4, 6]
+
+6.2.13迭代器方法
+ECMAScript为数组定义了5个迭代方法。每个方法接收两个参数：以每一项为参数运行的函数，以及可选的作为
+函数运行上下文的作用域对象（影响函数中this的值）。传给每个方法的函数接收3个参数：数组元素、元素索引
+数组本身。数组的5个迭代方法如下：
+·every():对数组每一项运行传入的函数，如果对每一项函数都返回true，则这个方法返回true。
+·filter()：对数组每一项都运行传入的函数，函数返回true的项会组成数组之后返回。
+·forEach()：对数组每一项都运行传入的函数，没有返回值。
+·map()：对数组每一项都运行传入的函数，返回由每次函数调用的结果构成的数组。
+·some()：对数组每一项都运行传入的函数，如果有一项函数返回true，则这个方法返回true。
+这些方法都不改变调用他们的数组
+
+6.2.14 归并方法
+
+ECMAScript为数组提供了两个归并方法：reduce()和reduceRight()。这两个方法都会迭代数组的所有项，并
+在此基础上构建一个最终返回值。reduce()方法从数组第一项开始遍历到最后一项。
+这两个方法都接受两个参数：对每一项都会运行的归并函数，以及可选的以之位归并起点的初始值。传给reduce()
+和reduceRight()的函数接收4个参数：上一个归并值、当前项、当前项的索引和数组本身。这个函数返回的任何值
+都会作为下一次调用同一个函数的第一个参数。如果没有给这两个方法传入可选的第二个参数（作为归并起点值），
+则第一次迭代将从数组的第二项开始，因此传给归并函数的第一个参数是数组的第一项，第二个参数是数组的第二项。
+例：
+let values = [1, 2, 3, 4, 5];
+let sum = values.reduce((prev, cur, index, array) => prev + cur);
+console.log(sum)  //15
+第一次执行归并函数时，prev是1，cur是2.第二次执行时，prev是3（1+2）,cur是3（数组第三项）。如此递进
+知道把所有项都遍历一次，最后返回归并结果。
+
+reduceRight()方法与之类似，只是方向相反。
+let values = [1, 2, 3, 4, 5]
+let sum = values.reduceRight(function(prev, cur, index, array){
+  return prev + cur;
+})
+console.log(sum)    //15
+
+6.3 定型数组
