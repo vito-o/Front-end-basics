@@ -1257,3 +1257,325 @@ const wm3 = new WeakMap([
 console.log(wm3.get(stringKey))   //val1
 
 初始化之后可以使用set()再添加键值对，可以使用get()和has()查询，还可以使用delete()删除。
+
+const wm = new WeakMap();
+
+const key1 = {id:1},
+      key2 = {id:2};
+
+console.log(wm.has(key1))   //false
+console.log(wm.get(key1))   //undefined
+
+wm.set(key1, 'matt')
+  .set(key2, 'frisbie')
+
+wm.delete(key1)
+
+console.log(wm.has(key1))   //false
+console.log(wm.has(key2))   //true
+
+set()方法返回弱映射实例，因此可以把多个操作连缀起来，包括初始化声明：
+
+const key1 = {id:1},
+      key2 = {id:2},
+      key3 = {id:3};
+
+const wm = new WeakMap().set(key1, 'val1')
+wm.set(key2, 'val2')
+  .set(key3, 'val3')
+
+console.log(wm.get(key1))
+console.log(wm.get(key2))
+console.log(wm.get(key3))
+
+6.5.2 弱键
+
+weakMap中“weak”表示弱映射得键是“弱弱地拿着”的意思。意思就是，这些建不属于正式的引用，不会阻止垃圾
+回收。但要注意的是，弱映射中值的引用可不是“弱弱地拿着”的。只要键存在，键值对就会存在与映射中，并被
+当作对值得引用，因此就不会被当作垃圾回收。
+
+const wm = new WeakMap()
+wm.set({}, 'val')
+set()方法初始化了一个新对象并将它用作一个字符串得键。因为没有指向这个对象得其他引用，所以当这行
+代码指向完成后，这个对象键就会被当作垃圾回收。然后，这个键值对就从弱映射中消失了，使其成为一个空
+映射。再这个例子中，因为值也没有被引用，所以这对键值被破坏后，值本身也会成为垃圾回收得目标。
+
+const wm = new WeakMap()
+const container = {
+  key: {}
+}
+wm.set(container.key, 'val')
+
+function removeReference(){
+  container.key = null;
+}
+这一次，container对象维护着一个对弱映射得引用，因此这个对象键不会成为垃圾回收得目标。不过，如果
+调用了removeReference()，就会摧毁键对象得最后一个引用，垃圾回收程序就可以把这个键值对清理掉。
+
+6.5.3 不可迭代键
+因为weakMap中得键值对任何时候都可能被销毁，所以没必要提供迭代其键值对得能力。当然，也用不着clear()
+这样一次性销毁所有键值得方法。weakMap确实没有这个方法。因为不可能迭代，所以也不可能再不知道对象引用
+得情况下从弱映射中取得值。即便代码可以访问weakMap实例，也没办法看到其中得内容。
+
+weakMap实例之所以限制只能用对象作为键，是为了保证只有通过键对象得引用才能取得值。如果允许原始值，那
+就没办法区分初始化时使用得字符串字面量和初始化之后使用得一个相等得字符串了
+
+6.5.4 使用弱映射
+
+weakMap实例与现有javascript对象有着很大不同，可能一时不容易说清楚应该怎么使用它。这个问题没有唯一
+答案，但以及出现了很多相关策略
+
+1.私有变量
+若映射造就了在js中实现真正私有变量得一种新方法。前提很明确：私有变量会存储再弱映射中，以对象实例
+为键，以私有成员的字典为值。
+
+const wm = new WeakMap();
+
+class User{
+  constructor(id){
+    this.idProperty = Symbol('id')
+    this.setId(id)
+  }
+
+  setPrivate(property, value){
+    const privateMembers = wm.get(this) || {}
+    privateMembers[property] = value;
+    wm.set(this, privateMembers)
+  }
+
+  getPrivate(property){
+    return wm.get(this)[property];
+  }
+
+  setId(id){
+    this.setPrivate(this.idProperty, id);
+  }
+
+  getId(){
+    return this.getPrivate(this.idProperty)
+  }
+}
+
+
+const user = new User(123);
+console.log(user.getId())   //123
+user.setId(456);
+console.log(user.getId())   //456
+
+//并不是真正私有的
+console.log(wm.get(user)[user.idProperty])    //456
+
+对于上面的实现，外部代码只需要拿到对象实例的引用和弱映射，就可以取得“私有”变量了。为了避免这种访问，
+可以用一个闭包把weakMap包装起来，这样就可以把弱映射与外界隔离开了。
+
+const User = (() => {
+  const wm = new WeakMap();
+
+  class User{
+    constructor(id){
+      this.idProperty = Symbol('id')
+      this.setId(id)
+    }
+
+    setPrivate(property, value){
+      const privateMembers = wm.get(this) || {}
+      privateMembers[property] = value;
+      wm.set(this, privateMembers)
+    }
+
+    getPrivate(property){
+      return wm.get(this)[property];
+    }
+
+    setId(id){
+      this.setPrivate(this.idProperty, id);
+    }
+
+    getId(){
+      return this.getPrivate(this.idProperty)
+    }
+  }
+  return User;
+})();
+
+const user = new User(123);
+console.log(user.getId())   //123
+user.setId(456);
+console.log(user.getId())   //456
+
+这样，拿不到弱映射中的键，也就无法取得弱映射中对于的值。虽然这防止了前面提到的访问，但整个代码也
+完全陷入了ES6之前的闭包私有变量模式。
+
+2.DOM节点元数据
+
+因为WeakMap实例不会妨碍垃圾回收，所以非常适合保存关联元数据。来看下面这个例子，其中使用了常规的map
+
+const m = new Map();
+
+const loginButton = document.querySelector('#login')
+
+m.set(loginButton, {disabled: true})
+
+假设在上面的代码指向后，页面被js改变了，原来的登录按钮从DOM树种被删掉了。但由于映射中还保存着按钮
+的引用，所以对于的DOM节点仍然会逗留在内存中，除非明确将其从映射中删除或者等到映射本身被销毁。
+如果这里使用的是弱映射，如以下代码所示，那么当节点从DOM树中被删除后，垃圾回收程序就可以立即释放
+其内存（假设每月其他任何引用这个对象）
+
+const wm = new WeaMap()
+const loginButton = document.querySelector('#login')
+wm.set(loginButton, {disabled: true})
+
+6.6 Set
+
+Set在很多方面都象时加强的MAP，这是因为他们的大多数API和行为都是公有的。
+
+6.6.1 基本API
+
+const m = new Set();
+
+//创建同时初始化
+const s1 = new Set(['val1', 'val2', 'val3'])
+console.log(s1.size)  //3
+
+//使用自定义迭代器初始化集合
+const s2 = new Set({
+  [Symbol.iterator]: function* (){
+    yield 'val1';
+    yield 'val2';
+    yield 'val3';
+  }
+})
+console.log(s2.size)  //3
+
+初始化之后，可以使用add()增加值，使用has()查询，通过size取得元素数量，以及使用delete()和clear()
+删除元素
+const s = new Set();
+
+console.log(s.has('matt'))  //false
+console.log(s.size)         //0
+
+s.add('matt')
+ .add('frisbie')
+
+console.log(s.has('matt'))  //true
+console.log(s.size)         //2
+
+s.delete('matt')
+
+console.log(s.has('matt'))    //false
+console.log(s.has('frisbie')) //true
+console.log(s.size)           //1
+
+//销毁结合实例中的所有值
+s.clear();
+
+console.log(s.has('matt'))    //false
+console.log(s.has('frisbie')) //false
+console.log(s.size)           //0
+
+add()返回集合的实例，所以可以将多个添加操作连缀起来，包括初始化：
+
+const s = new Set().add('val1')
+
+s.add('val2')
+ .add('val3')
+console.log(s.size)   //3
+
+与Map类似，Set可以包含任何js数据类型作为值。集合也使用SameValueZero操作，基本上相当于使用严格对象
+相等的标准来检查值得匹配性
+
+const s = new Set()
+
+const functionVal = function(){}
+const symbolVal = Symbol()
+const objectVal = new Object();
+
+s.add(functionVal)
+s.add(symbolVal)
+s.add(objectVal)
+
+console.log(s.has(functionVal)) //true
+console.log(s.has(symbolVal))   //true
+console.log(s.has(objectVal))   //true
+
+console.log(s.has(function(){}))  //false
+
+与严格相等一样，用作值得对象和其他“集合”类型在自己的内容或属性被修改时也不会改变
+
+const s = new Set();
+
+const objVal = {},
+      arrVal = [];
+
+s.add(objVal)
+s.add(arrVal)
+
+objVal.bar = 'bar'
+arrVal.push('bar')
+
+console.log(s.has(objVal))  //true
+console.log(s.has(arrVal))  //true
+
+add()和delete()操作是幂等的。delete()返回一个布尔值，表示集合中是否存在要删除的值
+const s = new Set();
+
+s.add('foo')
+console.log(s.size) //1
+s.add('foo')
+console.log(s.size) //1
+
+console.log(s.delete('foo'))  //true
+
+console.log(s.delete('foo'))  //false
+
+6.6.2 顺序与迭代
+
+set会维护值插入时的顺序，因此会支持按顺序迭代。
+集合实例可以提供一个迭代器(Iterator)，能以插入顺序生成集合内容。可以通过values()方法及其别名方法
+keys()取得这个迭代器
+
+const s = new Set(['val1', 'val2', 'val3'])
+
+console.log(s.values === s[Symbol.iterator])
+console.log(s.keys === s[Symbol.iterator])
+
+for(let value of s.values()){
+  console.log(value)
+}
+//val1
+//val2
+//val3
+
+for(let value of s[Symbol.iterator]()){
+  console.log(value)
+}
+//val1
+//val2
+//val3
+
+因为values()是默认迭代器，所以可以直接对集合实例使用扩展操作，把集合转换为数组：
+const s = new Set(['val1', 'val2', 'val3'])
+console.log([...s])   //(3) ["val1", "val2", "val3"]
+
+集合的entries()方法返回一个迭代器，可以按照插入顺序产生包含两个元素的数组，这两个元素是集合中每个
+值重复出现
+const s = new Set(['val1', 'val2', 'val3'])
+
+for(let pair of s.entries()){
+  console.log(pair)
+}
+//(2) ["val1", "val1"]
+//(2) ["val2", "val2"]
+//(2) ["val3", "val3"]
+
+如果不适用迭代器，而是使用回调方式，则可以调用结合的forEach()方法并传入回调，依次迭代每个键值对。
+传入的回调接收可选的第二参数，这个参数用于重写回调内部this的值：
+const s = new Set(['val1', 'val2', 'val3'])
+
+s.forEach((val, dupVal) => console.log(`${val} -> ${dupVal}`))
+
+//val1 -> val1
+//val2 -> val2
+//val3 -> val3
+
+修改集合中值的属性不会影响作为结合值得身份：
