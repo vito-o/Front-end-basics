@@ -1578,4 +1578,215 @@ s.forEach((val, dupVal) => console.log(`${val} -> ${dupVal}`))
 //val2 -> val2
 //val3 -> val3
 
-修改集合中值的属性不会影响作为结合值得身份：
+修改集合中值的属性不会影响作为集合值得身份：
+const s1 = new Set(['val1'])
+
+for(let value of s1.values()){
+  value = 'newVal'
+  console.log(value)          //newVal
+  console.log(s1.has('val1')) //true
+}
+
+const valObj = {id: 1}
+
+const s2 = new Set([valObj]);
+
+for(let value of s2.values()){
+  value.id = 'newVal' 
+  console.log(value)            //{id: 'newVal'}
+  console.log(s2.has(valObj))   //true
+}
+console.log(valObj)             //{id: 'newVal'}
+
+6.6.3 定义正式集合操作
+
+从各方面来看，Set跟map都很相似，只是API稍微有调整。唯一需要强调的就是集合的API对自身的简单操作。
+很多开发者都喜欢使用Set操作，但需要手动实现：或者是子类化set，或者是定义一个实用函数库。要把两种
+方式合二为一，可以再子类上实现静态方法，然后在实例方法中使用这些静态方法。在实现这些操作时，需要考虑
+几个地方。
+
+·某些set操作是有关联性的。因此最好让实现的方法能支持处理任意多个集合实例。
+·set保留插入顺序，所有方法返回的集合必须保证顺序。
+·尽可能高效地使用内存。扩展操作符的语法很简单，但尽可能避免集合和数组间的相互转换能够节省对象初始化
+成本。
+·不要修改已有的集合实例。union(a, b)或a.union(b)应该返回包含结果的新集合实例。
+class XSet extends Set {
+  union(...sets){
+    return XSet.union(this, ...sets)
+  }
+
+  intersection(...sets){
+    return XSet.intersection(this, ...sets)
+  }
+
+  difference(set){
+    return XSet.difference(this, set)
+  }
+
+  symmetricDifference(set){
+    return XSet.symmetricDifference(this, set)
+  }
+
+  cartesianProduct(set){
+    return XSet.cartesianProduct(this, set);
+  }
+
+  powerSet(){
+    return XSet.powerSet(this)
+  }
+
+  static union(a, ...bSets){
+    const unionSet = new XSet(a);
+    for(const b of bSets){
+      for(const bValue of b){
+        unionSet.add(bValue)
+      }
+    }
+    return unionSet;
+  }
+
+  //返回两个或更多集合的交集
+  static intersection(a, ...bSets){
+    const intersectionSet = new XSet(a);
+    for(const aValue of intersectionSet){
+      for(const b of bSets){
+        if(!b.has(aValue)){
+          intersectionSet.delete(aValue)
+        }
+      }
+    }
+    return intersectionSet;
+  }
+
+  //返回两个集合的差集
+  static difference(a, b){
+    const differenceSet = new XSet(a);
+    for(const bValue of b){
+      if(a.has(bValue)){
+        differenceSet.delete(bValue)
+      }
+    }
+    return differenceSet;
+  }
+
+  //返回两个集合的对称差集(看不懂)
+  static symmetricDifference(a, b){
+    return a.union(b).difference(a.intersection(b))
+  }
+
+  //返回两个集合（数组对形式）的笛卡尔积
+  //必须返回数组集合，因为笛卡尔积可能包含相同值得对。
+  static cartesianProduct(a, b){
+    const cartesianProductSet = new XSet();
+    for(const aValue of a){
+      for(const bValue of b){
+        cartesianProductSet.add([aValue, bValue])
+      }
+    }
+    return cartesianProductSet;
+  }
+
+  //返回一个集合得幂集
+  static powerSet(a){
+    const powerSet = new XSet().add(new XSet())
+    for(const aValue of a){
+      for(const set of new XSet(powerSet)){
+        powerSet.add(new XSet(set).add(aValue))
+      }
+    }
+    return powerSet;
+  }
+}
+
+6.7 WeakSet
+
+ECMAScript6新增得“弱集合”是一种新的集合类型，为这门语言带来了集合数据结构。WeakSet是Set的“兄弟”类型
+其API也是Set的子集。WeakSet中的“weak”（弱），描述的是javascript垃圾回收程序对待“弱集合”中值的方式
+
+6.7.1 基本API
+
+const sw = new WeakSet();
+
+若集合中的值只能是Object或者继承字object的类型，尝试使用非对象设置会抛出TypeError。如果想在初始化时
+填充弱集合，则构造函数可以接收一个可迭代对象，其中需要包含有效的值。可迭代对象中的每个值都会按照迭代
+顺序插入到新实例中：
+const val1 = {id:1},
+      val2 = {id:2},
+      val3 = {id:3};
+
+const ws1 = new WeakSet([val1, val2, val3])
+
+console.log(ws1.has(val1))  //true
+console.log(ws1.has(val2))  //true
+console.log(ws1.has(val3))  //true
+
+//初始化时全有或全无的操作
+//只要有一个值无效就会抛出错误，导致整个初始化失败
+
+const ws2 = new WeakSet([val1, 'badval', val3]);
+//TypeError:Invalid value used in weak set
+
+const stringVal = new String('val1');
+const ws3 = new WeakSet([stringVal])
+console.log(ws3.has(stringVal))       //true
+
+初始化之后可以使用add()再添加新值，可以使用has()查询，还可以使用delete()删除：
+const ws = new WeakSet();
+
+const val1 = {id:1},
+      val2 = {id:2};
+console.log(ws.has(val1)) //false
+
+ws.add(val1)
+  .add(val2);
+
+console.log(ws.has(val1));  //true
+console.log(ws.has(val2));  //true
+
+ws.delete(val1)
+
+console.log(ws.has(val1));  //false
+console.log(ws.has(val2));  //true
+
+add()方法返回若集合实例，因此可以把多个操作连缀起来，包括初始化声明
+const val1 = {id:1},
+      val2 = {id:2},
+      val3 = {id:3};
+
+const ws = new WeakSet().add(val1)
+
+ws.add(val2)
+  .add(val3);
+
+console.log(ws.has(val1))   //true
+console.log(ws.has(val2))   //true
+console.log(ws.has(val3))   //true
+
+6.7.2 弱值
+
+WeakSet中“weak”表示弱集合的值是 “弱弱地拿着”。 意思就是，这些值不属于正式的引用，不会阻止垃圾回收。
+const ws = new WeakSet()
+ws.add({})
+
+add()方法初始化了一个新对象，并将它用作一个值。因为没有指向这个对象的其他引用，所以当这行代码完成后
+这个对象就会被当作垃圾回收。然后，这个之久从若集合中消失了，使其成为一个空集合。
+
+再看一个稍微不同的例子：
+const ws = new WeakSet();
+
+const container = {
+  val: {}
+}
+
+ws.add(container.val)
+
+function removeReference(){
+  container.val = null;
+}
+
+removeReference()
+
+这一次，container对象维护着一个对若集合值得引用，因此这个对象值不会成为垃圾回收得目标。不过，如果
+调用了removeReference()，就会摧毁值对象得最后一个引用，垃圾回收程序就可也把这个值清理掉。
+
+6.7.3 不可迭代对象
