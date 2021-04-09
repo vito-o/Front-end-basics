@@ -1790,3 +1790,143 @@ removeReference()
 调用了removeReference()，就会摧毁值对象得最后一个引用，垃圾回收程序就可也把这个值清理掉。
 
 6.7.3 不可迭代对象
+
+因为WeakSet中的值任何时候都可能被销毁，所以没必要提供迭代其值的能力。当然，也用不着像clear()这样
+一次性销毁所有值的方法。WeakSet确实没有这个方法。因为不可能迭代，所以也不可能在不知道对象引用的情况
+下从弱集合中取得值。即便代码可以访问weakSet实例，也没有办法看到其中的内容。
+
+weakSet之所以限制只能用对象作为值，是为了保证只有通过值对象的引用才能取得值。如果允许原始值，那就
+没办法区分初始化时使用的字符串字面量和初始化之后使用的一个相等的字符串
+
+6.7.4 使用弱集合
+
+相比于WeakMap实例，WeakSet实例的用处没这么大。不过，若集合在给对象打标签时还时有价值的。
+
+const disabledElements = new Set();
+const loginButtion = document.querySelector('#login')
+//通过加入对应集合，给这个节点打上“禁用”标签
+disabledElements.add(loginButtion)
+
+这样，通过查询元素在不在disabledElements中，就可以知道它是不是被禁用了。不过，加入元素从DOM树中
+被删除了，它的引用却仍然保存在set中，因此垃圾回收程序也不能回收它。
+为了让垃圾回收程序回收元素的内存，可以在这里使用WeakSet
+const disabledElements = new WeakSet();
+
+const loginButton = document.querySelector('#login')
+disabledElements.add(loginButtion)
+这样，只要weakset中任何元素从DOM树种被删除，垃圾回收程序就可以忽略其存在，而立即释放其内存（假设
+没有其他地方引用这个对象）。
+
+6.8 迭代与扩展操作
+
+ECMAScript6新增的迭代器和扩展操作符对集合引用类型特别有用。这些新特性让集合类型之间相互操作、
+赋值和修改变得异常方便。
+
+在本章前面，有4种原生集合类型定义了默认迭代器：
+Array
+所有定型数组
+Map
+Set
+
+很简单，意味着上述所有类型都支持顺序迭代，都可以传入for-of循环:
+let iterableThings = [
+  Array.of(1, 2),
+  typedArr = Int16Array.of(3, 4),
+  new Map([[5, 6], [7, 8]]),
+  new Set([9, 10])
+]
+
+for(const iterableThing of iterableThings){
+  for(const x of iterableThing){
+    console.log(x)
+  }
+}
+
+//1
+//2
+//3
+//4
+//(2) [5, 6]
+//(2) [7, 8]
+//9
+//10
+
+这也意味着所有这些类型都兼容扩展操作符。扩展操作符在对可迭代对象指向浅复制时都特别有用，只需简单
+的语法就可以复制整个对象：
+let arr1 = [1, 2, 3];
+let arr2 = [...arr1]
+
+console.log(arr1)           //[1, 2, 3]
+console.log(arr2)
+console.log(arr1 === arr2)  //false
+
+对于期待可迭代对象的构造函数，只要传入一个可迭代对象就可也实现复制：
+let map1 = new Map([[1, 2], [3, 4]])
+let map2 = new Map(map1)
+
+console.log(map1)     //Map(2) {1 => 2, 3 => 4}
+console.log(map2)     //Map(2) {1 => 2, 3 => 4}
+
+let arr1 = [1, 2, 3]
+let arr2 = [0, ...arr1, 4, 5]
+
+console.log(arr2)     //[0, 1, 2, 3, 4, 5]
+
+浅复制意味着只会复制对象引用：
+let arr1 = [{}]
+let arr2 = [...arr1]
+
+arr1[0].foo = 'bar'
+console.log(arr2[0])  //{foo: 'bar'}
+上面这些类型都支持多种构造方法，比如Array.of()和Array.from()静态方法。在于扩展操作符一起使用时
+可以非常方便地实现互操作：
+
+let arr1 = [1, 2, 3]
+
+//把数组赋值到定型数组
+let typedArr1 = Int16Array.of(...arr1)
+let typedArr2 = Int16Array.from(arr1)
+console.log(typedArr1)  //Int16Array(3) [1, 2, 3]
+console.log(typedArr2)  //Int16Array(3) [1, 2, 3]
+
+//把数组复制到映射
+let map = new Map(arr1.map(x => [x, 'val' + x]))
+console.log(map)        //Map(3) {1 => "val1", 2 => "val2", 3 => "val3"}
+
+//把数组复制到集合
+let set = new Set(typedArr2)
+console.log(set)      //[1, 2, 3]
+
+//把集合复制回数组
+let arr2 = [...set];
+console.log(arr2)
+
+6.9 小结
+
+javascript中的对象是引用值，可以通过几种内置引用类型创建特定类型的对象。
+·引用类型与传统面向对象编程语言中的类相似，但实现不同。
+·Object类型是一个基础类型，所有引用类型都从他继承了基本的行为
+·Array类型标识一组有序的值，并提供了操作和转换值得能力。
+·定型数组包含一套不同得引用类型，用于管理数值在内存中得类型
+·Date类型提供了关于日期和时间得信息，包含当前日期和时间以及计算。
+·RegExp类型是ECMAScript支持得正则表达式的接口，提供了大多数基本正则表达式以及一些高级正则表达式的能力。
+
+javascript比较独特的一点是，函数其实是Function类型的实例，这意味着函数也是对象。由于函数是对象，
+因此也就具有能够增强自身行为的方法。
+
+因为原始值包装类型的存在，所以javascript中原始值可以拥有类似对象的行为。有3中原始值包装类型：
+Boolean、Number和String。他们都具有如下特点。
+·每种包装类型都映射到同名的原始类型
+·在以读模式访问原始值时，回台回实例化一个原始值包装对象，通过这个对象可以操作数据。
+·涉及原始值的语句只要一执行完毕，包装对象就会立即销毁。
+
+javascript还有两个在一开始只需代码时就存在的内置对象：Global和Math。其中，Global对象在大多数
+ECMAScript视线中无法直接访问。不过浏览器将Global实现为window对象。所有全局变量和函数都是Global
+对象的属性。Math对象包含辅助完成复杂数学计算的数学和方法。
+
+ECMAScript6新增了一批引用类型：Map、WeaMap、Set和WeakSet。这些类型为组织应用程序和简化内存管理
+提供了新能力。
+
+
+
+
