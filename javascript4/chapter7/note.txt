@@ -228,3 +228,313 @@ console.log(iter.next())  //{value: "bar", done: false}
 console.log(iter.next())  //{value: undefined, done: true}
 
 注意：迭代器维护着一个指向可迭代对象的引用，因此迭代器会阻止垃圾回收程序回收可迭代对象。
+
+“迭代器”的概念有时候容易模糊，因为它可以指通用的迭代，也可以指接口，还可以指正式的迭代器类型。下面
+的例子比较了一个显式的迭代器实现和一个原生的迭代器实现。
+
+//这个类实现了可迭代接口（Iterable）
+//调用默认的迭代器工厂函数会返回
+//一个实现迭代器接口（Iterator）的迭代器对象
+class Foo{
+  [Symbol.iterator](){
+    return {
+      next(){
+        return { done: false, value: 'foo' }
+      }
+    }
+  }
+}
+
+let f = new Foo();
+console.log(f[Symbol.iterator]())
+//{next: f}
+
+//Array类型实现了可迭代接口（Iterable）
+//调用Array类型的默认迭代器工厂函数
+//会创建一个ArrayIterator的实例
+let a = new Array();
+console.log(a[Symbol.iterator]())
+//Array Iterator {}
+
+7.2.3 自定义迭代器
+
+与Iterable接口类似，任何实现Iterator接口的对象都可以作为迭代器使用。下面这个例子中的Counter类只
+能被迭代一定的次数。
+class Counter {
+  constructor(limit){
+    this.count = 1;
+    this.limit = limit;
+  }
+
+  next(){
+    if(this.count <= this.limit){
+      return { done: false, value: this.count++ }
+    }else{
+      return { done: true, value: undefined };
+    }
+  }
+
+  [Symbol.iterator](){
+    return this;
+  }
+}
+
+let counter = new Counter(3);
+
+for(let i of counter){
+  console.log(i);
+}
+//1
+//2
+//3
+
+这个类实现了Iterator接口，但不理想。这是因为它的每个实例只能被迭代一次：
+for(let i of counter){
+  console.log(i)
+}
+//nothing logged
+
+为了让一个可迭代对象能够创建多个迭代器，必须每创建一个迭代器就对于一个新计数器。为此，可以把计数器
+遍历放到闭包里面，然后通过闭包返回迭代器：
+
+class Counter {
+  constructor(limit){
+    this.limit = limit;
+  }
+  [Symbol.iterator](){
+    let count = 1,
+        limit = this.limit;
+    return {
+      next(){
+        if(count <= limit){
+          return { done: false, value: count++ };
+        }else{
+          return { done: true, value: undefined }
+        }
+      }
+    }
+  }
+}
+
+let counter = new Counter(3)
+for(let i of counter){
+  console.log(i)
+}
+
+每个以这种方式创建的迭代器也实现了Iterable接口。Symbol.iterator属性引用的工厂函数会返回相同的
+迭代器：
+
+let arr = ['foo', 'bar', 'baz']
+let iter1 = arr[Symbol.iterator]();
+console.log(iter1[Symbol.iterator]);
+//ƒ [Symbol.iterator]() { [native code] }
+
+let iter2 = iter1[Symbol.iterator]();
+console.log(iter1 === iter2)
+//true
+
+因为每个迭代器也实现了Iterable接口，所以他们可以用在任何期待可迭代对象的地方，比如for-of循环：
+let arr = [3, 1 ,4]
+let iter = arr[Symbol.iterator]();
+
+for(let item of arr){
+  console.log(item)
+}
+
+for(let item of iter){
+  console.log(item)
+}
+
+7.2.4 提前终止迭代器
+
+可选的return()方法用于指定在迭代器提前关闭时执行的逻辑。执行迭代的结构在想让迭代器知道它不想遍历
+到可迭代对象耗尽时，就可以“关闭”迭代器。可能的情况包括：
+·for-of循环通过break、continue、return或throw提出退出；
+·解构操作并未消费所有值
+return()方法必须返回一个有效的IteratorResult对象。简单情况下，可以只返回{done:true}。因为这个返回
+值只会用在生成器的上下文中，所以本章后面再讨论这种情况。
+
+如下面的代码所示，内置语言结构再发现还有更多值可以迭代，但不会消费这些值时，会自动调用return()方法
+
+class Counter {
+  constructor(limit){
+    this.limit = limit;
+  }
+  [Symbol.iterator](){
+    let count = 1,
+        limit = this.limit;
+    return {
+      next(){
+        if(count <= limit){
+          return { done: false, value: count++ }
+        }else{
+          return { done: true }
+        }
+      },
+      return(){
+        console.log('Exiting early');
+        return { done: true }
+      }
+    }
+  }
+}
+
+let counter1 = new Counter(5)
+for(let i of counter1){
+  if(i > 2){
+    break;
+  }
+  console.log(i)
+}
+//1
+//2
+//Exiting early
+
+let counter2 = new Counter(5);
+
+try{
+  for(let i of counter2){
+    if(i > 2){
+      throw 'err';
+    }
+    console.log(i)
+  }
+}catch(e){}
+
+//1
+//2
+//Exiting early
+
+let counter3 = new Counter(5)
+let [a, b] = counter3;
+
+如果迭代器没有关闭，则还可以继续从上次离开的地方继续迭代，比如，数组的迭代器就是不能关闭的：
+
+let a = [1, 2, 3, 4, 5]
+let iter = a[Symbol.iterator]();
+
+for(let i of iter){
+  console.log(i)
+  if(i > 2){
+    break;
+  }
+}
+
+for(let i of iter){
+  console.log(i)
+}
+
+因为return()方法时可选的，所以并非所有迭代器都可关闭的。要知道某个迭代器是否可关闭，可以测试这个
+迭代器实例的return属性是不是函数对象。不过，仅仅给一个不可关闭的迭代器增加这个方法并不能让他变成
+可关闭的。这是因为调用return()不会强制迭代器进入关闭状态。即便如此，return()方法还是会被调用。
+
+let a = [1, 2, 3, 4, 5];
+let iter = a[Symbol.iterator]();
+
+iter.return = function(){
+  console.log('Exiting early')
+  return { done: true }
+}
+
+for(let i of iter){
+  console.log(i);
+  if(i > 2){
+    break;
+  }
+}
+
+for(let i of iter){
+  console.log(i);
+}
+
+7.3 生成器
+
+生成器是ECMAScript6新增的一个极为灵活的结构，拥有在一个函数块内暂停和恢复代码执行的能力。这种新
+能力具有深远的影响，比如，使用生成器可以自定义迭代器和实现协程。
+
+7.3.1 生成器基础
+
+生成器的形式是一个函数，函数名称前面加一个星号（*）表示它是一个生成器。只要是可以定义函数的地方
+就可以定义生成器。
+
+//生成器函数声明
+function* generatorFn(){}
+
+//生成器函数表达式
+let generatorFn = function* (){}
+
+//作为对象字面量方法的生成器函数
+let foo = {
+  * generatorFn(){}
+}
+
+//作为类实例方法的生成器函数
+class Foo{
+  *generatorFn(){}
+}
+
+//作为类静态方法的生成器函数
+class Bar{
+  static * generatorFn(){}
+}
+
+//注意： 箭头函数不能用来定义生成器函数
+
+标识生成器函数的星号不受两侧空格的影响：
+
+//等价的生成器函数
+function* generatorFnA(){}
+function *generatorFnB(){}
+function * generatorFnc(){}
+
+//等价的生成器方法：
+class Foo{
+  *generatorFnD(){}
+  * generatorFnE(){}
+}
+
+调用生成器函数会产生一个生成器对象。生成器对象一开始处于暂停执行（suspended）的状态。与迭代器
+相似，生成器对象也实现了Iterator接口，因此具有next()方法。调用这个方法会让生成器开始或恢复执行。
+
+function* generatorFn(){}
+const g = generatorFn();
+console.log(g)        //generatorFn {<suspended>}
+console.log(g.next)   //ƒ next() { [native code] }
+
+next()方法的返回值类似于迭代器，有一个done属性和一个value属性。函数体为空的生成器函数中间不会停留，
+调用一次next()就会让生成器到达done:true状态。
+function * generatorFn(){
+  console.log('123...')
+}
+let generatorObject = generatorFn();
+console.log(generatorObject)        //generatorFn {<suspended>}
+console.log(generatorObject.next())
+//123...
+//{value: undefined, done: true}
+
+生成器函数只会在初次调用next()方法后开始执行，如下所示：
+function* generatoerFn(){
+  console.log('foobar')
+}
+let generatorObject = generatoerFn()
+generatorObject.next();
+
+生成器对象实现了Iterable接口，他们默认的迭代器是自引用的：
+function* generatorFn(){}
+console.log(generatorFn)  //ƒ* generatorFn(){}
+
+console.log(generatorFn()[Symbol.iterator])
+//ƒ [Symbol.iterator]() { [native code] }
+
+console.log(generatorFn())
+//generatorFn {<suspended>}
+
+console.log(generatorFn()[Symbol.iterator]())
+//generatorFn {<suspended>}
+
+const g = generatorFn();
+console.log(g === g[Symbol.iterator]()) //true
+
+7.3.2 通过yield中断执行
+
+
