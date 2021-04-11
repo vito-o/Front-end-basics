@@ -537,4 +537,285 @@ console.log(g === g[Symbol.iterator]()) //true
 
 7.3.2 通过yield中断执行
 
+yield 关键字可以让生成器停止和开始执行，也就是生成器最有用的地方。生成器函数在遇到yield关键字之前
+会正常执行。遇到这个关键字后，执行会停止，函数作用域的状态会被保留。停止执行的生成器函数只能通过在
+生成器对象上调用next()方法来恢复执行：
+function* generatorFn(){
+  yield;
+}
+let generatorObject = generatorFn();
+console.log(generatorObject.next()) //{value: undefined, done: false}
+console.log(generatorObject.next()) //{value: undefined, done: true}
 
+此时的yield关键字有点像函数的中间返回语句，它生成的值会出现在next()方法返回的对象里。通过yield
+关键字退出的生成器函数会处在done:false状态；通过return关键字退出的生成器函数会处于done:true状态。
+function* generatorFn(){
+  yield 'foo'
+  yield 'bar'
+  return 'baz'
+}
+
+let generatorObject = generatorFn();
+console.log(generatorObject.next())   //{done: false, value: 'foo'}
+console.log(generatorObject.next())   //{done: false, value: 'bar'}
+console.log(generatorObject.next())   //{done: true, value: 'baz'} 
+
+生成器函数内部的执行流程会针对每个生成器对象区分作用域。在一个生成器对象上条用next()不会影响其他
+生成器。
+function* generatorFn(){
+  yield 'foo'
+  yield 'bar'
+  return 'baz'
+}
+
+let generatorObject1 = generatorFn();
+let generatorObject2 = generatorFn();
+
+console.log(generatorObject1.next())  //{value: "foo", done: false}
+console.log(generatorObject2.next())  //{value: "foo", done: false}
+console.log(generatorObject1.next())  //{value: "bar", done: false}
+console.log(generatorObject2.next())  //{value: "bar", done: false}
+
+yield关键字只能在生成器函数内部使用，用在其他地方会抛出错误。类似函数的return关键字，yield关键字
+必须直接位于生成器函数定义中，出现嵌套的非生成器函数种会抛出语法错误：
+
+//有效
+function* validGeneratorFn(){
+  yield;
+}
+
+//无效
+function* invalidGeneratorFnA(){
+  function a(){
+    yield;
+  }
+}
+//无效
+function* invalidGeneratorFnB(){
+  const b = () =< {
+    yield;
+  }
+}
+
+//无效
+function* invalidGeneratorFnC(){
+  (() => {
+    yield;
+  })();
+}
+
+
+1.生成器对象作为可迭代对象
+
+在生成器对象上显式调用next()方法的用处并不大。其实，如果把生成器对象当成可迭代对象，那么使用起来
+会更方便：
+
+function* generatorFn(){
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+for(const x of generatorFn()){
+  console.log(x)
+}
+//1
+//2
+//3
+
+在需要自定义迭代对象时，这样使用生成器对象会特别有用。比如，我们需要定义一个可迭代对象，而他会产生
+一个迭代器，这个迭代器会执行指定的次数。使用生成器，可以通过一个简单循环来实现：
+
+function* nTimes(n){
+  while(n--){
+    yield;
+  }
+}
+
+for(let _ of nTimes(3)){
+  console.log('foo', _)
+}
+
+//foo undefined
+//foo undefined
+//foo undefined
+
+传给生成器的函数可以控制迭代循环的次数。在n为0时，while条件为假，循环退出，生成器函数返回。
+
+2.使用yield实现输入和输出
+除了可以作为函数的中间返回语句使用，yield关键字还可以作为函数的中间参数使用。上一次让生成器函数
+暂停的yield关键字会接收到传给Next()方法的第一个值。这里有一个地方不太好理解--第一次调用next()
+传入的值不会被使用，因为这一次调用是为了开始执行生成器函数：
+
+function* generatorFn(initial){
+  console.log(initial);
+  console.log(yield);
+  console.log(yield);
+}
+
+let generatorObject = generatorFn('foo')
+generatorObject.next('bar')   //foo 第一次调用传入的值不会被使用，因为第一次是为了开始执行生成器
+generatorObject.next('baz')   //baz
+generatorObject.next('qux')   //qux
+
+yield关键字可以同时用于输入和输出，如下
+function* generatorFn(){
+  return yield 'foo'
+}
+
+let generatorObject = generatorFn();
+
+
+console.log(generatorObject.next())       //{value: "foo", done: false}
+console.log(generatorObject.next('bar'))  //{value: "bar", done: true}
+
+因为函数必须对整个表达式求值才能确定要返回的值，所以它在遇到yield关键字时暂时执行并计算出要产生的值：
+"foo"。下一次调用next()传入了"bar"，作为交给同一个yield的值。然后这个值被确定为本次生成器函数要返回
+的值。
+yield关键字并非只能使用一次。比如，以下代码就定义了一个无穷计数生成器函数。
+
+function* generatorFn(){
+  for(let i = 0; ; ++i){
+    yield i;
+  }
+}
+
+let generatorObject = generatorFn()
+console.log(generatorObject.next())
+console.log(generatorObject.next())
+console.log(generatorObject.next())
+console.log(generatorObject.next())
+console.log(generatorObject.next())
+console.log(generatorObject.next())
+
+假设我们向定义一个生成器函数，它会根据配置的值迭代相应次数并产生迭代的索引。初始化一个新数组可以实现
+这个需求，但不用数组也可以实现同样的行为：
+
+function* nTimes(n){
+  for(let i = 0; i < n; ++i){
+    yield i;
+  }
+}
+
+for(let x of nTimes(3)){
+  console.log(x)
+}
+
+另外，使用while循环也可以，而且代码稍微简洁一点：
+function* nTimes(n){
+  let i = 0;
+  while(n--){
+    yield i++;
+  }
+}
+
+for(let x of nTimes(3)){
+  console.log(x)
+}
+
+这样使用生成器也可以实现范围和填充数组；
+function* range(start, end){
+  while(end > start){
+    yield start++;
+  }
+}
+
+for(const x of range(4, 7)){
+  console.log(x)
+}
+
+function* zeroes(n){
+  while(n--){
+    yield 0;
+  }
+}
+console.log(Array.from(zeroes(8)))
+//(8) [0, 0, 0, 0, 0, 0, 0, 0]
+
+3.产生可迭代对象
+
+可以使用星号增强yield的行为，让它能够迭代一个可迭代对象，从而一次产出一个值：
+//等价于generatorFn;
+//function* generatorFn(){
+//  for(const x of [1, 2, 3]){
+//    yield x;  
+//  }
+//}
+
+function* generatorFn(){
+  yield* [1, 2, 3]; //使用星号增强yield的行为，让他能够迭代一个可迭代对象，从而一次产出一个值:
+}
+let generatorObject = generatorFn();
+
+for(const x of generatorFn()){
+  console.log(x)
+}
+//1
+//2
+//3
+
+与生成器函数的星号类似，yield星号两侧的空格不影响其行为：
+function* generatorFn(){
+  yield* [1, 2];
+  yield *[3, 4];
+  yield * [5, 6];
+}
+
+for(const x of generatorFn()){
+  console.log(x)
+}
+
+因为yield*实际上只是将一个可迭代对象序列化为一串可以单独产出的值，所以这跟把yield放到一个循环里
+没有声明不同。下面两个生成器函数的行为是等价的：
+
+function* generatorFnA(){
+  for(const x of [1, 2, 3]){
+    yield x;
+  }
+}
+
+for(const x of generatorFnA()){
+  console.log(x)
+}
+
+function* generatorFnB(){
+  yield* [1, 2, 3];
+}
+
+for(const x of generatorFnB()){
+  console.log(x)
+}
+
+yield*的值是关联迭代器返回done:true时的value属性。对于普通的带起来说，这个值是undefined
+
+function* generatorFn(){
+  console.log('iter value:', yield* [1, 2, 3]);
+}
+
+for(const x of generatorFn()){
+  console.log('value:', x);
+}
+//value: 1
+//value: 2
+//value: 3
+iter value: undefined
+
+
+对于生成器函数产生的迭代器来说，这个值就是生成函数返回的值。
+function* innerGeneratorFn(){
+  yield 'foo'
+  return 'bar'
+}
+
+function* outerGeneratorFn(genObj){
+  console.log('iter value: ', yield* innerGeneratorFn())
+}
+
+for(const x of outerGeneratorFn()){
+  console.log('value:', x)
+}
+//foo
+//iter value bar
+
+4. 使用yield* 实现递归算法
+yield*最有用的地方是实现递归操作，此时生成器可以产生自身
