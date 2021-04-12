@@ -818,4 +818,10 @@ for(const x of outerGeneratorFn()){
 //iter value bar
 
 4. 使用yield* 实现递归算法
-yield*最有用的地方是实现递归操作，此时生成器可以产生自身
+yield*最有用的地方是实现递归操作，此时生成器可以产生自身。看下面的例子：
+function* nTimes(n){
+  if(n > 0){
+    yield* nTimes(n - 1);
+    yield n - 1;
+  }
+}
