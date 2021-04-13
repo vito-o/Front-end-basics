@@ -1039,3 +1039,142 @@ g.isConnected();
 
 
 7.3.3 生成器作为默认迭代器
+
+因为生成器对象实现了Iterable接口，而且生成器函数和默认迭代器被调用之后都产生了迭代器，所以生成器
+格外适合作为默认迭代器。
+下面是一个简单的例子，这个类的默认迭代器可以用一行代码产出的内容。
+class Foo{
+  constructor(){
+    this.values = [1, 2, 3]
+  }
+
+  *[Symbol.iterator](){
+    yield* this.values;
+  }
+}
+
+const f = new Foo();
+for(const x of f){
+  console.log(x)
+}
+//1
+//2
+//3
+
+在这里，for-of循环调用了默认迭代器（它恰好又是一个生成器函数）并产生了一个生成器对象。这里生成器
+对象是可迭代的，所以完全可以在迭代中使用。
+
+7.3.4提前终止生成器
+
+与迭代器类似，生成器也支持“可关闭”的概念。一个实现Iterator接口的对象一定有next()方法，还有一个
+可选的return()方法方法用于提前终止迭代器。生成器对象除了有这两个方法，还有第三个方法：throw()。
+
+function* generatorFn(){}
+const g = generatorFn();
+
+console.log(g)        //generatorFn {<suspended>}
+console.log(g.next)   //ƒ next() { [native code] }
+console.log(g.return) //ƒ return() { [native code] }
+console.log(g.throw)  //ƒ throw() { [native code] }
+
+return()和throw()方法都可以用于强制生成器进入关闭状态。
+
+1.return()
+return()方法会强制生成器进入关闭状态。提供给return()方法的值，就是终止迭代器对象的值
+
+function* generatorFn(){
+  for(const x of [1, 2, 3]){
+    yield x;
+  }
+}
+
+const g = generatorFn();
+console.log(g)            //generatorFn {<suspended>}
+console.log(g.return(4))  //{value: 4, done: true}
+console.log(g)            //generatorFn {<closed>}
+
+与迭代器不同，所有生成器对象都有return()方法，只要通过它进入关闭状态，就无法恢复了。后续调用
+next()会显式done: true状态，而提供的任何返回值都不会被存储或传播：
+function* generatorFn(){
+  for(const x of [1, 2, 3]){
+    yield x;
+  }
+}
+const g = generatorFn();
+console.log(g.next())     //{value: 1, done: false}
+console.log(g.return(4))  //{value: 4, done: true}
+console.log(g.next())     //{value: undefined, done: true}
+console.log(g.next())     //{value: undefined, done: true}
+console.log(g.next())     //{value: undefined, done: true}
+
+for-of循环等内置语言结构会忽略状态为done:true的IteratorObject内部返回的值。
+function* generatorFn(){
+  for(const x of [1, 2, 3]){
+    yield x;
+  }
+}
+const g = generatorFn();
+
+for(const x of g){
+  if(x > 1){
+    g.return(4);
+  }
+  console.log(x)
+}
+
+//2.throw()
+throw()方法会在暂停的时候将一个提供的错误注入到生成器对象中。如果错误未被处理，生成器就会关闭。
+function* generatorFn(){
+  for(const x of [1, 2, 3]){
+    yield x;
+  }
+}
+const g = generatorFn();
+console.log(g)          //generatorFn {<suspended>}
+try{
+  g.throw('foo')
+}catch(e){
+  console.log(e, 'e')   //foo e
+}
+console.log(g)          //generatorFn {<closed>}
+
+不过，假如生成器函数内部处理了这个错误，那么生成器就不会关闭，而且还可以恢复秩序。错误处理会跳过
+对应的yield，因此在这个例子中会跳过一个值。比如：
+
+function* generatorFn(){
+  for(const x of [1, 2, 3]){
+    try{
+      yield x;
+    }catch(e){}
+  }
+}
+
+const g = generatorFn()
+console.log(g.next()) //{value: 1, done: false}
+g.throw('foo')
+console.log(g.next()) //{value: 3, done: false}
+
+在这个例子中，生成在try/catch块中的yield关键字处暂停执行。在暂停期间，throw()方法生成器对象内部
+注入了一个错误：字符串“foo”。这个错误会被yield关键字抛出因为错误是在生成器的try/catch块中抛出的，
+所以仍然在生成器内部被捕获。可是，由于yield抛出了哪个错误，生成器就不会再产出值2。此时，生成器函数
+继续执行，再下一次迭代再次遇到yield关键字时产出了值3.
+
+注意： 如果生成器对象还没有开始执行，那么调用throw()抛出的错误不会在换数内部被捕获，因为这相当于
+在函数块外部抛出了错误。
+
+7.4 小结 
+
+迭代时一种所有编程语言都可以看到的模式。ECMAScript6正式支持迭代模式并引入了两个新的特性：迭代器和
+生成器。
+迭代器时一个可以由任意对象实现的接口，支持连续获取对象产出的每一个值。任何实现Iterable接口的对象
+都有一个Symbol.iterator属性，这个属性引用默认迭代器。默认迭代器就像一个迭代器工厂，也就是一个函数
+调用之后会产生一个实现Iterator接口的对象
+
+迭代器必须通过连续调用next()方法再能连续取得值，这个方法返回一个IteratorObject。这个对象包含一个
+done属性和一个value属性。前者时一个布尔值，表示是否还由更多值可以访问；后者包含迭代器返回的当前值
+这个接口可以通过手动反复调用next()方法来消费，也可以通过原生消费者，比如for-of循环来自动消费。
+
+生成器是一种特殊的函数，调用之后会返回一个生成器对象。生成对象实现了Iterable接口，因此可用在任何
+消费可迭代对象的地方。生成器的独特之处在于支持yield关键字，这个关键字能够暂停执行生成器函数。使用
+yield关键字还可用通过next()方法接收输入和产生输出。在加上星号之后，yield关键字可用将跟在它后面的
+可迭代对象序列化为一连串值。
