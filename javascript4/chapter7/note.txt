@@ -825,3 +825,217 @@ function* nTimes(n){
     yield n - 1;
   }
 }
+
+for(const x of nTimes(3)){
+  console.log(x)
+}
+//0
+//1
+//2
+这个例子中，每个生成器首先会从新创建的生成器对象产出每个值，然后再产出一个整数。结果就是生成器函数
+会递归地减少计数器值，并实例化另一个生成器对象。从最顶层来看，这就相当于创建一个可迭代对象并返回
+递增的整数
+
+使用递归生成器结构和yield*可以优雅地表达递归算法。下面是一个图的实现，用于生成一个随机的双向图：
+
+class Node{
+  constructor(id){
+    this.id = id;
+    this.neighbors = new Set();
+  }
+
+  connect(node){
+    if(node !== this){
+      this.neighbors.add(node);
+      node.neighbors.add(this)
+    }
+  }
+}
+
+class RandomGraph{
+  constructor(size){
+    this.nodes = new Set();
+
+    //创建节点
+    for(let i = 0; i < size; i++){
+      this.nodes.add(new Node(i))
+    }
+
+    const threshold = 1 / size;
+    for(const x of this.nodes){
+      for(const y of this.nodes){
+        if(Math.random() < threshold){
+          x.connect(y)
+        }
+      }
+    }
+  }
+  print(){
+    for(const node of this.nodes){
+      const ids = [...node.neighbors]
+                    .map(n => n.id)
+                    .join(',')
+      console.log(`${node.id}: ${ids}`)
+    }
+  }
+}
+
+const g = new RandomGraph(6)
+g.print();
+
+图数据结构非常适合递归遍历，而递归生成器非常合用。为此，生成器函数必须接收一个可迭代对象，产出该
+对象中的每一个值，并且对每个值进行递归。这个实现可以用来测试某个图是否连通。即是否没有不可到达的节点
+只要总一个节点开始，然后尽力访问每个节点就可以了。结果就得到了一个非常间经的深度优先遍历。
+
+
+class Node{
+  constructor(id){}
+
+  connect(node){}
+}
+
+class RandomGraph{
+  constructor(size){}
+
+  print(){}
+
+  isConnected(){
+    const visitedNodes = new Set();
+
+    function* traveres(node){
+      for(const node of nodes){
+        if(!visitedNodes.has(node)){
+          yield node;
+          yield* traveres(node.neighbors)
+        }
+      }
+    }
+
+    const firstNode = this.nodes[Symbol.iterator]().next().value;
+
+    for(const node of traveres([firstNode])){
+      visitedNodes.add(node)
+    }
+
+    return visitedNodes.size == this.nodes.size;
+  } 
+}
+
+
+function* generatorFn(){
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+for(const x of generatorFn()){
+  console.log(x)
+}
+
+function* nTimes(n){
+  while(n--){
+    yield;
+  }
+}
+
+for(let _ of nTimes(10)){
+  console.log('foo')
+}
+
+function* test(){
+  yield 1;
+  console.log('123')
+}
+let tt = test();
+
+function* demo(){
+  yield* [1, 2, 3]
+  console.log('123')
+  yield 'end'
+}
+
+let d = demo();
+
+function* inner(){
+  yield* ['i-1', 'i-2']
+}
+
+function* outer(){
+  yield* inner();
+  console.log('inner end')
+  yield 'outer end'
+}
+
+let o = outer();
+
+
+class Node{
+  constructor(id){
+    this.id = id;
+    this.neighbors = new Set();
+  }
+
+  connect(node){
+    if(node !== this){
+      this.neighbors.add(node);
+      node.neighbors.add(this)
+    }
+  }
+}
+
+class RandomGraph{
+  constructor(size){
+    this.nodes = new Set();
+
+    //创建节点
+    for(let i = 0; i < size; i++){
+      this.nodes.add(new Node(i))
+    }
+
+    const threshold = 1 / size;
+    for(const x of this.nodes){
+      for(const y of this.nodes){
+        if(Math.random() < threshold){
+          x.connect(y)
+        }
+      }
+    }
+  }
+  print(){
+    for(const node of this.nodes){
+      const ids = [...node.neighbors]
+                    .map(n => n.id)
+                    .join(',')
+      console.log(`${node.id}: ${ids}`)
+    }
+  }
+
+  isConnected(){
+    const visitedNodes = new Set();
+
+    function* traveres(nodes){
+      for(const node of nodes){
+        if(!visitedNodes.has(node)){
+          yield node;
+          yield* traveres(node.neighbors)
+        }
+      }
+    }
+
+    const firstNode = this.nodes[Symbol.iterator]().next().value;
+    console.log(firstNode, 'firstNode')
+    for(const node of traveres([firstNode])){
+      visitedNodes.add(node)
+    }
+
+    return visitedNodes.size == this.nodes.size;
+  } 
+}
+
+const g = new RandomGraph(6)
+g.print();
+console.log('~~~~~~~~~~~~')
+g.isConnected();
+
+
+7.3.3 生成器作为默认迭代器
