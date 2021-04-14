@@ -139,3 +139,195 @@ Object.defineProperty(book, 'year', {
 
 book.year = 2018;
 console.log(book.edition)
+
+获取函数和设置函数不一定都要定义。值定义获取函数意味着属性是只读的，尝试修改属性会被忽略。在严格模式
+下，尝试写入之定义了获取函数的属性会抛出错误。类似地，只有一个设置函数的属性是不能读取的。非严格模式
+下读取会返回Undefined，严格模式下会抛出错误。
+
+在不支持Object.defineProperty()的浏览器中没有办法修改[[Configurable]]或[[Enumerable]]
+
+注意： 在ECMAScript5以前，开发者会使用两个非标准的访问创建访问器属性：__defineGetter__()和
+__defineSetter__().这两个方法最早是Firefox引入的，后来Safari、Chrome和Opera也实现了。
+
+8.1.2 定义多个属性
+
+在一个对象上同时定义多个属性的可能性是非常大的。为此ECMAScript提供了Object.defineProperties()
+方法。这个方法可以通过多个描述符一次性定义多个属性。它接收两个参数：要为之添加或修改属性的对象和
+另一个描述符对象，其属性与要添加或修改的属性一一对应。
+
+let book = {}
+Object.defineProperties(book, {
+  year_: {
+    value: 2017
+  },
+  edition: {
+    value: 1
+  },
+  year: {
+    get(){
+      return this.year_;
+    },
+    set(newValue){
+      if(newValue > 2017){
+        this.year_ = newValue;
+        this.edition += newValue - 2017;
+      }
+    }
+  }
+})
+
+这段代码在book对象上定义了两个数据属性year_和edition，还有一个访问器属性year。
+对象和上一节示例一样。唯一的区别是所有属性都是同时定义的，并且数据属性的configurable、enumerable
+和writable特性值都是false。
+可以使用Object.getOwnPropertyDescriptors(book)查看。
+
+//edition: {value: 1, writable: false, enumerable: false, configurable: false}
+//year: {enumerable: false, configurable: false, get: ƒ, set: ƒ}
+//year_: {value: 2017, writable: false, enumerable: false, configurable: false}
+
+
+8.1.3 读取属性的特性
+
+使用Object.getOwnPropertyDescriptor()方法可以取得指定数据的属性描述符。这个方法接收两个参数：
+属性所在的对象和要取得其描述符的属性名。返回值是一个对象，对于访问器属性包含configurable、enumerable
+get和set数学，对于数据数学包含configurable、enumerable、writable 和 value属性。
+
+let book = {}
+Object.defineProperties(book, {
+  year_:{
+    value: 2017
+  },
+  edition:{
+    value: 1
+  },
+  year: {
+    get: function(){
+      return this.year_;
+    },
+    set: function(){
+      if(newValue > 2017){
+        this.year_ = newValue;
+        this.edition += newValue - 2017;
+      }
+    }
+  }
+})
+
+let descriptor = Object.getOwnPropertyDescriptor(book, 'year_')
+//{value: 2017, writable: false, enumerable: false, configurable: false}
+
+let descriptor = Object.getOwnPropertyDescriptor(book, 'year')
+//{enumerable: false, configurable: false, get: ƒ, set: ƒ}
+
+对于数据属性year_，value等于原来的值，configurable是false，get是undefined。对于访问器属性year,
+value是undefined，enumerable是false，get是一个指向获取函数的指针。
+
+ESMAScript2017新增了Object.getOwnPropertyDescriptors()静态方法。这个方法实际上会在每个自有属性
+上调用Object.getOwnPropertyDescriptor()并在一个新对象中返回他们。对于前面的例子，使用这个静态方法
+返回如下对象：
+
+8.1.4 合并对象
+
+javascript开发者经常觉得“合并”(merge)两个对象很有用。更具体地说，就是把源对象所有的本地属性一起
+复制到目标对象上。有时候这种操作也被称为“混入”(mixin)，因为目标对象通过混入源对象的属性得到了增强。
+
+ECMAScript6专门为合并对象提供了Object.assign()方法。这个方法接收一个目标对象和一个或多个源对象
+作为参数，然后将每个源对象中可枚举(Object.propertyIsEnumerable()返回true)和自有(Object.hasOwnProperty()
+返回true)属性复制到目标对象。以字符串和符号为键的属性会被复制。对每个符合条件的属性，这个方法会使用
+源对象上的[[Get]]取得属性的值，然后使用目标对象上的[[Set]]设置属性的值。
+
+let dest, src, result;
+
+dest = {}
+src = { id: 'src'}
+
+result = Object.assign(dest, src);
+
+//Object.assign修改目标对象，也会返回修改后的目标对象
+console.log(dest === result)  //true
+console.log(dest !== src)     //true
+
+//多个源对象
+dest = {}
+
+result = Object.assign(dest, {a: 'foo'}, {b: 'bar'})
+console.log(result)
+//{a: "foo", b: "bar"}
+
+//获取函数与设置函数
+let dest = {
+  set a(val){
+    console.log(`Invoked dest setter with param ${val}`)
+  }
+}
+
+let src = {
+  get a(){
+    console.log('Invoked src  getter')
+    return 'foo'
+  }
+}
+
+Object.assign(dest, src);
+//调用src的获取方法
+//调用dest的设置方法并传入参数'foo'
+//因为这里的设置函数不执行复制操作
+//所以实际上并没有把值转移过来
+console.log(dest);
+
+//Invoked src  getter
+//Invoked dest setter with param foo
+//{}
+
+Object.assign()实际上对每个元对象指向的是浅复制。如果多个源对象都有相同的属性，则使用最后一个复制
+的值。此外，从源对象访问器属性取得的值，比如获取函数，会作为一个静态值赋给目标对象。换句话说，不能
+在两个对象间转移获取函数和设置函数。
+
+let dest, src, result;
+
+dest = { id: 'dest'}
+
+result = Object.assign(dest, { id: 'src1', a: 'foo'}, {id: 'src2', b: 'bar'})
+
+console.log(result) //{id:src2, a: foo, b: bar}
+
+dest = {
+  set id(x){
+    console.log(x)
+  }
+}
+
+Object.assign(dest, {id: 'first'}, {id: 'second'}, {id: 'third'});
+//first
+//second
+//third
+//{}
+
+//对象引用
+dest = {}
+src = { a: { }}
+
+Object.assign(dest, src);
+//复制意味着只会复制对象的引用
+console.log(dest)             //{a: {…}}
+console.log(dest.a === src.a) //true
+
+//错误处理
+dest = {}
+src = {
+  a: 'foo',
+  get b(){
+    throw new Error();
+  },
+  c: 'bar'
+}
+
+try{
+  Object.assign(dest, src)
+}catch(e){}
+
+//Object.assign()没办法回滚以及完成的修改
+//因此在抛出错误之前，目标对象上一级完成的修改会继续存在：
+console.log(dest) //{a: foo}
+
+8.1.5
