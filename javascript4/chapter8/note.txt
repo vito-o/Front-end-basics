@@ -1,0 +1,141 @@
+第八章 对象、类与面向对象编程
+
+理解对象
+理解对象创建过程
+理解继承
+理解类
+
+ECMA-262将对象定义为一组属性的无序集合。严格来说，这意味着对象就是一组没有特定顺序的值。对象的每个
+属性或方法都由一个名称来表示，这个名称映射到一个值。正因为如此（以及其他还未讨论的原因），可用把
+ECMAScript的对象想象成一张散列表，其中的内容就是一组名/值对，值可用时数据或者函数。
+
+8.1 理解对象
+
+创建自定义对象的通常方法是创建object的一个新实例，然后再给它添加属性和方法，如下列所示：
+let person = new Object();
+person.name = 'nicholas'
+person.age = 29;
+person.job = 'software Engineer'
+person.sayName = function(){
+  console.log(this.name)
+}
+
+对象字面量型式
+
+let person = {
+  name: 'nicholas',
+  age: 29,
+  ...
+}
+
+8.1.1 属性的类型
+
+ECMA-262使用一些内部特性来描述属性的特征。这些特性是由为javascript实现引擎的规范定义的。因此，
+开发者不能再javascript中直接访问这些特性。为了将某个特性表示为内部特性，规范会用两个中括号把
+特性的名称括起来，比如[[Enumerable]]
+属性分两种：数据属性和访问器属性。
+
+1.数据属性
+数据属性包含一个保存数据值的位置。值会从这个位置读取，也会写入到这个位置。数据属性由4个特性描述他们的
+行为。
+·[[Configurable]]:表示属性是否可用通过delete删除并重新定义，是否可以修改它的特性，以及是否可以把
+它改为访问器属性。默认情况下，所有直接定义的对象上的属性的这个特性都是true，如前面的例子所示。
+·[[Enumerable]]:表示属性是否可以通过for-in循环返回。默认情况下，所有直接定义在对象上的属性的这个
+特性都是true，如前面的例子所示
+·[[Writable]]：表示属性的值是否可以被修改。默认情况下，所有直接定义在对象上的属性的这个特性都是true
+如前面的例子所示
+·[[Value]]:包含属性实际的值。这就是前面提到的那个读取和写入属性值的位置。这个特性的默认值为undefined.
+
+在像前面例子中那样将属性显式添加到对象之后，[[Configurable]],[[Enumerable]]和[[Writable]]都会被
+设置为true，而[[Value]]特性会被设置为指定的值。
+
+let person = {
+  name: 'Nicholas'
+}
+
+要修改属性的默认特性，就必须使用Object.definePropery()方法。这个方法接收3个参数：要给其添加属性
+的对象、属性的名称和一个描述符对象。最后一个参数，即描述符对象上的属性可以包含：configurable、
+enumerable,writable和value,跟相关特性的名称一一对应。根据要修改的特性，可以设置其中一个或多个值。
+
+let person = {}
+Object.defineProperty(person, 'name', {
+  writable: false,
+  value: 'nicholas'
+})
+
+console.log(person.name)  //nicholas
+person.name = 'greg'
+console.log(person.name)  //nicholas
+
+在非严格模式下尝试给这个属性重新赋值会被忽略。
+在严格模式下，尝试修改只读属性的值会配出错误。
+
+类似的规则也适用于创建不可配置的属性。
+
+let person = {}
+
+Object.defineProperty(person, 'name', {
+  configurable: false,
+  value: 'Nicholas'
+})
+console.log(person.name)  //Nicholas
+delete person.name;
+console.log(person.name)  //Nicholas
+
+这个例子把configurable设置为false，意味着这个属性不能从对象上删除。非严格模式下对这个属性调用delete
+没有效果，严格模式下会抛出错误。此外，一个属性被定义为不可配置之后，就不能在变回可配置的了。再次
+调用Object.defineProperty()并修改任何非writable属性会导致错误：
+
+let person = {}
+
+Object.defineProperty(person, 'name', {
+  configruable: false,
+  value: 'nicholas'
+})
+
+Object.defineProperty(person, 'name', {
+  configruable: true,
+  value: 'NICHOLAS'
+})
+//Type Error: cannot redefine property
+
+因此，虽然可以对同一个属性多次调用Object.definePropery()，但在把configurable设置为false之后就
+受限制了。
+
+在调用Object.defineProperty()时，configurable,enumerable和writable的值如果不指定，则都默认为
+false。多数情况下，可能都不需要Object.defineProperty()提供这些强大的设置，但要理解javascript对象
+就要理解这些概念。
+
+2.访问器属性
+
+访问器属性不包含数据值。相反，他们包含一个获取(getter)函数和一个设置(setter)函数，不过这两个函数
+不是必须的。在读取访问器属性时，会调用获取函数，这个函数的责任就是返回一个有效的值。在写入访问器属性
+时，会调用设置函数并传入新值，这个函数必须决定对数据做处什么修改。访问器属性有4个特性描述他们的行为。
+
+·[[Configurable]]:表示属性是否可以通过delete删除并重新定义，是否可以修改它的特性，以及是否可以把
+它改为数据属性。默认情况下，所有直接定义在对象上的属性的这个特性都是true。
+·[[Enumerable]]：表示属性是否可以通过for-in循环返回。默认情况下，所有直接定义在对象上的属性的这个
+特性都是true
+·[[Get]]: 获取函数，在读取属性时调用。默认值undefined.
+·[[Set]]: 设置函数，在写入属性时调用。默认值为undefined
+
+访问器属性时不能直接定义的，必须使用Object.defineProperty()。
+
+let book = {
+  year_: 2017,
+  edition: 1
+}
+Object.defineProperty(book, 'year', {
+  get(){
+    return this.year_;
+  },
+  set(newValue){
+    if(newValue > 2017){
+      this.year_ = newValue;
+      this.edition += newValue - 2017
+    }
+  }
+})
+
+book.year = 2018;
+console.log(book.edition)
