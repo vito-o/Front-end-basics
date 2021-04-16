@@ -677,3 +677,301 @@ printPerson2('1st', person, '2nd')
 //Matt 27
 
 8.2 创建对象
+
+虽然使用Object构造函数或对象字面量可以方便地创建对象，但这些方式也有明显
+不足：创建具有同样接口的多个对象需要重复编写很多代码。
+
+8.1.2 概述
+
+综观ECMAScript规范的历次发布，每个版本的特性似乎都出人意料。ECMAScript5.1
+并没有正式支持面向对象解构，比如类或继承。但是，正如接下来几节会介绍的，巧妙
+地运用原型式继承可以成功地模拟同样的行为。
+
+ECMAScript6开始正式支持类和继承。ES6的类旨在完全涵盖之前规范设计的基于原型
+的继承模式。不过，无论从哪方面看，ES6的类都仅仅式封装了ES5.1构造函数加原型
+继承的语法糖而已.
+
+注意 不要误会:采用面向对象编程模式的javascript代码还是应该使用ECMAScript6
+的类.但不管怎么说,理解ES6类出现之前的惯例总是有益无害的.特别是ES6的类定义本身
+就相当于对原有结构的封装,因此,在介绍ES6的类之前,本书会循序渐进地介绍被类取代
+的那些底层概念.
+
+8.2.2 工厂模式
+
+工厂模式是一种众所周知的设计模式,广泛应用于软件工厂领域,用于抽象创建特定
+对象的过程,下面的例子展示了一种按照特定接口创建对象的方式.
+
+function createPerson(name, age, job){
+  let o = new Object();
+  o.name = name;
+  o.age = age;
+  o.job = job;
+  o.sayName = function(){
+    console.log(this.name)
+  }
+  return o;
+}
+
+let person1 = createPerson('nicholas', 29, 'software Engineer');
+let person2 = createPerson('Greg', 26, 'Doctor');
+
+这里,函数createPerson()接收3个参数,根据这几个参数构建了一个包含Person
+信息的对象.可以用不同的参数多次调用这个函数,每次都会返回包含3个属性和一个
+方法的对象.这种工厂模式虽然可以解决多个类似对象的问题,但没有解决对象标识
+问题(即新创建的对象是什么类型).
+
+8.2.3 构造函数模式
+
+前面几章提到过,ECMAScript中的构造函数时用于创建特定类型对象的.像Object
+和Array这样的原生构造函数,运行时可以直接在执行环境中使用.当然也可以自定义
+构造函数,以函数的形式为自己的对象类型定义属性和方法.
+
+比如,前面的例子使用构造函数模式可以这样写:
+function Person(name, age, job){
+  this.name = name;
+  this.age = age;
+  this.job = job;
+  this.sayName = function(){
+    console.log(this.name)
+  }
+}
+
+let person1 = new Person('nicholas', 29, 'software Engineer')
+let person2 = new Person('greg', 27, 'Doctor')
+
+person1.sayName();
+person2.sayName();
+
+在这个例子中,Person()构造函数代替了createPerson()工厂函数.实际上,Person()
+内部的代码跟createPerson()基本是一样的,只有如下的区别.
+
+`没有显式地创建对象
+`属性和方法直接赋值给了this
+`没有return
+
+另外,要注意函数名Person的首字母大写了.按照惯例,构造函数名称的首字母都是要
+大写的,非构造函数则以小写字母开头.这是从面向对象编程语言那里借鉴的,有助于在ECMAScript中区分构造函数
+和普通函数.毕竟ECMAScript的构造函数就是能创建对象的函数.
+
+要创建Person的实例,应使用new操作符.以这种方式调用构造函数会执行如下操作.
+1.在内存中创建一个新对象
+2.这个新对象内部的[[Prototype]]特性被赋值为构造函数的prototype属性.
+3.构造函数内部的this被赋值为这个新对象(即this指向新对象).
+4.执行构造函数内部的代码(给新对象添加属性).
+5.如果构造函数返回非空对象,则返回该对象;否则,返回刚创建的新对象
+
+上一个例子的最后,person1和person2分别保存着Person的不同实例.这两个对象都有一个constructor属性
+指向Person, 如下所示:
+console.log(person1.constructor == Person)  //true
+console.log(person2.constructor == Person)  //true
+
+constructor本来是用于标识对象类型的.不过,一般认为instanceof操作符是确定对象类型更可靠的方式.
+前面例子中的每个对象都是Object的实例,同时也是Person的实例,如下面调用instanceof操作符的结果所示:
+
+console.log(person1 instanceof Object)  //true
+console.log(person1 instanceof Person)  //true
+console.log(person2 instanceof Object)  //true
+console.log(person2 instanceof Person)  //true
+
+定义自定义构造函数可以确保实例被标识为特定类型,相比于工厂模式,这是一个很大的好处.在这个例子中,
+person1和person2之所以也被认为是Object的实例,是因为所有自定义对象都继承自Object(后面再详细
+讨论这一点)
+
+构造函数不一定要写成函数声明的形式.赋值给变量的函数表达式也可以表示构造函数:
+
+let Person = function(name, age, job){
+  this.name = name;
+  this.age = age;
+  this.job = job;
+  this.sayName = function(){
+    console.log(this.name)
+  }
+}
+
+let person1 = new Person('nicholas', 29, 'software Engineer')
+let person2 = new Person('Greg', 27, 'Doctor')
+
+person1.sayName();
+person2.sayName();
+
+console.log(person1 instanceof Object)  //true
+console.log(person1 instanceof Person)  //true
+console.log(person2 instanceof Object)  //true
+console.log(person2 instanceof Person)  //true
+
+在实例化时,如果不想传参数,那么构造函数后面的括号可加可不加.只要有new操作符,就可以调用相应的构造函数
+
+function Person(){
+  this.name = 'jake'
+  this.sayName =function(){
+    console.log(this.name)
+  }
+}
+
+let person1 = new Person();
+let person2 = new Person;
+
+person1.sayName()
+person2.sayName();
+
+console.log(person1 instanceof Object)  //true
+console.log(person1 instanceof Person)  //true
+console.log(person2 instanceof Object)  //true
+console.log(person2 instanceof Person)  //true
+
+1.构造函数也是函数
+
+构造函数与普通函数唯一的区别就是调用方式不同.除此之外,构造函数也是函数.并没有把某个函数定义为构造
+函数的特殊语法.任何函数只要使用new操作符调用就是构造函数,而不使用new操作符调用的函数就是普通函数.
+比如,前面的例子中定义的Person()可以像下面这样调用:
+
+//作为构造函数
+let person = new Person('nicholas', 29, 'software Engineer')
+person.sayName();
+
+//作为函数调用
+Person('Greg', 27, 'Doctor'); //添加到weindow对象
+window.sayName()  //Greg
+
+//在另一个对象的作用域中调用
+let o = new Object();
+Person.call(o, 'kristen', 25, 'nurse')
+o.sayName()
+
+这个例子一开始展示了典型的构造函数调用方式,即使用new操作符创建一个新对象.然后是普通函数的调用方式,
+这时候没有使用new操作符调用Person(),结果会将属性和方法添加到window对象.这里要记住,在调用一个函数
+而没有明确设置this值得情况下(即没有作为对象的方法调用,或者没有使用没有使用call()/apply()调用),
+this始终指向Global对象(在浏览器中就是window对象).因此在上面的调用之后,window对象上就有了一个sayName()
+方法,调用它会返回'Greg'.最后展示的调用方式是通过call()(或apply())调用函数,同时将特定对象指定为
+作用域.这里的调用将对象o指定为Perons()内部的this值.因此指向完函数后,所有属性和sayName()方法都会
+添加到对象o上面.
+
+2.构造函数的问题
+
+构造函数虽然有用,但也不是没有问题.构造函数的主要问题在于,其定义的方法会在每个实例上都创建一遍.因此
+对前面的例子而言,person1和person2都有名为sayName()的方法,但这两个方法不是同一个Function实例.
+我们知道,ECMAScript中函数是对象,因此每次定义函数时,都会初始化一个对象.逻辑上讲,这个构造函数实际
+上是这样的:
+
+function Person(name, age, job){
+  this.name = name;
+  this.age = age;
+  this.job = job;
+  this.sayName = new Function('console.log(this.name)') //逻辑等价
+}
+
+这样理解这个构造函数可以更清除地知道,每个Person实例都会有自己的Function实例用于显示name属性.当然
+以这种方式创建函数会带来不同的作用域链和标识符解析.但创建新Function实例的机制是一样的.因此不同
+实例上的函数虽然同名却不相等,如下所示:
+
+console.log(person1.sayName == person2.sayName)   //false
+
+因为都是做一样的事,所以没必要定义两个不同的Function实例.况且,this对象可以把函数与对象的绑定推迟
+到运行时.
+
+要解决这个问题,可以把函数定义转移到构造函数外部:
+
+function Person(name, age, job){
+  this.name = name;
+  this.age = age;
+  this.job = job;
+  this.sayName = sayName;
+}
+
+function sayName(){
+  console.log(this.name)
+}
+
+let person1 = new Person('nicholas', 29, 'software Engineer')
+let person2 = new Person('Greg', 27, 'Doctor')
+
+person1.sayName();  //nicholas
+person2.sayName();  //Greg
+
+在这里,sayName()被定义在了构造函数外部.在构造函数内部,sayName属性等于全局sayName()函数,因为这一次
+sayName属性中包含的只是一个指向外部函数的指针,所以person1和person2共享了定义在全局作用域上的
+sayName()函数.这样虽然解决了相同逻辑的函数重复定义的问题,但全局作用域也因此被搞乱了,因为那个函数
+实际上只能在一个对象上调用.如果这个对象需要多个方法,那么就要在全局作用域中定义多个函数.这回导致
+自定义类型引用的代码不能很好地聚集在一起.这个新问题可以通过原型模式来解决.
+
+
+8.2.4 原型模式
+
+每个函数都会创建一个prototype属性,这个属性是一个对象,包含应该由特定引用类型的实例共享的属性和方法.
+实际上,这个对象就是通过调用构造函数创建的对象的原型.使用原型对象的好处是,在它上面定义的属性和方法
+可以被对象实例共享.原来在构造函数中直接赋值给对象实例的值,可以直接赋值给他们的原型,如下所示:
+
+function Person() {}
+
+Person.prototype.name = 'Nicholas'
+Person.prototype.age = 29
+Person.prototype.job ='software Engineer'
+Person.prototype.sayName = function(){
+  console.log(this.name)
+}
+
+let person1 = new Person();
+person1.sayName();  //Nicholas
+
+let person2 = new Person();
+person2.sayName();  //Nicholas
+
+console.log(person1.sayName == person2.sayName)   //true
+
+使用函数表达式也可以:
+let Person = function() {}
+
+Person.prototype.name = 'Nicholas'
+Person.prototype.age = 29
+Person.prototype.job ='software Engineer'
+Person.prototype.sayName = function(){
+  console.log(this.name)
+}
+
+let person1 = new Person();
+person1.sayName();  //Nicholas
+
+let person2 = new Person();
+person2.sayName();  //Nicholas
+
+console.log(person1.sayName == person2.sayName)   //true
+
+这里,所有属性和sayName()方法都直接添加到了Person的prototype属性上,构造函数体中什么也没有.但这样
+定义之后,调用构造函数创建的新对象仍然拥有相应的属性和方法.域构造函数模式不同,使用这种原型模式定义
+的属性和方法是由所有实例共享的.因此person1和person2访问的都是相同的属性和相同的sayName()函数.要
+理解这个过程,就必须理解ECMAScript中原型的本质.
+
+1.理解原型
+
+无论何时,只要创建一个函数,就回按照特定的规则为这个函数创建一个prototype属性(指向原型对象).默认情况
+下,所有原型对象自动获得一个名为constructor的属性,指回与之关联的构造函数.对前面的例子而言,Person.
+prototype.constructor指向Person.然后,因构造函数而异,可能会给原型对象添加其他属性和方法.
+
+在自定义构造函数时,原型对象默认只会获得constructor属性,其他的所有方法都继承自Object.每次调用
+构造函数创建一个新实例,这个实例的内部[[Prototype]]指针就会被赋值为构造函数的原型对象.脚本中没有
+访问这个[[Prototype]]特性的标准方式,但FireFox,safari和chrome回在每个对象上暴露__proto__属性,
+通过这个属性可以访问对象的原型.在其他实现中,这个特性完全被隐藏了.关键在于理解这一点:实例与构造
+函数原型之间由直接的联系,但实例域构造函数之间没有.
+
+这种关系不好可视化,但可以通过下面的代码来理解原型的行为.
+
+//构造函数可以是函数表达式
+//也可以是函数声明,因此以下两种形式都可以:
+//function Person() {}
+//let Person = function() {}
+
+function Person() {}
+
+//声明之后,构造函数就有了一个与之关联的原型对象
+console.log(typeof Person.prototype)    
+// object
+
+console.log(Person.prototype) 
+// constructor: ƒ Person()
+// __proto__: Object
+
+//如前面所述,构造函数有一个prototype属性引用其原型对象,
+//而这个原型对象也有一个constructor属性,引用这个构造函数
+//换句话说,两者循环引用
+console.log(Person.prototype.constructor == Person) //true
+
