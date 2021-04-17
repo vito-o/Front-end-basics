@@ -1342,3 +1342,228 @@ console.log(Object.getOwnPropertyNames(o))
 //(7) ["0", "1", "2", "3", "first", "second", "third"]
 
 8.2.5 对象迭代
+
+在javascript有史以来的大部分时间内,迭代对象属性都是一个难题。ECMAScript2017新增了两个静态方法，
+用于讲对象内容转换位序列化的--更重要的是可迭代的--格式。这两个静态方法Object.values()和Object.entries()
+接收一个对象，返回他们内容的数组。Object.values()返回对象值得数组，Object.entries()返回键值对的数组。
+
+const o = {
+  foo: 'bar',
+  baz: 1,
+  qux: {}
+}
+
+console.log(Object.values(o)) //(3) ["bar", 1, {…}]
+
+console.log(Object.entries(o))
+
+0: (2) ["foo", "bar"]
+1: (2) ["baz", 1]
+2: (2) ["qux", {…}]
+
+
+注意，非字符串属性会被转换为字符串输出。另外，这两个方法执行对象的浅复制：
+const o = {
+  qux : {}
+}
+
+console.log(Object.values(o)[0] === o.qux)  //true
+
+console.log(Object.entries(o)[0][1] === o.qux)  //true
+
+符号属性会被忽略：
+
+const sym = Symbol();
+const o = {
+  [sym]: 'foo'
+}
+
+console.log(Object.values(o))   //[]
+console.log(Object.entries(o))  //[]
+
+1.其他原型语法
+
+有读者可能注意到了，在前面的例子中，每次定义一个属性或方法都会把Person.prototype重写一遍。为了
+减少代码冗余，也为了从视觉上更好地封装原型功能，直接通过一个包含所有属性和方法的对象字面量来重写
+原型成为了一种常见的作法，如下面的例子所示：
+
+function Person() {}
+
+Person.prototype = {
+  name: 'nicholas',
+  age: 29,
+  job: 'software Engineer',
+  sayName(){
+    console.log(this.name)
+  }
+}
+
+在这个例子中，Person.prototype被设置为等于一个通过对象字面量创建的新对象。最终结果是一样的，
+只有一个问题：这样重写之后，Person.prototype的constructor属性就不指向Person了。在创建函数
+时，也会创建它的prototype对象，同时会自动给这个原型的constructor属性赋值。而上面的写法完全
+重写了默认的prototype对象，因此其constructor属性也指向了完全不同的新对象（Object构造函数）
+不再指向原来的构造函数。虽然instanceof操作符还能可靠地返回值，但我们不能再依靠constructor属性
+来识别类型了，如下面的例子所示：
+
+let friend = new Person()
+
+console.log(friend instanceof Object) //true
+console.log(friend instanceof Person) //true
+
+console.log(friend.constructor == Person) //false
+console.log(friend.constructor == Object) //true
+
+这里，instanceof仍然对Object和Person都返回true。但constructor属性现在等于Object而不是Person
+了。如果constructor的值很重要，则可以像下面这样在重谢原型对象时专门设置一下它的值
+
+function Person() {}
+
+Person.prototype = {
+  constructor: Person,
+  name: 'nicholas',
+  age: 29,
+  job: 'software Engineer',
+  sayName(){
+    console.log(this.name)
+  }
+}
+
+这种代码中特意包含了constructor属性，并将它设置为Person，保证了这个属性仍然包含恰当的值。
+但要注意，以这种方式恢复constructor属性会创建一个[[Enumerable]]为true的属性。而原生constructor
+属性默认是不可枚举的。因此，如果你使用的是兼容ECMAScript的javascript引擎，那可能会改为使用
+Object.defineProperty()方法来定义constructor属性：
+
+function Person() {}
+
+Person.prototype = {
+  name: 'nicholas',
+  age: 29,
+  job: 'software Engineer',
+  sayName(){
+    console.log(this.name)
+  }
+}
+
+Object.defineProperty(Person.prototype, 'constructor', {
+  enumerable: false,
+  value: Person
+})
+
+2.原型的动态性
+
+因为从原型上搜索值得过程是动态得，所以即使实例在修改原型之前已经存在，任何时候对原型对象所做得修改
+也会在实例上反映出来。下面是一个例子：
+
+let friend = new Person();
+
+Person.prototype.sayHi = function(){
+  console.log('hi')
+}
+
+friend.sayHi()  
+
+以上代码先创建了一个Person实例并保存在friend中。然后一条语句在Person.prototype上添加了一个名为
+sayHi()的方法。虽然friend实例是在添加方法之前创建的，但它仍然可以访问这个方法。之所以会这样，
+主要原因是实例与原型之间松散的联系。在调用friend.sayHi()时，首先会从这个实例中搜索名为sayHi的
+属性。在没有找到的情况下，运行时会继续搜索原型对象。因为实例和原型之间的链接就是简单的指针，而
+不是保存的副本，所以会在原型上找到sayHi属性并返回这个属性保存的函数
+
+虽然随时能给原型添加属性和方法，并能够理解反映在所有对象实例上，但这跟重写整个原型是两回事。实例
+的[[Prototype]]指针式在调用构造函数时自动赋值的，这个指针即使把原型修改为不同的对象也不会变。
+从写整个原型会切断最初原型与构造函数的联系，但实例引用的仍然时最初的原型。记住，实例只有指向
+原型的指针，没有指向构造函数的指针。
+
+实例和原型之间的联系时松散的。
+实例和原型之间的链接就是简单的指针，而不是保存的副本
+实例的[[Prototype]]指针是在调用构造函数时自动赋值的，这个指针即使把原型修改为不同的对象也不会变.
+重写整个原型会切断最初原型与构造函数的联系，但实例引用的仍然是最初的原型
+
+实例只有指向原型的指针，没有指向构造函数的指针。
+
+function Person(){}
+let friend = new Person();
+Person.prototype = {
+  constructor: Person,
+  name: 'nicholas',
+  age: 29,
+  job: 'sofware Engineer',
+  sayName(){
+    console.log(this.name)
+  }
+}
+
+friend.sayName()  //firend.sayName is not function
+
+在这个例子中，Person的新实例是在重写原型对象之前创建的。在调用firend.sayName()的时候，会导致错误。
+这是因为firend指向的原型还是最初的原型，而这个原型上并没有sayName属性。
+
+重写构造函数上的原型后再创建的实例才会引用新的原型。而再次之前创建的实例仍然会引用最初的原型。
+
+3.原生对象原型
+
+原型模式之所以重要，不仅体现在自定义类型上，而且还因为它也是实现所有原生引用类型的模式。
+所有原生引用类型的构造函数（包括Object、Array、String等）都在原型上定义了实例方法。
+比如，数组实例的sort()方法就是Array.prototype上定义的，而字符串包装对象的substring()方法也是
+在String.prototype上定义的。如下所示：
+
+console.log(typeof Array.prototype.sort)        //function
+console.log(typeof String.prototype.substring)  //function
+
+通过原生对象的原型可以取得所有默认方法的引用，也可以给原生类型的实例重新定义新的方法。可以像修改
+自定义对象原型一样修改原生对象原型，因此随时可以添加方法。比如，下面的代码就给String原始值包装
+类型的实例添加了一个startsWith()方法：
+String.prototype.startsWith = function(text){
+  return this.indexOf(text) === 0;
+}
+let msg = 'Hello world'
+console.log(msg.startsWith('Hello'))  //true
+
+如果给定字符串的开头出现了调用startsWith()方法的文本，那么该方法就会返回true。因为这个方法是被
+定义在String.prototype上的，所以当前环境下所有的字符串都可以使用这个方法。msg是个字符串，在读取
+它的属性时，后台会自动创建String的包装实例，从而找到并调用startsWith()方法
+
+注意： 尽管可以这么做，但并不推荐在产品环境中修改原生对象原型。这样做很可能造成误会，而且可能会引发
+命名冲突（比如一个名称在某个浏览器实现中不存在，在另一个实现中却存在）。另外还有可能意外重写原生的
+方法。推荐的做法是创建一个自定义的类，继承原生类型。
+
+4.原型的问题
+
+原型模式也不是没有问题。首先，它弱化了向构造函数传递初始化参数的能力，会导致所有实例默认都取得
+相同的属性值。虽然这回带来不变，但还不是原型的最大问题。原型的最主要问题源自它的共享特性。
+我们知道，原型上的所有属性是在实例间共享的，这对函数来说比较适合。另外包含原始值的属性也还好，
+如前面例子中所示，可以通过在实例上添加同名属性来简单遮蔽原型上的属性。正则的问题是来自包含引用值
+的属性。
+
+function Person(){ }
+
+Person.prototype = {
+  constructor: Person,
+  name: 'Nicholas',
+  age: 29,
+  job: 'sofeware Engineer',
+  friends: ['shelby', 'court'],
+  sayName(){
+    console.log(this.name)
+  }
+}
+
+let person1 = new Person();
+let person2 = new Person();
+
+person1.friends.push('Van')
+
+console.log(person1.friends)      //(3) ["shelby", "court", "Van"]
+console.log(person2.friends)      //(3) ["shelby", "court", "Van"]
+console.log(person1.friends === person2.friends)  //true
+
+这里，Person.prototype有一个名为friends的属性，它包含一个字符串数组。然后这里创建了两个Person
+的实例。Person1.friends通过push方法向数组中添加了一个字符串。由于这个friends属性存在于
+Person.prototype而非person1上，新加的这个字符串也会在（指向同一个数组的）person2.friends上
+反映出来。如果这是有意在多个实例间共享数组，那没什么问题。但一般来说，不同的实例应该有属于自己的
+属性副本。这就是实际开发中通常不单独使用原型模式的原因。
+
+8.3 继承
+
+继承是面向对象编程中讨论最多的化提。很多面向对象语言都支持两种继承：接口继承和实现继承。前者只
+继承方法签名，后者继承实际的方法。接口继承在ECMAScript中是不可能的，因为函数没有签名。实现继承
+是ECMAScript唯一支持的继承方式，而这主要是通过原型链实现的。
