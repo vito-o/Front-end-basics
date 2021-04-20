@@ -2087,3 +2087,146 @@ SubType.prototype.sayAge = function(){
 有效。寄生式组合继承可以算是引用类型继承的最佳模式。
 
 8.4 类
+
+前几节交了如何使用ECMAScript5的特性来模拟类似于类（class-like）的行为。不难看出，各种策略都有
+自己的问题，也有相应的拖鞋。正因为如此，实现继承的代码也显得非常冗长和混乱。
+
+为解决这个问题，ECMAScript6引入了class关键字具有正式定义类的能力。类（class）是ECMAScript中的
+基础性语法糖结构，因此刚开始接触时可能不会太习惯。虽然ECMAScript6表明上看起来可以支持正式的面向
+对象编程，但实际上它背后使用的仍然时原型和构造函数的概念。
+
+8.4.1 类定义
+
+有两种主要方式：类声明和类表达式.
+
+//类声明
+class Person {}
+
+//类表达式
+const Animal = class {}
+
+于函数表达式类似，类表达式在他们被求值前也不能引用。不过，与函数定义不同的是，虽然函数声明可以提升，
+但类定义不能。
+
+console.log(FunctionExpression)       //undefined
+var FunctionExpression = function(){} 
+console.log(FunctionExpression)       //f (){}
+
+console.log(FunctionExpression)       //f (){}
+function FunctionExpression(){} 
+console.log(FunctionExpression)       //f (){}
+
+console.log(ClassExpression)          //undefined
+var ClassExpression = class {}      
+console.log(ClassExpression)          //class {}
+
+console.log(ClassDeclaration)          //ReferenceError: ClassDeclaration is not defined
+class ClassDeclaration{}      
+console.log(ClassDeclaration)          //class {}
+
+另一个跟函数声明不同的地方是，函数受函数作用域限制，而类受块作用域限制：
+
+{
+  function FunctionDeclaration(){}
+  class ClassDeclaration{}
+}
+
+console.log(FunctionDeclaration)    //ƒ FunctionDeclaration(){}
+console.log(ClassDeclaration)       //ReferenceError: ClassDeclaration is not defined
+
+类的构成
+
+类可以包含构造函数方法、实例方法、获取函数、设置函数和静态类方法，但这些都不是必须的。
+空的类定义照样有效。默认情况下，类定义中的代码都在严格模式下执行。
+
+与函数构造函数一样，多种编程风格都建议类名的首字母要大写，以区别于通过它创建的实例（比如，通过class Foo{}
+创建实例foo）
+
+class Foo {}
+
+class Bar{
+  constructor(){}
+}
+
+class Baz {
+  get myBaz(){}
+}
+
+class Qux {
+  static myQux() {}
+}
+
+类表达式的名称是可选的。在把类表达式赋值给变量后，可以通过name属性取得类表达式的名称字符串。但
+不能再类表达式作用域外部访问这个标识符。
+
+let Person = class PersonName{
+  identify(){
+    console.log(Person.name, PersonName.name)   //PersonName PersonName
+  }
+}
+
+let p = new Person();
+p.identify()
+
+console.log(Person.name)  //PersonName
+console.log(PersonName)   //ReferenceError: PersonName is not defined
+
+8.4.2 类构造函数
+
+constructor关键字用于在类定义块内部创建类的构造函数。方法名constructor会告诉解释器在使用new
+操作符创建类的新实例时，应该调用这个函数。构造函数的定义不是必须的，不定义构造函数相当于将
+构造函数定义为空函数。
+
+1.实例化
+
+使用new操作符实例化Person的操作等于使用new调用其构造函数。唯一可感知的不同之处就是，javascript
+解释器知道使用new和类意味着应该使用constructor函数进行实例化。
+
+使用new调用类的构造函数会执行如下操作。
+·在内存中创建一个新对象。
+·这个新对象内部的[[Prototype]]指针被赋值为构造函数的prototype属性。
+·构造函数内部的this被赋值为这个新对象（即this指向新对象）
+·执行构造函数函数内部的代码（给新对象添加属性）。
+·如果构造函数返回非空对象，则返回该对象；否则，返回刚创建的新对象。
+
+class Animal {}
+
+class Person {
+  constructor(){
+    console.log('person ctor')
+  }
+}
+
+class Vegetable {
+  constructor(){
+    this.color = 'orange'
+  }
+}
+
+let a = new Animal()
+
+let p = new Person()
+
+let v = new Vegetable();
+console.log(v.color)
+
+类实例化时传入的参数会用作构造函数的参数。如果不需要参数，则类名后面的括号也是可选的：
+class Person{
+  constructor(name){
+    console.log(arguments.length)
+    this.name = name || null;
+  }
+}
+
+let p1 = new Person;
+console.log(p1)               //Person {name: null}
+
+let p2 = new Person();  
+console.log(p2)               //Person {name: null}
+
+let p3 = new Person('Jake');
+console.log(p3)               //Person {name: "Jake"}
+
+默认情况下，类构造函数会在执行之后返回this对象。构造函数返回的对象会被用作实例化的对象，如果
+没有什么引用新创建的this对象，那么这个对象会被销毁。不过，如果返回的不是this对象，而时其他对象，
+那么这个对象不会通过instanceof操作符检测出跟类有关联，因为这个对象的原型指针并没有被修改。
