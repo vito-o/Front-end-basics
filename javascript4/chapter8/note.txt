@@ -2230,3 +2230,152 @@ console.log(p3)               //Person {name: "Jake"}
 默认情况下，类构造函数会在执行之后返回this对象。构造函数返回的对象会被用作实例化的对象，如果
 没有什么引用新创建的this对象，那么这个对象会被销毁。不过，如果返回的不是this对象，而时其他对象，
 那么这个对象不会通过instanceof操作符检测出跟类有关联，因为这个对象的原型指针并没有被修改。
+
+class Person {
+  constructor(override){
+    this.foo = 'foo';
+    if(override){
+      return {
+        bar: 'bar'
+      }
+    }
+  }
+}
+
+let p1 = new Person(),
+    p2 = new Person(true)
+
+console.log(p1)                     //Person {foo: "foo"}
+console.log(p1 instanceof Person)   //true
+
+console.log(p2)                     //{bar: "bar"}
+console.log(p2 instanceof Person)   //false
+
+类构造函数与构造函数的主要区别是，调用类构造函数必须使用new操作符，而普通构造函数如果不使用
+new调用，那么就会以全局的this（通常是window）作为内部对象。调用类构造函数如果忘了使用new
+则会抛出错误：
+
+function Person() {}
+
+class Animal {}
+
+let p = Person();
+let a = Animal();   //TypeError: Class constructor Animal cannot be invoked without 'new'
+
+类构造函数没有什么特殊之处，实例化之后，他会成为普通的实例方法（但作为类构造函数，仍然要使用new
+调用）。因此实例化之后可以在实例上引用它
+
+class Person {}
+
+let p = new Person()
+
+p.constructor()
+//TypeError: Class constructor Person cannot be invoked without 'new'
+
+//使用对类构造函数的引用创建一个新实例
+let p2 = new p.constructor()
+
+2.把类当成特殊函数
+
+ECMAScript中没有正式的类这个类型。从各方面来看，ECMAScript类就是一种特殊函数。声明一个类之后
+通过typeof操作符检测类表是否，表示它是一个函数：
+
+class Person {}
+
+console.log(Person)         //class Person {}
+console.log(typeof Person)  //function
+
+类标识符有prototype属性，而这个原型也有一个constructor属性指向类自身：
+
+class Person {}
+console.log(Person.prototype)   //constructor: class Person
+console.log(Person === Person.prototype.constructor)  //true
+
+与普通构造函数一样，可以使用instanceof操作符检查构造函数原型是否存在于实例的原型链中：
+
+class Person {}
+let p = new Person()
+
+console.log(p instanceof Person)    //true
+
+由此可知，可以使用instanceof操作符检查一个对象与类构造函数，以确定这个对象是不是类的实例。
+只不过此时的类构造函数要使用类标识符，比如，签名的例子中要检查p和Person
+
+如前所述，类本身具有与普通构造函数一样的行为。在类的上下文中，类本身在使用new调用时就会被当成
+构造函数。重点在于，类中定义的constructor方法不会被当成构造函数，在对它使用Instanceof操作符
+时会返回false。但，如果在创建实例时直接将类构造函数当成普通构造函数来使用，那么instanceof操作
+符的返回值会反转。
+
+class Person {}
+let p1 = new Person()
+
+console.log(p1.constructor === Person)  //true
+console.log(p1 instanceof Person)       //true
+
+let p2 = new Person.constructor();
+console.log(p2.constructor === Person)  //false
+console.log(p2 instanceof Person);      //false
+console.log(p2 instanceof Person.constructor) //true
+
+类时javascript的一等公民，因此可以想其他对象或函数一样把类作为参数传递。
+
+let classList = [
+  class {
+    constructor(id) {
+      this.id_ = id;
+      console.log(`instance ${this.id_}`)
+    }
+  }
+]
+
+function createInstance(ClassDeclaration, id){
+  return new ClassDeclaration(id);
+}
+
+let foo = createInstance(classList[0], 3141)    //instance 3141
+
+与立即调用函数表达式相似，类也可以立即实例化
+
+let p = new class Foo{
+  constructor(x){
+    console.log(x)
+  }
+}('bar')
+
+console.log(p)  //Foo {}
+
+8.4.3 实例、原型和类成员
+
+类的语法可以非常方便地定义应该存在于实例上的成员、应该存在于原型上的成员，以及应该存在于类本身的成员。
+
+1.实例成员
+
+每次通过new调用类标识符时，都会执行类构造函数。在这个函数内部，可以为新创建的实例（this）添加
+“自有”属性。至于添加什么样的属性，则没有限制。另外，在构造函数执行完毕后，仍然可以给实例继续
+添加新成员。
+
+每个实例都对应一个唯一的成员对象，这意味着所有成员都不会在原型上共享。
+
+class Person {
+  constructor(){
+    this.name = new String('jack');
+    this.sayName = () => console.log(this.name)
+    this.nickname = ['jake', 'j-dog']
+  }
+}
+let p1 = new Person(),
+    p2 = new Person();
+
+p1.sayName();
+p2.sayName();
+
+console.log(p1.name === p2.name)        //false
+console.log(p1.sayName === p2.sayName)  //false
+console.log(p1.nickname === p2.nickname)//false
+
+p1.name = p1.nickname[0]  
+p2.name = p2.nickname[1];
+p1.sayName();
+p2.sayName();
+
+
