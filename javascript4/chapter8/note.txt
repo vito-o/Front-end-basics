@@ -2378,4 +2378,205 @@ p2.name = p2.nickname[1];
 p1.sayName();
 p2.sayName();
 
+2.原型方法与访问器
 
+为了在实例间共享方法，类定义语法把在类块中定义的方法作为原型方法。
+class Person {
+  constructor(){
+    this.locate = () => console.log('instance')
+  }
+
+  //在类块中定义的所有内容都会定义在类的原型上。
+  locate(){
+    console.log('prototype')
+  }
+}
+
+let p = new Person();
+Person.prototype.locate();  //prototype
+
+可以把方法定义在类构造函数中或者类块中，但不能在类块中给原型添加原始值或对象作为成员数据：
+
+class Person {
+  name: 'Jake'
+}
+//SyntaxError: Unexpected identifier
+
+类方法等同于对象属性，因此可以使用字符串、符号或计算的值作为键：
+const symbolKey = Symbol('symbolKey')
+
+class Person {
+  stringKey(){
+    console.log('invoked stringKey'); //invoked stringKey
+  }
+
+  [symbolKey](){
+    console.log('invoked symbolKey')  //invoked symbolKey
+  }
+
+  ['computed' + 'Key'](){
+    console.log('invoked computedKey')//invoked computedKey
+  }
+}
+
+let p = new Person();
+p.stringKey();
+p[symbolKey]();
+p.computedKey();
+
+类定义也支持获取和设置访问器。语法与行为跟普通对象一样：
+
+class Person {
+  set name(newName){
+    this.name_ = newName
+  }
+
+  get name(){
+    return this.name_;
+  }
+}
+
+let p = new Person();
+p.name = 'Jake'
+console.log(p.name)   //Jake
+
+3.静态类方法
+
+可以在类上定义静态方法。这些方法通常用于执行不特定于实例的操作，也不要求存在类的实例。
+于原型成员类似，静态成员每个类上只能有一个。
+
+静态类成员在类定义中使用static关键字作为前缀。在静态成员中，this引用类自身。其他所有约定跟原型
+成员一样：
+
+class Person {
+  constructor(){
+    //添加到this的所有内容都会存在于不同的实例上
+    this.locate = () => console.log('instance', this)
+  }
+
+  //定义在类的原型对象上
+  locate(){
+    console.log('prototype', this)
+  }
+
+  static locate(){
+    console.log('class', this)
+  }
+
+  static locate1(){
+    console.log('class', this)
+  }
+}
+
+let p = new Person();
+p.locate()                //instance
+Person.prototype.locate() //prototype
+Person.locate()           //static
+
+静态类方法非常适合作为实例工厂
+
+class Person {
+  constructor(age){
+    this.age_ = age;
+  }
+
+  sayAge(){
+    console.log(this.age_)
+  }
+
+  static create(){
+    //使用随机年龄创建并返回一个Person实例
+    return new Person(Math.floor(Math.random() * 100))
+  }
+}
+
+console.log(Person.create())
+console.log(Person.create())
+
+4.非函数原型和类成员
+
+虽然类定义并不显示支持在原型或类上添加成员数据，但在类定义外部，可以手动添加。
+
+class Person {
+  sayName(){
+    console.log(`${Person.greeting} ${this.name}`)
+  }
+}
+//在类上定义数据成员
+Person.greeting = 'My name is'
+//在原型上定义数据成员
+Person.prototype.name = 'Jake'
+
+let p = new Person();
+p.sayName()
+
+注意 类定义中之所以没有显式支持添加数据成员，是因为在共享目标（原型和类）上添加可变（可修改）数据
+是一种反模式。一般来说，对象实例应该独自拥有通过this引用的数据。
+
+5.迭代器于生成器
+
+类定义语法支持在原型和类本身上定义生成器方法：
+
+class Person {
+  //在原型上定义生成器方法
+  *createNicknameIterator(){
+    yield 'Jack';
+    yield 'Jake';
+    yield 'J-Dog';
+  }
+
+  static *createJobIterator(){
+    yield 'Butcher'
+    yield 'Baker'
+    yield 'Candlestick maker'
+  }
+}
+
+let jobIter = Person.createJobIterator();
+console.log(jobIter.next().value) //Butcher
+console.log(jobIter.next().value) //Baker
+console.log(jobIter.next().value) //Candlestick maker
+
+let p = new Person();
+let nicknameIter = p.createNicknameIterator();
+
+console.log(nicknameIter.next().value)  //Jack
+console.log(nicknameIter.next().value)  //Jake
+console.log(nicknameIter.next().value)  //J-Dog
+
+因为支持生成器方法，所以可以通过添加一个默认的迭代器，把类实例变成可迭代对象：
+class Person {
+  constructor(){
+    this.nicknames = ['jack', 'jake', 'j-dom']
+  }
+
+  *[Symbol.iterator](){
+    yield *this.nicknames.entries()
+  }
+}
+
+let p = new Person();
+for(let [idx, nickname] of p){
+  console.log(nickname)
+}
+// jack
+// jake
+// j-dom
+
+也可以只返回迭代器实例：
+class Person {
+  constructor(){
+    this.nicknames = ['jack', 'jake', 'j-dom']
+  }
+
+  [Symbol.iterator](){
+    return this.nicknames.entries()
+  }
+}
+
+let p = new Person();
+for(let [idx, nickname] of p){
+  console.log(nickname)
+}
+
+8.4.4 继承
