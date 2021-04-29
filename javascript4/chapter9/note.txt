@@ -770,4 +770,133 @@ argumentsList: 调用函数时的参数列表
 4.捕获器不变式
 target必须时一个函数对象
 
-9.2.13 construct
+9.2.13 construct()
+construct()捕获器会在new操作符中被调用。对应的反射API方法为Reflect.construct()。
+
+const myTarget = function(){}
+
+const proxy = new Proxy(myTarget, {
+  construct(target, argumentList, newTarget){
+    debugger
+    console.log('construct()')
+    return Reflect.construct(...arguments)
+  }
+})
+
+new proxy;
+//construct()
+
+1.返回值
+construct()必须返回一个对象
+
+2.拦截的操作
+new proxy(...argumentsList)
+Reflect.construct(target, argumentsList, newTarget)
+
+3.捕获器处理程序参数
+target: 目标构造函数
+argumentsList: 传给目标构造函数的参数列表
+newTarget: 最初被调用的构造函数
+
+4.捕获器不变式
+target必须可以用作构造函数。
+
+//Reflect.construct()
+
+function func1(a, b, c){
+  this.sum = a + b + c;
+}
+const args = [1, 2, 3]
+
+const object1 = new func1(...args)
+const object2 = Reflect.construct(func1, args);
+
+console.log(object1)  //func1 {sum: 6}
+console.log(object2)  //func1 {sum: 6}
+
+9.3 代理模式
+
+使用代理可以在代码中实现一些有用的编程模式。
+
+9.3.1 跟踪属性访问
+
+const user = {
+  name: 'Jake'
+}
+
+const proxy = new Proxy(user, {
+  get(target, property, receiver){
+    console.log(`Getting ${property}`)
+    return Reflect.get(...arguments)
+  },
+  set(target, property, value, receiver){
+    console.log(`Setting ${property}=${value}`)
+    return Reflect.set(...arguments)
+  }
+})
+
+proxy.name;
+proxy.age = 27;
+
+//Getting name
+//Setting age=27
+
+9.3.2 隐藏属性
+
+代理的内部实现对外部代码是不可见的，因此要隐藏目标对象上的属性也轻而易举。比如：
+
+const hiddenProperties = ['foo', 'bar']
+const targetObject = {
+  foo: 1,
+  bar: 2,
+  baz: 3
+}
+const proxy = new Proxy(targetObject, {
+  get(target, property){
+    if(hiddenProperties.includes(property)){
+      return undefined;
+    }else{
+      return Reflect.get(...arguments)
+    }
+  },
+  has(target, property){
+    if(hiddenProperties.includes(property)){
+      return false;
+    }else{
+      return Reflect.has(...arguments)
+    }
+  }
+})
+
+//get()
+console.log(proxy.foo)  //undefined
+console.log(proxy.bar)  //undefined
+console.log(proxy.baz)  //3
+
+//has()
+console.log('foo' in proxy)   //false
+console.log('bar' in proxy)   //false
+console.log('baz' in proxy)   //true
+
+9.3.3 属性验证
+
+因为所有赋值操作都会触发set()捕获器，所以可以根据所赋的值决定是否允许还是拒绝赋值：
+
+const target = {
+  onlyNumbersGoHere: 0
+}
+
+const proxy = new Proxy(target, {
+  set(target, property, value){
+    if(typeof value !== 'number'){
+      return false;
+    }else{
+      return Reflect.set(...arguments)
+    }
+  }
+})
+
+proxy.onlyNumbersGoHere = 1;
+console.log(proxy.onlyNumbersGoHere)  //1
+proxy.onlyNumbersGoHere = '2';
+console.log(proxy.onlyNumbersGoHere)  //1
