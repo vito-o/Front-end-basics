@@ -519,3 +519,145 @@ let objectSayColor = sayColor.bind(o)
 objectSayColor();   //blue
 
 10.11 函数表达式
+
+函数声明的关键特点是函数声明提升，即函数声明会在代码执行之前获得定义。意味着函数声明可以出现在调用
+它的代码之后。
+
+任何时候，只要函数被当作值来使用，它就是一个函数表达式。
+function a(){
+  return function(){}
+}
+一个匿名函数被返回，函数被当作值来使用。
+
+10.12 递归
+
+function factorial(num){
+  if(num <= 1){
+    return 1
+  }else{
+    return num * arguments.callee(num - 1)
+  }
+}
+
+arguments.callee就是一个指向正在执行的函数的指针，因此可以在函数内部递归调用。
+
+不过，在严格模式下运行的代码时不能访问arguments.callee的，因为访问会出错。此时，可以使用命名函数
+表达式达到目的。
+const factorial = (function f(num){
+  if(num <= 1){
+    return 1;
+  }else{
+    return num * f(num - 1)
+  }
+})
+
+10.13 尾调用优化
+
+ECMAScript6规范新增了一项内存管理优化机制，让javascript引擎在满足条件时可以重用栈帧。具体来说，
+这项优化非常适合“尾调用”，即外部函数的返回值是一个内部函数的返回值。比如
+function outerFunction(){
+  return innerFunction()  //尾调用
+}
+
+在ES6优化之前，执行这个例子会在内存中发生如下操作。
+1.执行到outerFunction函数体，第一个栈帧被推到了栈上
+2.执行outerFunction函数体，到return语句。计算返回值必须先计算innerFunction
+3.执行到innerFunction函数体，第二个栈帧被推到了栈上
+4.执行innerFunction函数体，计算其返回值
+5.将返回值传回outerFunction，然后outerFunction再返回值。
+6.将栈帧弹出栈外
+
+在ES6优化之后，执行这个例子会在内存发生如下操作。
+1.执行到outerFunction函数体，第一个栈帧被推到栈上。
+2.执行outerFunction函数体，到达return语句。为求值返回语句，必须先求值innerFunction。
+3.引擎发现把第一个栈帧弹出栈外也没问题，因为innerFunction的返回值也是outerFunction的返回值。
+4.弹出outerFunction的 栈帧
+5.执行到InnerFunction函数体，栈帧被推到栈上。
+6.执行innerFunction函数体，计算其返回值
+7.将innerFunction的栈帧弹出栈外。
+
+很明显，第一种情况下没多调用依次嵌套函数，就会增加一个栈帧。而第二种情况下无论多少次嵌套函数，都只有
+一个栈帧。这就是ES6尾调用优化的关键：如果函数的逻辑运行基于尾调用将其销毁，则引擎就会那么做。
+
+注意 现在还没有办法测试尾调用优化是否起作用。不过，因为这是ES6规范所规定的，兼容的浏览器实现都能
+保障在代码满足条件的情况下应用这个优化。
+
+10.13.1 尾部调用优化的条件
+
+尾调用优化的条件就是确定外部栈帧真的没有必要存在了。涉及的条件如下：
+1.代码在严格模式下执行；
+2.外部函数的返回值是对尾调用函数的调用；
+3.尾调用函数返回后不需要执行额外的逻辑
+4.尾调用函数不是引用外部函数作用域中自由变量的闭包
+
+这个优化在递归场景下的效果最明显，因为递归代码最容易在栈内迅速产生大量栈帧。
+
+注意 之所以要求严格模式，主要因为在非严格模式下函数调用中允许使用f.arguments和f.caller,而他们都会
+引用 外部函数的栈帧。显然，这意味着不能应用优化了。因此尾调用优化要求必须在严格模式下有效，以防止
+引用这些属性。
+
+10.13.2 尾调用优化的代码
+
+"use strict"
+
+function fib(n){
+  return fibImpl(0, 1, n)
+}
+
+function fibImpl(a, b, n){
+  if(n === 0){
+    return a;
+  }
+
+  return fibImpl(b, a + b, n - 1);
+}
+
+10.14 闭包
+
+匿名函数经常被人误认为是闭包（closure）。闭包指的是那些引用了另外一个函数作用域中变量的函数，
+通常是在嵌套函数中实现的。比如
+
+function createComparisonFunction(propertyName){
+  return function(object1, object2){
+    let value1 = object1[propertyName]; //加粗
+    let value2 = object2[propertyName]; //加粗
+
+    if(value1 < value2){
+      return -1;
+    }else if(value1 > value2){
+      return 1
+    }else {
+      return 0;
+    }
+  }
+}
+
+这里加粗的代码位于内部函数（匿名函数）中，其中引用了外部函数的变量propertyName。在这个内部函数
+被返回并在其他地方被使用后，它仍然应用这那个变量。这是因为内部函数的作用域链包含createComparisonFunction()
+函数的作用域
+
+在调用一个函数时，会为这个函数调用创建一个执行上下文，并创建一个作用域链。然后用arguments和其他
+命名参数来初始化这个函数的活动对象。外部函数的活动对象是内部函数作用域链上的第二个对象。这个作用域
+链一直向外串起了所有包含函数的活动对象，直到全局执行上下文才终止。
+
+在函数执行时，要从作用域链中查找变量，以便读、写值。
+
+function compare(value1, value2){
+  if(value1 < value2){
+    return -1
+  }else if (value1 > value2){
+    return 1;
+  }else{
+    return 0
+  }
+}
+
+let result = compare(5, 10)
+
+这里定义的compare()函数是在全局上下文中调用的。第一次调用compare()时，会为它创建一个包含
+arguments、value1和value2的活动对象，这个对象是其作用域链上的第一个对象。而全局上下文的变量
+对象则是compare()作用域链上的第二个对象，其中包含this、result和compare。
+
+注意  因为闭包会保留他们包含函数的作用域，所以比其他函数更占用内存。过度使用闭包可能导致内存过度占用
+因此建议仅在是否必要时使用。v8等优化的js引擎会努力回收被闭包困住的内存，不过我们还是建议在使用闭包时
+要谨慎。
