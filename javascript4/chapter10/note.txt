@@ -661,3 +661,118 @@ arguments、value1和value2的活动对象，这个对象是其作用域链上�
 注意  因为闭包会保留他们包含函数的作用域，所以比其他函数更占用内存。过度使用闭包可能导致内存过度占用
 因此建议仅在是否必要时使用。v8等优化的js引擎会努力回收被闭包困住的内存，不过我们还是建议在使用闭包时
 要谨慎。
+
+
+10.14.1 this对象
+
+在闭包中使用this会让代码变得复杂。如果内部函数没有使用箭头函数定义，则this对象会在运行时绑定到执行
+函数的上下文。如果在全局函数中调用，则this在非严格模式下等于window，在严格模式下等于undefined。
+如果作为某个对象的方法调用，则this等于这个对象。匿名函数在这种情况下不会绑定到某个对象，这就意味
+着this会指向window，除非在严格模式下this是undefined。不过，由于闭包的写法所致，这个事实有时候没有
+那么容易看出来。
+
+window.identity = 'The Window'
+
+let object = {
+  identity: 'My Object',
+  getIdentityFunc(){
+    return function(){
+      return this.identity;
+    }
+  }
+}
+
+console.log(object.getIdentityFunc()())
+
+前面介绍过，每个函数在被调用时都会自动创建两个特殊变量：this和arguments。内部函数永远不可能直接
+访问外部函数的这两个变量。但是，如果把this保存到闭包可以访问的另一个变量中，则是行得通的。
+
+注意： this和arguments都是不能直接在内部函数中访问的。如果想访问包含作用域中的arguments对象，
+则同样需要将其引用先保存到闭包能访问的另一个变量中。
+
+10.14.2 内存泄漏
+
+由于IE在IE9之前对JScript对象和COM对象使用了不同的垃圾回收机制，所以闭包在这些旧版本IE中可能会
+导致问题。在这些版本的IE中，把HTML元素保存在某个闭包的作用域中，就相当于宣布该元素不能被销毁。
+
+function assignHandler(){
+  let element = document.getElementById('xxx');
+  element.onclick = () => console.log(element.id)
+}
+
+//解决引用无法被垃圾回收
+function assignHandler(){
+  let element = document.getElementById('xxx');
+  let id = element.id;
+  element.onclick = () => console.log(element.id)
+
+  element = null;
+}
+
+10.15 立即调用的函数表达式
+//IIFE
+
+(function(){
+
+})();
+
+由于被包含在括号中，所以会被解释为函数表达式。紧跟在第一组括号后面的第二组括号会立即调用前面的函数
+表达式。
+
+使用IIFE可以模拟块级作用域，即在一个函数表达式内部声明变量，然后立即调用这个函数。这样位于函数体
+作用域的变量就像是在块级作用域中一样。
+
+在ECMAScript6以后，IIFE就没有那么必要了，因为块级作用域中的变量无须IIFE就可以实现同样的隔离。
+
+//内嵌块级作用域
+{
+  let i;
+  for(i = 0; i < count; i++){
+    console.log(i)
+  }
+}
+console.log(i)    //Uncaught ReferenceError: count is not defined
+
+//循环块级作用域
+for(let i = 0; i < count; i++){
+  console.log(i)
+}
+console.log(i)    //Uncaught ReferenceError: count is not defined
+
+10.16 私有变量
+
+function add(num1, num2){
+  let sum = num1 + num2;
+  return sum;
+}
+
+特权方法：能够访问函数私有变量（及私有函数）的公有方法。
+在对象上有两种方式创建特权方法
+
+1.在构造函数中实现
+
+function MyObject(){
+  let privateVariable = 10;
+
+  function privateFunction(){
+    return false;
+  }
+
+  this.publicMethod = function(){
+    privateVariable++;
+    return privateFunction();
+  }
+}
+
+
+function Person(name){
+  this.getName = function(){
+    return name;
+  }
+  this.setName = function(value){
+    name = value;
+  }
+}
+
+10.16.1 静态私有变量
+
