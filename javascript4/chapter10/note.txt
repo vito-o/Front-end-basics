@@ -776,3 +776,124 @@ function Person(name){
 
 10.16.1 静态私有变量
 
+特权方法也可以使用私有作用域定义私有变量和函数来实现
+
+(function(){
+  let privateVariable = 10;
+
+  function privateFunction(){
+    return false;
+  }
+
+  MyObject = function() {}
+
+  MyObject.prototype.publicMethod = function(){
+    privateVariable++;
+    return privateFunction();
+  }
+})();
+
+
+(function(){
+  let name = '';
+
+  Person = function(value){
+    name = value;
+  }
+
+  Person.prototype.getName = function(){
+    return name
+  }
+
+  Person.prototype.setName = function(value){
+    name = value;
+  }
+})();
+
+注意： 使用闭包和私有变量会导致作用域链变长，作用域链越长，则查找变量所需得时间也越多。
+
+10.16.2 模块模式
+
+在一个单例对象上实现了相同的隔离和封装。
+
+let singleton = {
+  name: value,
+  method(){
+
+  }
+}
+
+模块模式是在单例对象基础上加以扩展，使其通过作用域链来关联私有变量和特权方法。
+
+let singleton = function(){
+  let privateVariable = 10;
+  function privateFunction(){
+    return false;
+  }
+
+  return {
+    publicProperty: true,
+
+    publicMethod(){
+      privateVariable++;
+      return privateFunction();
+    }
+  }
+}();
+
+10.16.3 模块增强模式
+
+另一个利用模块模式的做法是在返回对象之前先对其进行增强。
+
+let singleton = function(){
+  let privateVariable = 10;
+  function privateFunction(){
+    return  false;
+  }
+
+
+  let object = new CustomType();
+
+  object.publicProperty = true;
+
+  object.publicMethod = function(){
+    privateVariable++;
+    return privateFunction();
+  }
+  return object;
+}();
+
+
+10.17 小结
+
+函数是javascript变成中最有用也最通用的工具。ECMAScript6新增了更加强大的语法特性，从而让开发者
+可以更有效地使用函数。
+
+函数表达式与函数声明式不一样的。函数声明要求写出函数名称，而函数表达式并不需要。没有名称的函数表达式
+也被称为匿名函数。
+
+ES6新增了类似于函数表达式的箭头函数语法，但两者也有一些重要区别
+
+javascript中函数定义于调用时的参数及其灵活。arguments对象，以及ES6新增的扩展操作符，可以实现函数
+定义和调用的完全动态化。
+
+函数内部也暴露了很多对象和引用，涵盖了函数被谁调用、使用声明调用，以及调用时传入了声明参数等信息。
+
+javascript引擎可以优化符合尾调用条件的函数，以节省栈空间
+
+闭包的作用域链中包含自己的一个变量对象，然后时包含函数的变量对象，直到全局上下文的变量对象。
+
+通常，函数作用域及其中的所有变量在函数指向完毕后都会被销毁
+
+闭包在被函数返回之后，其作用域会一直保存在内存中，直到闭包被销毁。
+
+函数可以在创建之后立即调用，执行其中代码之后却不留下对函数的引用
+
+立即调用的函数表达式如果不在包含作用域中将返回值赋给一个变量，则其包含的所有变量都会被销毁。
+
+虽然javascript没有私有对象属性的概念，但可以使用闭包实现公共方法，访问位于包含作用域中定义的变量。
+
+可以访问私有变量的公共方法叫特权方法
+
+特权方法可以使用构造函数或原型模式通过自定义类型中实现，也可以使用模块模式或模块增强模式在单例对象上
+实现。
