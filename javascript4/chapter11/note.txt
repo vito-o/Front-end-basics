@@ -544,3 +544,272 @@ setTimeout(console.log, 0, p8)    //Promise {<fulfilled>: "foo"}
 如果返回的是一个待定期约，或者onFinally处理程序抛出异常(显式抛出或返回了一个拒绝期约)，则会
 返回相应的期约（待定或拒绝）
 
+
+let p9 = p1.finally(() => new Promise(() => {}))
+let p10 = p1.finally(() => Promise.reject())
+//Uncaught (in promise) undefined
+
+setTimeout(console.log, 0, p9)    //Promise {<pending>}
+setTimeout(console.log, 0, p10)   //Promise {<rejected>: undefined}
+
+let p11 = p1.finally(() => { throw 'baz' })
+setTimeout(console.log, 0, p11)   //Promise {<rejected>: "baz"}
+//Uncaught (in promise) baz
+
+返回待定期约的情形并不常见，这是因为只要期约一解决，新期约仍然会原样后传初始的期约。
+
+let p1 = Promise.resolve('foo')
+let p2 = p1.finally(
+  () => new Promise((resolve, reject) => setTimeout(() => resolve('bar'), 100))
+)
+
+setTimeout(console.log, 0, p2)                        //Promise {<pending>}
+setTimeout(() => setTimeout(console.log, 0, p2), 200) //Promise {<fulfilled>: "foo"}
+
+5.非重入期约方法
+
+当期约进入落定状态时，与该状态相关的处理程序仅仅会被排期，而非立即执行。跟在这个添加处理程序
+的代码之后的同步代码一定会在处理程序之前执行。即使期约一开始就是与附加处理程序关联的状态，执行
+顺序也是这样的。这个特性由javascript运行时保证，被称为“非重入”特性。
+
+//创建解决的期约
+let p = Promise.resolve()
+
+//添加解决处理程序
+//直觉上，这个处理程序会等期约一解决就执行
+p.then(() => console.log('onResolved handler'))
+
+//同步输出，证明then已经返回
+console.log('then() returns')
+
+//实际输出
+//then() returns
+//onResolved handler
+
+在这个例子中，在一个解决期约上调用then()会把onResolved处理程序推进消息队列。但这个处理程序
+在当前线程上的同步代码执行完成之前不会执行。因此，跟在then后面的同步代码一定先于处理程序执行。
+
+先添加处理程序后解决期约也时一样的。如果添加处理程序后，同步代码才改变期约状态，那么处理程序仍然
+会基于该状态变化表现出非重入特性。
+
+下面的例子展示了即使先添加了onResolved处理程序，再同步调用resolve()，处理程序也不会进入同步线程
+执行。
+
+let synchronousResolve;
+
+let p = new Promise(resolve => {
+  synchronousResolve = function(){
+    console.log('1: invoking resolve()')
+    resolve()
+    console.log('2: resolve() returns')
+  }
+})
+
+p.then(() => console.log('4: then() handler executes'))
+
+synchronousResolve()
+
+console.log("3: synchronousResolve() returns")
+
+//1: invoking resolve()
+//2: resolve() returns
+//3: synchronousResolve() returns
+//4: then() handler executes
+
+在这个例子中，即使期约状态变化发生在添加处理程序之后，处理程序也会等到运行的消息队列让它出列
+时才会执行。
+
+非重入适用于onResolved/onRejected处理程序、catch()处理程序和finally()处理程序。
+
+let p1 = Promise.resolve();
+p1.then(() => console.log('p1.then() onResolved'))
+console.log('p1.then() returns')
+
+let p2 = Promise.reject();
+p2.then(null, () => console.log('p2.then() onRejected'))
+console.log('p2.then() returns')
+
+let p3 = Promise.reject();
+p3.catch(() => console.log('p3.catch() onRejected'))
+console.log('p3.catch() returns')
+
+let p4 = Promise.resolve();
+p4.finally(() => console.log('p4.finally() onFinally'))
+console.log('p4.finally() returns')
+
+//p1.then() returns
+//p2.then() returns
+//p3.catch() returns
+//p4.finally() returns
+//p1.then() onResolved
+//p2.then() onRejected
+//p3.catch() onRejected
+//p4.finally() onFinally
+
+6.邻近处理程序的执行顺序
+
+如果给期约添加了多个处理程序，当期约状态变化时，相关处理程序会按照添加他们的顺序依次执行。无论是
+then()、catch()还是finally()添加的处理程序都是如此。
+
+let p1 = Promise.resolve()
+let p2 = Promise.reject()
+
+p1.then(() => setTimeout(console.log, 0, 1))
+p1.then(() => setTimeout(console.log, 0, 2))
+
+p2.then(null, () => setTimeout(console.log, 0, 3))
+p2.then(null, () => setTimeout(console.log, 0, 4))
+
+p2.catch(() => setTimeout(console.log, 0, 5))
+p2.catch(() => setTimeout(console.log, 0, 6))
+
+p1.finally(() => setTimeout(console.log, 0, 7))
+p1.finally(() => setTimeout(console.log, 0, 8))
+
+//1
+//2
+//3
+//4
+//5
+//6
+//7
+//8
+
+7.传递解决只和拒绝理由
+
+到了落定状态后，期约会提供其解决值（如果兑现）或其拒绝理由（如果拒绝）给相关状态的处理程序。拿到返回
+之后，就可以进一步对这个值进行操作。比如，第一次网络请求返回的json是发送第二次请求必须的数据，那么
+第一次请求返回的值就应该传给onResolved处理程序继续处理。当然，失败的网络请求也应该把HTTP状态码传给
+onRejected处理程序。
+
+在执行函数中，解决的值和拒绝的理由分别作为resolve()和reject()的第一个参数往后传的。然后，这些值
+优惠传给他们各自的处理程序，作为onResolved或onRejected处理程序的唯一参数。
+
+let p1 = new Promise((resolve, reject) => resolve('foo'))
+p1.then(value => console.log(value))
+
+let p2 = new Promise((resolve, reject) => reject('foo'))
+p2.catch(reason => console.log(reason))
+
+Promise.resolve()和Promise.reject()在被调用时就会接收解决值和拒绝理由。同样地，他们返回的期约
+也会像执行器一样把这些值传给onResolved或onRejected处理程序；
+
+let p1 = Promise.resolve('foo')
+p1.then(value => console.log(value))
+
+let p2 = Promise.reject('bar')
+p2.catch(reason => console.log(reason))
+
+8.拒绝期约与拒绝错误处理
+
+拒绝期约类似于throw()表达式，因为他们都代表一种程序状态，即需要中断或者特殊处理。在期约的执行函数
+或处理程序中抛出错误会导致拒绝，对应的错误兑现会成为拒绝的理由。因此以下这些期约都会以一个错误对象
+为由被拒绝：
+
+let p1 = new Promise((resolve, reject) => reject(Error('foo')))
+let p2 = new Promise((resolve, reject) => {throw Error('foo')})
+let p3 = Promise.resolve().then(() => {throw Error('foo')})
+let p4 = Promise.reject(Error('foo'))
+
+setTimeout(console.log, 0, p1)    //Promise {<rejected>: Error: foo
+setTimeout(console.log, 0, p2)    //Promise {<rejected>: Error: foo
+setTimeout(console.log, 0, p3)    //Promise {<rejected>: Error: foo
+setTimeout(console.log, 0, p4)    //Promise {<rejected>: Error: foo
+
+
+11.2.4 期约连锁与期约合成
+
+多个期约组合在一起可以构成强大的代码逻辑。这种组合可以通过两种方式实现：期约连锁和期约合成。前者
+就是一个期约接一个期约地拼，后者则是将多个期约组合为一个期约。
+
+1.期约连锁与期约合成
+把期约逐个地串联起来时一种非常有用的编程模式。之所以可以这样做，是因为每个期约实例的方法(then()、catch
+和finally())都会返回一个新的期约对象，而这个新期约又有自己的实例方法。这样连缀方法调用就可以
+构成所谓的“期约连锁”。
+
+let p = new Promise((resolve, reject) => {
+  console.log('first')
+  resolve()
+})
+
+p.then(() => console.log('second'))
+ .then(() => console.log('third'))
+ .then(() => console.log('fourth'));
+
+//first
+//second
+//third
+//fourth
+
+这个实现最终指向了一连串同步任务。正因为如此，这种方式执行的任务没有那么有用，毕竟分别使用4个同步
+函数也可以做到：
+
+(() => console.log('first'))();
+(() => console.log('second'))();
+(() => console.log('third'))();
+(() => console.log('fourth'))();
+
+要真正执行异步任务，可以改写前面的例子，让每个执行器都返回一个期约实例。这样就可以让每个后续期约
+都等待之前的期约，也就是串行化异步任务。
+
+let p1 = new Promise((resolve, reject) => {
+  console.log('p1 executor')
+  setTimeout(resolve, 1000)
+})
+
+p1
+  .then(() => new Promise((resolve, reject) => {
+    console.log('p2 executor')
+    setTimeout(resolve, 1000)
+  }))
+  .then(() => new Promise((resolve, reject) => {
+    console.log('p3 executor')
+    setTimeout(resolve, 1000)
+  }))
+  .then(() => new Promise((resolve, reject) => {
+    console.log('p4 executor')
+  }))
+
+
+把生成期约的代码提取到一个工厂函数中，就可以写成这样：
+
+function delayedResolve(str){
+  return new Promise((resolve, reject) => {
+    console.log(str)
+    setTimeout(resolve, 1000)
+  })
+}
+
+delayedResolve('p1 executor')
+  .then(() => delayedResolve('p2 executor'))
+  .then(() => delayedResolve('p3 executor'))
+  .then(() => delayedResolve('p4 executor'))
+
+每个后续处理程序都会等待前一个期约解决，然后实例化一个新期约并返回它。这种结构可以简洁地将异步任务
+串行化，解决之前依赖回调的难题。假如这种情况下不使用期约，那么前面的代码可能就要这样写
+
+function delayedExecute(str, callback = null){
+  setTimeout(() => {
+    console.log(str)
+    callback && callback()
+  }, 1000)
+}
+
+delayedExecute('p1 callback', () => {
+  delayedExecute('p2 callback', () => {
+    delayedExecute('p3 callback', () => {
+      delayedExecute('p4 callback', () => {})
+    })
+  })
+})
+
+因为then()、catch()和finally()都返回期约，所以串联这些方法也很直观。
+
+let p = new Promise((resolve, reject) => {
+  console.log('initial promise rejects')
+  reject()
+})
+
+p.catch(() => console.log('reject handler'))
+ .then(() => console.log('resolve handler'))
+ .finally(() => console.log('finally handler'))
