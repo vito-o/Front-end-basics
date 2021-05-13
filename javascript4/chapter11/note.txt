@@ -1034,3 +1034,64 @@ function compose(...fns){
 let addTen = compose(addTwo, addThree, addFive)
 
 addTen(8).then(console.log);
+
+
+11.2.5 期约扩展
+
+ES6期约实现时很可靠的，但它也有不足之处。比如，很多第三方期约实现中具备而ECMAScript规范却未涉及
+的两个特性：期约取消和进度追踪。
+
+1.期约取消
+
+我们经常会遇到期约正在处理中，程序却不再需要其结果的情形。这时候如果能够取消期约就好了。某些
+第三方库，比如Bluebird，就提供了这个特性。实际上，TC39委员会也曾准备增加这个特性，但相关提案
+最终被撤回了。结果，ES6期约被认为时“激进的”：只要期约的逻辑开始执行，就没有办法阻止它指向到
+完成。
+
+实际上，可以在现有实现基础上提供一种临时性的封装，以实现取消期约的功能。这可以用到KevinSmith
+提到的“取消令牌”(cancel token)。生成的令牌实例提供了一个接口，利用这个接口可以取消期约；同时
+也提供了一个期约的实例，可以用来触发取消后的操作并求值取消状态。
+
+cancelToken类的一个基本实例：
+
+class CancelToken {
+  constructor(cancelFn) {
+    this.promise = new Promise((resolve, reject) => {
+      cancelFn(resolve);
+    })
+  }
+}
+
+这个类包装了一个期约，把解决方法暴露给了cancelFn参数。这样，外部代码就可以向构造函数中传入一个
+函数，从而控制什么情况下可以取消期约。因此可以给它添加处理程序以取消期约。
+
+class CancelToken {
+  constructor(cancelFn) {
+    this.promise = new Promise((resolve, reject) => {
+      cancelFn(() => {
+        setTimeout(console.log, 0, 'delay cancelled')
+        resolve();
+      });
+    })
+  }
+}
+function cancellableDelayedResolve(delay){
+  setTimeout(console.log, 0, 'set delay')
+
+  return new Promise((resolve, reject) => {
+    const id = setTimeout((() => {
+      setTimeout(console.log, 0, 'delayed resolve')
+    }), delay)
+
+    const cancelToken = new CancelToken(
+      //cancelCallback => cancelButton.addEventListener('click', cancelCallback)
+      cancelCallback => cancelCallback()
+    )
+
+    cancelToken.promise.then(() => clearTimeout(id))
+  })
+}
+cancellableDelayedResolve(1000)
+
+2.期约进度通知
+
