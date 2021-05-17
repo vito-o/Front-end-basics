@@ -112,3 +112,83 @@ if(typeof pageWidth != 'number'){
 }
 
 在移动设备上window.innerWidth和window.innerHeight返回视口的大小，也就是屏幕上页面可视区域的大小
+但在document.documentElement.clientWidth和document.documentElement.clientHeight中提供了相同
+得信息。在放大或缩小页面时，这些值也会相应变化。
+
+
+resizeTo()  新得宽度和高度
+resizeBy()  宽度和高度要缩放多少
+
+
+12.1.5 视口位置
+
+度量文档相对于视口滚动距离得属性有两个，返回相等得值
+window.pageXoffset/window.scrollX
+window.pageYoffset/window.scrollY
+
+滚动页面
+window.scroll()
+scrollTo()
+scrollBy()
+
+//相对于当前视口向下滚动100像素
+window.scrollBy(0, 100)
+
+//滚动到页面左上角
+window.scrollTo(0, 0)
+
+
+这几个方法也都接收一个ScrollToOptions字典，除了提供偏移值，还可用通过behavior属性告诉浏览器是否
+平滑滚动
+
+//正常滚动
+window.scrollTo({
+  left: 100,
+  top: 1000,
+  behavior: 'auto'
+})
+
+//平滑滚动
+window.scrollTo({
+  left: 100,
+  top: 1000,
+  behavior: 'smooth'
+})
+
+12.1.6 导航与打开新窗口
+
+window.open()
+
+4个参数
+·要加载得URL
+·目标窗口
+·特性字符串
+·表示新窗口在浏览器历史记录中是否替代当前加载页面的布尔值。（只有不打开新窗口才使用）
+
+window.open('http://www.baidu.com', 'topFrame')
+
+12.1.7 定时器
+
+javascript在浏览器中是单线程执行的，
+但允许使用定时器指定在某个事件之后或每隔一段时间就执行相应的代码
+
+js是单线程的，所以每次只能执行一段代码。为了调度不同代码的执行，js维护了一个任务队列。
+其中的任务会按照添加到队列的现后顺序执行。
+
+setTimeout的第二个参数只是告诉js引擎在指定的毫秒数过后把任务添加到这个队列。如果队列是空的，则会
+立即执行该代码。如果队列不是空的，则代码必须等待前面的任务执行完才能执行。
+
+setInterval()第二参数，指的是向队列添加新任务之前等待的时间
+
+12.1.8 系统对话框
+
+12.2 location对象
+
+URLSearchParams()
+
+let param = URLSearchParams(location.search);
+
+12.2.2 操作地址
+
+12.3 navigator 对象
+
