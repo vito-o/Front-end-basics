@@ -192,3 +192,67 @@ let param = URLSearchParams(location.search);
 
 12.3 navigator 对象
 
+navigator是由Netscape Navigator2 最早引入浏览器的，找你要浏览器启用js，navigator对象就一定存在。
+
+12.3.1 监测插件
+
+监测浏览器是否安装了某个插件
+
+12.3.2 注册处理程序
+
+现代浏览器支持navigator上的registerProtocolHandler()方法。这个方法可用把一个网站注册为处理某种
+特定类型信息应用程序。
+
+navigator.registerProtocolHandler('mailto', 'http://www.baidu.com', 'some mail client')
+
+
+12.4 screen对象
+
+12.5 history对象
+
+12.5.1 导航
+
+//后退一页
+history.go(-1)  
+
+//前进两页
+history.go(2)
+
+//后退一页
+history.back()
+
+//前进一页
+history.forward()
+
+12.5.2 历史状态管理
+
+hashchange
+
+hashchange会在页面URL的散列变化时被触发，开发者可用在此时执行某些操作。而状态管理API则可用让
+开发者改变浏览器URL而不会加载新页面。为此，可用使用history.pushState()方法。
+
+history.pushState(xx,xx,xx)
+3个参数
+·一个state对象
+·一个新状态的标题
+·一个（可选的）相对URL
+
+let stateObject = { foo: 'bar' }
+history.pushState(stateObject, 'mytitle', 'baz.html')
+
+pushState()方法执行后，状态信息就会被推到历史记录中，浏览器地址栏也会改变以反映新的相对URL。
+除了这些变化之外，即使location.href返回的是地址栏中的内容，浏览器页不会像服务器发送请求
+第一个参数应该包含正确初始化页面状态必须的信息。为防止滥用，这个状态的对象大小是有限制的。通常在
+500KB~1MB以内
+
+popstate事件，popstate事件的事件对象有一个state属性，其中包含通过pushState()第一个参数传入的state对象：
+
+window.addEventListener('popstate', (event) => {
+  let state = event.state;
+  console.log(state)
+  if(state){
+    processState(state)
+  } 
+})
+
+history.replaceState({newFoo: 'newBar'}, 'new title')
