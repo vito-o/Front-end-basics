@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片-描点</title>
+  <style>
+    #canvas{
+      border:1px solid;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    (function(){
+      let canvas = document.getElementById('canvas');
+      let ctx = canvas.getContext('2d');
+
+      let img = new Image();
+      img.src = './dragon.jpg'
+      img.onload = function(){
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        ctx.drawImage(img, 0, 0)
+
+        getPoint(canvas, ctx, img);
+      }
+
+      //获取并裁剪画布上的点阵信息
+      function getPoint(canvas, ctx, img){
+        let imgData = ctx.getImageData(0, 0, img.width, img.height).data;
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(0, 0, img.width, img.height);
+
+        var gap = 6;
+
+        for(let h = 0; h < img.height; h+=gap){
+          for(let w = 0; w < img.width; w+=gap){
+            var position = (img.width * h + w) * 4;
+            var r = imgData[position];
+            var g = imgData[position+1]
+            var b = imgData[position+2]
+            if(r + g + b < 150){
+              ctx.fillStyle = '#000';
+              ctx.fillRect(w, h, 4, 4)
+            }
+          }
+        }
+
+      }
+    })();
+  </script>
+</body>
+</html>

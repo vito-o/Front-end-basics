@@ -30,3 +30,18 @@ function isSortable(object){
 
 13.1.2 基于能力监测进行浏览器分析。
 
+1.监测特性
+
+按照能力将浏览器归类，如果你的应用程序需要使用特定的浏览器能力，那么最好集中监测所有能力，而不是
+等到用的时候再重复监测
+
+let hasNSPlugins = !!(navigator.plugins && navigator.plugins.length);
+
+2.监测浏览器
+
+可以根据对浏览器特性的检测并与已知特性对比，确认使用的是什么浏览器，
+
+13.2 用户代理检测
+
+用户代理检测通过浏览器的用户代理字符串确定使用什么浏览器。
+navigator.userAgent
