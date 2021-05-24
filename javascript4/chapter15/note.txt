@@ -1,0 +1,118 @@
+第15章 DOM扩展
+
+·理解Selectors API
+·使用HTML5 DOM扩展
+
+15.1 Selectors API
+
+Selectors API 是W3C推荐标准，规定了浏览器原生支持的CSS查询API。
+
+Selectors API Level 1的核心是两个方法：querySelector()和querySelectorAll()。
+
+Selectors API Level 2规范在Element类型上新增了更多方法，比如matches()、find()和findAll()
+
+目前还没有浏览器实现或宣称实现find()和findAll()
+
+15.1.1 querySelecctor()
+
+querySelector()方法接收css选择符参数，返回匹配该模式的第一个后代元素，如果没有匹配项则返回Null.
+
+let body = document.querySelector('body')
+
+let myDiv = document.querySelector('#myDiv')
+
+let selected = document.querySelector('.selected')
+
+let img = document.boy.querySelector('img.button')
+
+在Document上使用querySelector()方法时，会从文档元素开始搜索；
+在Element上使用querySelector()方法时，则只会从当前元素的后代中查询。
+
+15.1.2 querySelectorAll()
+
+返回所有匹配的节点，而不是一个。
+querySelectorAll()返回的NodeList实例一个属性和方法都不缺，但它是一个静态的“快照”，而非“实时”的查询。
+这样的底层实现避免了使用NodeList对象可能造成的性能问题。
+
+与querySelector()一样，querySelectorAll()也可以在Document、DocumentFragment和Element类型上
+使用。
+
+15.1.3 matches()
+
+matches()方法接收一个css选择符参数，如果元素匹配则该选择符返回true，否则返回false。
+if(document.body.matches('body.page1')){
+  //true
+}
+
+15.2 元素遍历
+
+15.3 HTML5
+
+HTML5代表着与以前的HTML截然不同的方向。在所有以前的HTML规范中，从未出现过描述js接口的情形，HTML就是
+一个纯标记语言。js绑定的事，一概交给DOM规范去定义。
+
+然而，html5给范却包含了与标记相关的大量js API。其中由的API与DOM重合，定义了浏览器应该提供的DOM扩展
+
+
+15.3.1 css类扩展
+
+1.getElementsByClassName()  
+
+接收一个参数，即包含一个或多个类名的字符串，返回类名中包含相应类的
+元素的NodeList。如果提供了多个类名，则顺序无关紧要
+
+//取得所有类名中包含username和current元素
+//两个类名的顺序无关紧要
+let xxx = document.getElementsByClassName('username current')
+
+
+2.classList
+
+要操作类名，可以通过className属性实现添加、删除和替换
+
+html5通过给所有元素增加classList属性为这些操作提供了更简单也更安全的实现方法。
+
+add()
+contains()  给定的值是否存在
+remove()
+toggle()    如果存在就删除，如果不存在就添加
+
+div.classList.remove('user')
+
+15.3.2 焦点管理
+
+document.activeElement
+
+15.3.3 HTMLDocument扩展
+
+1.readyState属性
+
+document.readyState 属性有两个可能的值：
+·loading，标识文档正在加载
+·complete，标识文档加载完成
+
+2.compatMode属性    浏览器渲染模式
+
+if(document.compatMode == 'CSS1Compat'){
+  console.log('standards mode')
+}else{
+  console.log('Quirks mode')
+}
+
+3.head属性
+
+let head = document.head;
+
+15.3.4 字符集属性
+
+document.characterSet
+
+//标识文档使用的字符集，也可以用来指定新字符集
+
+15.3.5 自定义数据属性
+
+html5匀速给元素指定非标准的属性，但要使用前缀data-以便告诉浏览器，这些属性即不包含与渲染有关的信息
+也不包含元素的语言信息。处理前缀，自定义属性对命名时没有限制的。
+
+15.3.6 插入标记
+

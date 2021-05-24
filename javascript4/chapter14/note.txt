@@ -282,3 +282,103 @@ let dom = document.getElementById('app')
 let items = dom.getElementsByTagName('xxx')
 
 14.1.4 Text类型
+
+Text节点由Text类型表示，包括按字面解释的纯文本，也可能包含转义后的HTML字符，但不含HTML代码。
+
+nodeType等于3
+
+操作方法
+
+appendData(text)
+deleteData(offset, count)
+insertData(offset, text)
+replaceData(offset, count, text)
+splitText(offset)
+substringData(offset, count)
+
+输入值
+dom.nodeValue = 'xxx'
+
+1.创建文本节点
+document.createTextNode()可以用来创建新文本节点，它接收一个参数，即要插入节点的文本。
+
+
+14.1.5 Comment类型
+
+DOM中的注释通过Comment类型表示。
+nodeType等于8
+
+14.1.6 CDATASection类型
+
+CDATASection类型标识XML中特有的CDATA去看。CDATASection类型继承Text类型。
+
+nodeType 4
+
+CDATA区块只在XML文档中有效，因此某些浏览器比较陈旧的版本会错误地将CDATA区块解析为Comment或Element
+
+<div>
+  <![CDATA[this is some content]]>
+</div>
+
+14.1.7 DocumentType类型
+
+DocumentType类型的节点包含文档的文档类型(doctype)信息
+
+nodetype 10
+
+document.doctype
+
+DOM Level 1 定义了 DocumentType对象的3个属性
+name        文档类型的名称 
+entities    文档类型描述的实体的NamedNodeMap
+notations   文档类型买搜狐的标识法的NamedNodeMap。
+
+14.1.8 DocumentFragment类型
+
+DocumentFragment类型时唯一一个没有对应标识的类型。DOM将文档片段定义为“轻量级”文档，能够包含和
+操作节点，却没有完整文档那样额外的消耗。
+
+nodeType 11
+
+14.1.9 Attr类型
+
+元素数据再DOM中通过Attr类型表示。
+
+14.2 DOM编程
+
+
+14.2.1 动态脚本
+
+<script src='foo.js'></script>
+
+let script = document.createElement('script')
+script.src = 'foo.js'
+document.body.appendChild(script)
+
+14.2.2 动态样式
+
+<link res="stylesheet" type="text/css" href="styles.css">
+
+let link = do.createElement('link')
+link.rel = 'stylesheet'
+link.type = 'text/css'
+link.href = 'styles.css'
+
+let head = document.getElementsByTagName('head')[0]
+head.appendChild(link)
+
+14.2.4 使用NodeList
+
+14.3 MutationObserver接口
+
+可以再DOM被修改时异步执行回调，使用MutationObserver可以观察整个文档、DOM树的一部分，或某个元素。
+此外还可以观察元素属性、子节点、文本或者前三者任意组合的变化。
+
+14.3.1 基本用法
+
+let observer = new MutationObserver(() => console.log('<body> attributes changed'))
+
+observer.observe(document.body, { attributes: true })
+
+document.body.className = 'foo'
+console.log('changed body class') 
