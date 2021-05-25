@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    div{
+      height: 500px;
+      border:1px solid ;
+      margin: 10px ;
+    }
+  </style>
+</head>
+<body>
+  <div id="dom1" test="123" data-name="myname">dom1</div>
+  <div id="dom2" test="123" data-name="myname">dom2</div>
+  <div id="dom3" test="123" data-name="myname">dom3</div>
+  <div id="dom4" test="123" data-name="myname">dom4</div>
+  <script>
+    let dom = document.getElementById('dom3');
+    /* console.log(dom)
+    console.log(dom.dataset)
+
+    dom.dataset.name = 'asldkfjalsdkfj'
+    console.log(dom.outerHTML)
+    console.log(dom.outerHTML = '<p>This is a paragraph.</p>') */
+
+    // dom.insertAdjacentHTML('beforebegin', '<p>hellow world!</p>')
+    // dom.insertAdjacentText('beforebegin', 'hello world')
+
+    // dom.insertAdjacentHTML('afterbegin', '<p>hellow world!</p>')
+    // dom.insertAdjacentText('afterbegin', 'hello world')
+
+    // dom.insertAdjacentHTML('beforeend', '<p>hellow world!</p>')
+    // dom.insertAdjacentText('beforeend', 'hello world')
+
+    // dom.insertAdjacentHTML('afterend', '<p>hellow world!</p>')
+    // dom.insertAdjacentText('afterend', 'hello world')
+    setTimeout(() => {
+      dom.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center' 
+      });
+
+    }, 1000)
+  </script>
+</body>
+</html>

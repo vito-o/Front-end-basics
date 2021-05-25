@@ -116,3 +116,111 @@ html5匀速给元素指定非标准的属性，但要使用前缀data-以便告�
 
 15.3.6 插入标记
 
+1.innerHTML属性
+
+注意：设置innerHTML会导致浏览器将HTML字符串解析为相应的DOM树。这意味着设置innerHTML属性后马上
+再读出来会得到不同的字符串。这是因为返回的字符串是将原始字符串对应的DOM子树序列化之后的结果
+
+2.旧IE中的innerHTML
+
+在所有现代浏览器中，通过innerHTML插入的<script>标签是不会执行的。而在IE8及之前的版本中，只要这样
+插入的<script>元素指定了defer属性，且<script>之前是“受控元素”(scoped element)，那就是可以执行的。
+<script>元素与<style>或注释一样，都是“非受控元素”(NoScope element)， 也就是在页面上看不到他们。
+IE会把innerHTML中从非受控元素开始的内容都删掉，也就是说下面的例子是行不通的：
+div.innerHTML = "<script defer>console.log('hi')</script>"
+
+3.outerHTML属性
+
+读取outerHTML属性时，会返回调用它的元素（及所有后代元素）的HTML字符串。在写入outerHTML属性时，
+调用它的元素会被传入的HTML字符串经解释之后生成的DOM子树取代。
+
+console.log(div.outerHTML = '<p>This is a paragraph.</p>')
+
+4.insertAdjacentHTML()与insertAdjacentText()
+
+关于插入标签的最后两个新增方法是insertAdjacentHTML()和insertAdjacentText()。这两个方法最早来源于
+IE，他们都接收两个参数：要插入标记的位置和要插入的HTML或文本。
+
+第一个参数
+  'beforebegin'     插入当前元素前面，作为前一个同胞节点
+  'afterbegin'      插入当前元素内部，作为新的子节点或放在第一个子节点前面
+  'beforeend'       插入当前元素内部，作为新的子节点或放在最后一个子节点后面
+  'afterend'        插入当前元素后面，作为下一个同胞节点。
+
+第二个参数会作为HTML字符串解析
+
+
+//作为前一个同胞节点插入
+element.insertAdjacentHTML('beforebegin', '<p>hellow world!</p>')
+element.insertAdjacentText('beforebegin', 'hello world')
+
+//作为第一个子节点插入
+element.insertAdjacentHTML('afterbegin', '<p>hellow world!</p>')
+element.insertAdjacentText('afterbegin', 'hello world')
+
+//作为最后一个子节点插入
+element.insertAdjacentHTML('beforeend', '<p>hellow world!</p>')
+element.insertAdjacentText('beforeend', 'hello world')
+
+//作为下一个同胞节点插入
+element.insertAdjacentHTML('afterend', '<p>hellow world!</p>')
+element.insertAdjacentText('afterend', 'hello world')
+
+5.内存与性能问题
+
+使用本节介绍的方法替换子节点可能在浏览器（特别是IE）中导致内存问题。比如，如果被移除的子树元素中
+之前有关联的事件处理程序或其他js对象（作为元素的属性），那他们之间的绑定关系会滞留在内存中。如果
+这种替换操作频繁发送，页面的内存占用就会持续攀升。在使用InnerHTML,outerHTML和insertAdjacentHTML
+之前，最好手动删除要被替换元素上关联的事件处理程序和js对象。
+
+6.跨站点脚本
+
+尽管innerHTML不会执行创建的<script>标签，但仍然向恶意用户暴露了很大的攻击面，因为通过它可以毫不
+费力地创建元素并执行onclick之类的属性。
+
+如果页面中要使用用户提供的信息，则不建议使用innerHTML。与使用InnerHTML获取的方便相比，防止XSS攻击
+更让人头疼。此时一定要隔离要插入的数据，在插入页面前面必须毫不犹豫地使用相关的库对他们进行转义。
+
+15.3.7 scrollIntoView()
+
+scrollIntoView()方法存在于所有HTML元素上，可以滚动浏览器唱K或容器元素以便包含元素进入视口。
+
+方法参数如下：
+
+alignToTop 是个布尔值
+  true  窗口滚动后元素的顶部于视口顶部对齐
+  false 窗口滚动后元素的底部于视口底部对齐
+
+scrollIntoViewOptions 是一个选项对象。
+  behavior  定义过渡动画，可取的值为'smooth', 'auto'
+  block     定义垂直对齐方式，可取得值为'start', 'center', 'end', 'nearest'
+  inline    定义水平对象，可取得值为start, center, end, nearest
+
+不传参数等于alignToTop为true
+
+dom.scrollIntoView({
+  behavior: 'smooth',
+  block: 'center' 
+});
+
+15.4 专有扩展
+
+不同浏览器为弥补功能确实而为DOM添加专有扩展
+
+15.4.1 children 属性
+
+dom.children 
+children属性是一个HTMLCollection，只包含元素的Element类型的子元素，即不包含空白节点
+
+15.4.2 contains()方法
+
+Dom编程中经常需要确定一个元素是不是另一个元素的后代，iE首先引入了contains()方法。
+
+compareDocumentPosition也可以判断，
+
+15.4.3 插入标记
+
+没有加入标准
+innerText和outerText
+
+15.4.4 滚动
