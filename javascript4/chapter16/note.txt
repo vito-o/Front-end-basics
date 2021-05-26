@@ -1,1 +1,127 @@
 第16章 DOM2和DOM3
+
+·DOM2到DOM3的变化
+·操作样式的DOM API
+·DOM遍历于范围
+
+DOM1(DOM Level 1) 主要定义了HTML和XML文档的底层结构。
+DOM2(DOM Level 2) 和 DOM3(DOM Level 3)在这些结构之上加入了更多交互能力，提供了更高级的XML特性。
+
+实际上，DOM2和DOM3时按照模块化的思路来指定标准的，每个模块之间有一定关联，但分别针对某个DOM子集。
+
+·DOM Core：在DOM1核心部分的基础上，为节点增加方法和属性。
+·DOM Views：定义基于样式信息的不同视图
+·DOM Events：定义通过事件实现DOM文档交互
+·DOM Style：定义以编程方式访问和修改CSS样式的接口
+·DOM Traversal and Range：新增遍历DOM文档及选择文档内容的接口
+·DOM HTML：在DOM1 HTML部分的基础上，增加属性、方法和新接口
+·DOM Mutation Observers：定义基于DOM变化触发回调的接口。这个模块时DOM4级模块，用于取代Mutation Event
+
+16.1 DOM的演进
+
+DOM2和DOM3 core模块的目标时扩展DOM API，满足xml的所有需求并提供更好的错误处理和特性检测。很大程度
+上，这意味着支持XML命名空间的概念。DOM2 Core没有新增任何类型，仅仅在DOM1 Core基础上增加了一些方法
+和属性。DOM3 Core则除了增强原有类型，也新增了一些新类型。
+
+16.1.1 XML命名空间
+
+xml命名空间可以实现在一个格式规范的文档中混用不同的xml语言，而不必单校元素命名冲突。严格来讲，xml
+命名空间在XHTML中才支持，html并不支持。因此本节示例使用XHTML.
+
+命名空间是使用xmlns指定的。XHTML的命名空间是"http://www.w3.org/1999/xhtml"。应该包含在任何格式
+规范的XHTML页面的<html>元素中。如下：
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head></head>
+  <body></body>
+</html>
+
+对这个例子来说，所有元素都默认属于XHTML命名空间。可以使用xmlns给命名空间创建一个前缀，格式为
+“xmlns：前缀”，如下所示：
+
+<xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <xhtml:head></xhtml:head>
+  <xhtml:body></xhtml:body>
+</xhtml:html>
+
+这里为XHTML命名空间定义了一个前缀xhtml，同时所有XHTML元素都必须加上这个前缀。为了避免混淆，属性
+也可以加上命名空间前缀。
+
+<xhtml:html xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <xhtml:head></xhtml:head>
+  <xhtml:body xhtml:class="home">
+    hello
+  </xhtml:body>
+</xhtml:html>
+
+这里的class属性被加上了xhtml前缀。如果文档中只使用一种XML语言，那么命名空间前缀其实是多余的，
+只有一个文档混合使用多种xml语言时才有必要。比如下面这个文档就使用了XHTML和svg两种语言
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Example XHTML page</title>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100" style="width:100%;height:100%">
+      <rect x="0" y="0" width="100" height="100" style="fill:red"/>
+    </svg>
+  </body>
+</html>
+
+在这个例子中，通过给<svg>元素设置自己的命名空间，将其标识为当前文档的外来元素。这样一来，<svg>
+元素及其属性，包括它的后代都会被认为属于"http://www.w3.org/2000/svg"命名空间。虽然这个文档从
+技术角度讲是XHTML文档，但由于使用了命名空间，其中包含的SVG代码也是有效的。
+
+对于这样的文档，如果调用某个方法与节点交互，就会出现一个问题。比如，创建了一个新元素，那这个元素
+属于哪个命名空间？查询特定标签名时，结果中应该包含哪个命名空间下的元素？DOM2 Core为了解决这些
+问题，给大部分DOM1方法提供了特定于命名空间的版本。
+
+1.Node的变化
+在DOM2中，Node类型包含以下特定于命名空间的属性：
+·localName，不包含命名空间前缀的节点名
+·namespaceURI，节点的命名控件URL，如果未指定则为null
+·prefix，命名空间前缀，如果未指定则为null。
+
+在节点使用命名空间前缀的情况下，nodeName等于prefix + ':' + localName。
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Example XHTML page</title>
+  </head>
+  <body>
+    <s:svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+       viewBox="0 0 100 100" style="width:100%;height:100%">
+      <s:rect x="0" y="0" width="100" height="100" style="fill:red"/>
+    </s:svg>
+  </body>
+</html>
+
+DOM3进一步增加了如下与命名空间相关的方法：
+·isDefaultNamespace(namespaceURI)，返回布尔值，标识namespaceURI是否未节点的默认命名空间；
+·lookupNamespaceURI(prefix)，返回给定prefix的命名空间URI
+·lookupPrefix(namespaceURI)，返回给定namespaceURI的前缀。
+
+2.Document的变化
+DOM2在Document类型上新增了如下命名空间特定的方法：
+
+·createElementNS(namespaceURI, tagName)，以给定的标签名tagName创建指定命名空间namespaceURI
+的一个新元素；
+·createAttributeNS(namespaceURI, attributeName)，以给定的属性名attributeName创建指定命名空间
+namespaceURI的一个新属性；
+·getElementsByTagNameNS(namespaceURI, tagName)，返回指定命名空间namespaceURI中所有标签名为
+tagName的元素的NodeList。
+
+使用这些方法都需要传入相应的命名空间URI（不是命名空间前缀），如下：
+
+//创建一个新svg元素
+let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+
+//创建一个任意命名空间的新属性
+let att = document.createAttributeNS('http://www.somewhere.com', 'random')
+
+//获取所有XHTML元素
+let elems = document.getElementsByTagNameNS('http://www.w3.org/1999/xhtml', '*');
+
+这些命名空间特定的方法只在文档中包含两个或两个以上命名空间时才有用。
+
+3.Element 的变化
