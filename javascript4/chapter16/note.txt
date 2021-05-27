@@ -125,3 +125,118 @@ let elems = document.getElementsByTagNameNS('http://www.w3.org/1999/xhtml', '*')
 这些命名空间特定的方法只在文档中包含两个或两个以上命名空间时才有用。
 
 3.Element 的变化
+
+DOM2 Core对Element类型的更新主要集中在对属性的操作上。
+
+·getAttrobiteNS(namespaceURI, localName), 
+·getAttributeNodeNS(namespaceURI, localName)
+·getElementsByTagNameNS(namespaceURI, tagName)
+·hasAttributeNS(namespaceURI, localName)
+·removeAttributeNS(namespaceURI, localName)
+·setAttributeNS(namespaceURI, qualifiedName, value)
+
+4.NamedNodeMap的变化
+
+NamedNodeMap主要标识属性，所以这些方法大都适用于属性：
+
+`getNamedItemNS(namespaceURI, localName)
+`removeNamedItemNS(namespaceURI, localName)
+`setNamedItemNS(node)
+
+16.1.2 其他变化
+
+DOM API的完整性与可靠性
+
+1.DocumentType的变化
+
+DocumentType新增了3个属性：publicId、systemId和internalSubset。
+
+publicId、systemId属性标识文档类型声明中有效但无法使用DOM1 API访问的数据。
+
+document.doctype.publicId
+"-// W3C// DTD HTML 4.01// EN"
+document.doctype.systemId
+"http://www.w3.org/TR/html4/strict.dtd"
+
+internalSubset用于访问文档类型声明中可能包含的额外定义
+
+2.Document的变化
+
+importNode()方法跟cloneNode()方法类似，同样接收两个参数：要复制的节点和表示是否同时复制子树的
+布尔值，返回结果时适合在当前文档中使用的新节点。
+let newNode = document.importNode(oldNode, true)
+document.body.appendChild(newNode)
+
+3 Node的变化
+
+DOM3 新增了两个用于比较节点的方法：isSameNode()和isEqualNode()。
+
+4.内嵌窗格的变化
+
+DOM2 HTML 给 HTMLIFrameElement（即<iframe>，内嵌窗格）类型新增了一个属性，叫contentDocument。
+这个属性包含代表子内嵌窗格中内容的document对象的指针。
+
+let iframe = document.getElementById('myIframe')
+let iframeDoc = iframe.contentDocument;
+
+contentDocument 和 contentWindow属性。
+
+注意：跨源访问子内嵌窗格的document对象会受到安全限制。如果内嵌窗格中加载了不同域名（或子域名）的
+页面，或者该页面使用了不同协议，则访问其document对象会抛出错误。
+
+16.2 样式
+
+HTML中的样式有3中定义方式：外部样式、文档样式和元素特定样式
+
+DOM2 style为这3中应用样式的机制都提供了API
+
+16.2.1 存取元素样式
+
+let myDiv = document.getElementById('myDiv')
+
+myDiv.style.backgroundColor = 'red'
+myDiv.style.width = '100px'
+myDiv.style.height = '200px'
+myDiv.style.border = '1px solid black'
+
+console.log(myDiv.style.backgroundColor)
+
+1.DOM样式属性和方法
+
+·cssText, 包含style属性中的css代码
+·length, 应用给元素的css属性数量
+·parentRule，表示css信息的CSSRule对象
+·getPropertyPriority(propertyName),如果css属性propertyName使用了!important则返回“important”
+  否则返回空字符串。
+·getPropertyValue(propertyName),返回属性propertyName的字符串值
+·item(index),返回索引为index的css属性名
+·removeProperty(propertyName)，从样式中删除css属性propertyName
+·serProperty(propertyName, value, priority)，这只css属性propertyName的值为value,priority是
+  important或空字符串
+
+myDiv.style.cssText
+//background-color: red; width: 100px; height: 200px; border: 1px solid black;
+
+cssText 一次性修改元素多个样式，原来的样式会丢失。
+
+myDiv.style.length
+//20
+
+for(let i = 0, len = myDiv.style.length; i < len; i++){
+  console.log(myDiv.style[i]) //或者用myDiv.style.item(i)
+}
+
+//background-color
+//width
+//height
+//border-top-width
+//border-right-width
+//...
+
+myDiv.style.getPropertyValue('background-color')
+//"red"
+
+myDiv.style.removeProperty('border')
+//''
+
+2.计算样式

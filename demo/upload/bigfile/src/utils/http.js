@@ -1,11 +1,12 @@
 
 
-function request({
+export function request({
   url,
   method = 'post',
   data,
-  headers = {},
-  requestList
+  headers = {
+  },
+  //requestList
 }) {
   return new Promise(resolve => {
     const xhr = new XMLHttpRequest()
@@ -15,10 +16,9 @@ function request({
     })
     xhr.send(data)
     xhr.onload = e => {
-      console.log(e)
-      resolve(e.target,Response)
+      resolve({
+        data: e.target.response
+      })
     }
   })
 }
-
-export const request;
