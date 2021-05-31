@@ -312,3 +312,35 @@ document.styleSheets表示文档中可用的样式表集合。
 left, top, right, bottom, height, width。这些属性给出了元素在页面中相对于视口的位置。
 
 16.3 遍历
+
+DOM2 Traversal and Range 模块定义了两个类型用于辅助顺序遍历DOM结构。
+·NodeIterator和TreeWalker 从某个起点开始执行对DOM结构的深度优先遍历
+
+
+16.3.1 NodeIterator
+
+通过document.createNodeIterator()方法创建其示例。这个方法接收以下4个参数：
+·root，作为遍历根节点的节点
+·whatToShow，数值代码，表示应该访问哪些节点
+·filter，NodeFilter对象或函数，表示是否接收或跳过特定节点。
+·entityReferenceExpansion，布尔值，表示是否扩展实体引用。这个参数在hTML文档中没有效果，因为实体
+引用永远不扩展。
+
+16.3.2 TreeWalker
+
+TreeWalker是NodeIterator的高级版。
+
+16.4 范围
+用于在文档中选择内容，而不用考虑节点之间的界限（选择在后台发生，用户是看不到的）
+
+16.4.1 DOM范围
+
+let range = document.createRange();
+
+16.4.2 简单选择
+
+let range1 = document.createRange(),
+    range2 = document.createRange(),
+    p1 = document.getElementById('p1');
+  console.log(range1.selectNode(p1))
+  console.log(range2.selectNodeContents(p1))
