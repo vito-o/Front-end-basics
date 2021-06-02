@@ -103,3 +103,58 @@ btn.removeEventListener('click', function(){
 
 大多数情况下，事件处理程序会被添加到事件流的冒泡阶段，主要原因时跨浏览器兼容性好。把事件处理程序
 注册到捕获阶段通常用于在事件到达指定不表之前拦截事件。如果不需要拦截，则不要使用事件捕获。
+
+17.2.4 IE事件处理程序
+
+attachEvent和detachEvent()
+
+//因为IE8及更早版本只支持事件冒泡，所以使用attachEvent()添加的事件处理程序会添加到冒泡阶段。
+
+let btn = document.getElementById('myBtn')
+btn.attachEvent('onclick', function(){
+  console.log('clicked')
+  console.log(this === window) //true
+})
+
+17.2.5 跨浏览器事件处理程序
+
+17.3 事件对象
+
+event
+
+17.3.1 DOM事件对象
+
+let btn = document.getElementById('myBtn')
+btn.onclick = function(event){
+  console.log(event.type) //click
+}
+
+preventDefault方法用于阻止特定事件的默认动作。比如，链接的默认行为就是在被单击时导航到href属性
+指定的URL。如果想阻止这个导航行为，可以在onclick事件处理程序中取消。
+let btn = document.getElementById('link')
+btn.onclick = function(event){
+  event.preventDefault();
+}
+其事件对象的cancelable属性都会设置为true
+
+
+stopPropagation()方法用于立即阻止事件流在DOM结构中传播，取消后续的事件捕获或事件冒泡。
+
+let btn = document.getElementById('p1')
+btn.onclick = function(event){
+  console.log('click')
+  event.stopPropagation();
+}
+
+document.body.onclick = function(event){
+  console.log('body click')
+}
+
+eventPhase  属性可用于确定事件流当前所处阶段。
+eventPhase:1  捕获阶段被调用
+eventPhase:2  目标上被调用
+eventPhase:3  冒泡阶段被调用
+
+注意：event对象只在事件处理程序执行期间存在，一旦执行完毕，就会被销毁。
+
+17.3.2 IE事件对象
