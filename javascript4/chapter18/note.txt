@@ -1,0 +1,10 @@
+第18章 动画与Canvas图形
+
+本章内容
+·使用requestAnimationFrame
+·使用<canvas>元素
+·绘制简单2D图形
+·使用W二百GL绘制3D图形
+
+
+18.1 使用requestAnimationFrame
