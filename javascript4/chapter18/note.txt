@@ -8,3 +8,405 @@
 
 
 18.1 使用requestAnimationFrame
+
+通知浏览器某些js代码要执行动画，
+
+function updateProgress(){
+  console.log(new Date().getTime())
+
+  requestAnimationFrame(updateProgress);
+}
+
+requestAnimationFrame(updateProgress);
+
+18.1.4 cancelAnimationFrame
+
+let m = () => {
+  console.log(new Date().getTime())
+  requestAnimationFrame(m);
+};
+
+let id = requestAnimationFrame(m)
+console.log(id)
+
+setTimeout(() => {
+  cancelAnimationFrame(id)
+}, 1000)
+
+通过 requestAnimationFrame 节流
+
+let enabled = true;
+
+function expensiveOperation(){
+  console.log('Invoked at ', Date.now())
+}
+
+window.addEventListener('scroll', () => {
+  if(enabled){
+    enabled = false;
+    window.requestAnimationFrame(expensiveOperation)
+    window.setTimeout(() => enabled = true, 50)
+  }
+})
+
+18.2 基本的画布功能
+
+//要在画布上绘制图形，首先要取得绘图上下文。
+//getContext可以取得绘图上下文的引用
+//对平面图形，需要给这个方法传入参数'2d',表示要获取2D上下文对象
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+}
+
+//可以使用toDataURL()方法导出<canvas>元素上的图像。这个方法接收一个参数：
+要生成图像的MIME类型，如导出一张PNG格式的图片如下：
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let imgURI = drawing.toDataURL('image/png')
+
+  let img = document.createElement('img')
+  img.src = imgURI;
+  document.body.appendChild(img)
+}
+
+18.3 2D绘图上下文
+
+坐标原点在左上角，所有坐标值都相对于该点进行计算
+
+
+18.3.1 填充和描边
+
+fillStyle和strokeStyle
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d');
+
+  context.strokeStyle = 'red'
+  context.fillStyle = '#0000ff'
+}
+
+18.3.2 绘制矩形
+
+矩形是唯一一个可以直接在2d绘图上下文中绘制的形状。
+于绘制矩形相关的方法有3个
+fillRect(), strokeRect()和 clearRect()
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d');
+
+  context.fillStyle = '#ff0000'
+  context.fillRect(10, 10, 50, 50)
+
+  context.fillStyle = 'rgba(0, 0, 255, 0.5)'
+  context.fillRect(30, 30, 50, 50)
+}
+
+strokeRect()
+
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d');
+
+  context.strokeStyle = '#ff0000'
+  context.strokeRect(10, 10, 50, 50)
+
+  context.strokeStyle = 'rgba(0, 0, 255, 0.5)'
+  context.strokeRect(30, 30, 50, 50)
+
+}
+
+clearRect() 擦除画布中某个区域。
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d');
+
+  context.fillStyle = '#ff0000'
+  context.fillRect(10, 10, 50, 50)
+
+  context.fillStyle = 'rgba(0, 0, 255, 0.5)'
+  context.fillRect(30, 30, 50, 50)
+
+  context.clearRect(40, 40, 10, 10)
+}
+
+18.3.3 绘制路径
+
+beginPath() 表示要开始绘制新路径
+
+arc(x, y, radius, startAngle, endAngle, counterclockwise)
+arcTo(x1, y1, x2, y2, radius)
+bezierCurveTo(c1x, c1y, c2x, c2y, x, y)
+lineTo(x, y)
+moveTo(x, y)
+quadraticCurveTo(cx, cy, x, y)
+rect(x, y, width, height)
+
+closePath() 绘制一条返回起点的线。
+
+
+例：
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+
+  //创建路径
+  context.beginPath();
+
+  context.arc(100, 100, 99, 0, 2 * Math.PI, false);
+
+  context.moveTo(194, 100)
+  context.arc(100, 100, 94, 0, 2 * Math.PI, false)
+
+  context.moveTo(100, 100);
+  context.lineTo(100, 15)
+
+  context.moveTo(100, 100)
+  context.lineTo(35, 100)
+
+  context.stroke()
+
+  if (context.isPointInPath(100, 100)) { 
+  alert("Point (100, 100) is in the path."); 
+  }
+}
+
+18.3.4 绘制文本
+
+fillText() 和 strokeText()
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+
+  context.font = 'blod 14px Arial'
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText('12', 100, 20)
+}
+
+18.3.5 变换
+
+rotate(angle) 围绕原点吧图像旋转angle弧度
+scale(scaleX, scaleY)
+translate(x, y)
+transform(m1_1, m1_2, m2_1, m2_2, dx, dy)
+setTransform(m1_1, m1_2, m2_1, m2_2, dx, dy)
+
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+
+  //创建路径
+  context.beginPath();
+
+  context.arc(100, 100, 99, 0, 2 * Math.PI, false);
+
+  context.moveTo(194, 100)
+  context.arc(100, 100, 94, 0, 2 * Math.PI, false)
+
+  context.translate(100, 100)
+
+  context.rotate(30)
+
+  context.moveTo(0, 0);
+  context.lineTo(85, -35)
+
+  context.moveTo(0, 0)
+  context.lineTo(-65, 0)
+
+  context.stroke()
+  
+}
+
+
+save() 所有这一时刻的设置会被放到一个暂存栈中。
+restore() 从暂存栈中取出并恢复之前保存的设置
+save() 方法只保存应用到绘图上下文的设置和变化，不保存绘图上下文的内容。
+
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+
+  context.fillStyle = '#ff0000'
+  context.save()
+
+  context.fillStyle = '#00ff00'
+  context.translate(100, 100)
+  context.save()
+
+  context.fillStyle = '#0000ff'
+  context.fillRect(0, 0, 100, 200)
+
+  context.restore()
+  context.fillRect(10, 10, 100, 200)
+
+  context.restore()
+  context.fillRect(0, 0, 100, 200)
+
+}
+
+18.3.6 绘制图像
+
+let image = document.images[0]
+context.drawImage(image, 10, 10)
+
+18.3.7 阴影
+
+shadowColor
+shadowOffsetX
+shadowOffsetY
+shadowBlur
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+
+  context.shadowOffsetX = 5;
+  context.shadowOffsetY = 5;
+  context.shadowBlur = 4;
+  context.shadowColor = 'rgba(0, 0, 0, .5)'
+
+  context.fillStyle = 'rgba(0, 0, 255, 1)'
+  context.fillRect(30, 30, 50, 50)
+}
+
+18.3.8 渐变
+
+CanvasGradient 实例
+
+线性渐变 createLinearGradient()
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+
+  let gradient = context.createLinearGradient(30, 30, 70, 70)
+  gradient.addColorStop(0, 'white')
+  gradient.addColorStop(1, 'black')
+
+  context.fillStyle = '#ff0000'
+  context.fillRect(10, 10, 50, 50)
+
+  context.fillStyle = gradient;
+  context.fillRect(50, 50, 50, 50)
+}
+
+径向渐变 createRadialGradient()
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d')
+
+  let gradient = context.createRadialGradient(55, 55, 10, 55, 55, 30)
+
+  gradient.addColorStop(0, 'white')
+  gradient.addColorStop(1, 'black')
+
+  context.fillStyle = '#ff0000'
+  context.fillRect(10, 10, 50, 50)
+
+  context.fillStyle = gradient;
+  context.fillRect(30, 30, 50, 50)
+
+}
+
+18.3.9 图案
+
+createPattern() 
+
+let image = document.images[0]
+    pattern = context.createPattern(image, 'repeat')
+context.fillStyle = pattern;
+context.fillRect(10, 10, 150, 150)
+
+18.3.10 图像数据
+
+getImageData()
+
+let image = context.getImageData(10, 5, 50, 50);
+
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d'),
+      image = document.images[0],
+      imageData, data,
+      i, len, average,
+      red, green, blue, alpha;
+
+  context.drawImage(image, 0, 0)
+
+  imageData = context.getImageData(0, 0, image.width, image.height);
+  data = imageData.data;
+  for(i = 0, len = data.length; i < len; i+=4){
+    red = data[i];
+    green = data[i+1];
+    blue = data[i+2];
+    alpha = data[i+3];
+
+    average = Math.floor((red + green + blue) / 3)
+
+    data[i] = data[i+1] = data[i+2] = average;
+  }
+
+  imageData.data = data;
+  context.putImageData(imageData, 0, 0);
+}
+
+18.3.11 合成
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d');
+
+  context.fillStyle = '#ff0000'
+  context.fillRect(10, 10, 50, 50)
+
+  context.globalAlpha = 0.5
+
+  context.fillStyle = 'rgba(0, 0, 255, 1)'
+  context.fillRect(30, 30, 50, 50)
+
+}
+
+
+let drawing = document.getElementById('drawing')
+
+if(drawing.getContext){
+  let context = drawing.getContext('2d');
+
+  context.fillStyle = '#ff0000'
+  context.fillRect(10, 10, 50, 50)
+
+  context.globalCompositeOperation = 'destination-over'
+
+  context.fillStyle = 'rgba(0, 0, 255, 1)'
+  context.fillRect(30, 30, 50, 50)
+
+}
+
+18.4 webGL
