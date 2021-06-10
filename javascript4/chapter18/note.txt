@@ -410,3 +410,80 @@ if(drawing.getContext){
 }
 
 18.4 webGL
+
+18.4.1 WebGL上下文
+
+let drawing = document.getElementById('drawing');
+
+if(drawing.getContext){
+  let g1 = drawing.getContext('webgl');
+  if(g1) console.log(g1)
+}
+
+18.4.2 webGl基础
+
+就可以开始3D绘图了。如前所述，因为webGL是OpenGL ES 2.0的web版，所以本节讨论的概念实际上是js所
+实现的OpenGL概念。
+
+可以在调用getContext()取得WebGL上下文时指定一些选项。这些选项通过一个参数对象传入，选项就是参数
+对象的一个或多个属性
+`alpha
+`depth
+`stencil
+`antialias
+`premultipliedAlpha
+`preserveDrawingBuffer
+
+如：
+
+let drawing = document.getElementById('drawing');
+
+if(drawing.getContext){
+  let g1 = drawing.getContext('webgl', { alpha: false });
+  if(g1) 
+}
+
+1.常量
+
+gl.COLOR_BUFFER_BIT
+
+2.方法命名
+
+3.准备绘图
+
+gl.clearColor(0, 0, 0, 1)
+gl.clear(gl.COLOR_BUFFER_BIT);
+
+以上代码把清理颜色缓冲区的值设置为黑色，然后调用clear()方法，这个方法相当于OpenGL中的glClear()方法。
+参数gl.COLOR_BUFFER_BIT告诉webGL使用之前定义的颜色填充画布。通常，所有绘图操作之前都需要先清除绘制
+区域。
+
+4.视口与坐标
+
+绘图前还要定义WebGL视口，默认情况下，视口使用整个<canvas>区域。要改变视口，可以调用viewport()方法
+并传入视口相对于<canvas>元素的x, y坐标及宽度和高度。
+
+gl.viewport(0, 0, drawing.width, drawing.height)
+
+这个视口的坐标系统与网页中通常的坐标系统不一样。视口的x和y坐标起点(0, 0)表示<canvas>元素的左下角，
+向上、向右增长可以用点(width-1, height-1)定义。
+
+//视口是<canvas>左下角四分之一区域
+gl.viewport(0, 0, drawing.width / 2, drawing.height / 2)
+
+//视口是<canvas>左上角四分之一区域
+gl.viewport(0, drawing.height / 2, drawing.width / 2, drawing.height / 2)
+
+定义视口的坐标系统与视口中的坐标系统不一样。在视口中，坐标原点(0, 0)是视口的中心点。左下角是
+(-1, -1)，右上角是(1, 1)。
+
+5.缓冲区
+
+在js中，顶点信息保存在定型数组中。要使用这些信息，必须先把他们转换为WebGL缓冲区。创建缓冲区要调用
+gl.createBuffer()方法，并使用gl.bindBuffer()方法将缓冲区绑定到WebGL上下文。
+
+let buffer = gl.createBuffer()
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0.5, 1]), gl.STATIC_DRAW)
+
+6.错误
