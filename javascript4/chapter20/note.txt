@@ -1,0 +1,360 @@
+第20章 javascript API
+
+本章内容
+·Atomics与SharedArrayBuffer
+·跨上下文消息
+·Encoding API
+·File API与Blob API
+·拖放
+·Notifications API
+·Page Visibility API
+·Streams API
+·计时API
+·Web组件
+·Web Cryptography API
+
+20.1 Atomics 与 SharedArrayBuffer
+
+Atomics API通过强制同一时刻只能对缓冲区执行一个操作，可以让多个上下文安全地读写一个SharedArrayBuffer.
+
+SharedArrayBuffer 与 SharedArrayBuffer具有同样的API。两者的主要区别是ArrayBuffer必须在不同
+执行上下文间切换，sharedArrayBuffer则可以被任意多个执行上下文同时使用。
+
+
+20.2 跨上下文消息   XDM（cross-document messaging）
+
+是一种在不同执行上下文间传递消息的能力。如www.wrox.com上的页面想要与包含在内嵌窗格中的p2p.wrox.com
+上上面的页面通信。在XDM之前，要以安全方式实现这种通信需要很多工作。XDM以安全以用的方式规范化了这个功能
+
+注意：跨上下文呢消息用于窗口之间通信或工作现场之间通信。本节主要介绍使用postMessage()与其他窗口
+通信。
+
+
+XDM的核心是postMessage()方法。处理XDM，这个方法名换在HTML5中很多地方用到过，但目的都一样，都是把
+数据传送到另一个位置。
+
+postMessage()方法接收三个参数：
+1.消息、
+2.表示目标接收源的字符串
+3.可选的可传输对象的数组（只与工作线程相关）
+
+let iframeWindow = document.getElementById('myframe').contentWindow;
+iframeWindow.postMessage('A secret', 'http://www.wrox.com')
+
+最后一行代码尝试向内嵌窗格中发送一条消息，而且指定了源必须是'http://www.wrox.com'。如果跟源匹配，
+那么消息将会较复到内嵌窗格；否则，postMessage()什么也不做。这个限制可以保护信息不会因地址改变而
+泄漏。如果不想限制接收目标，则可以给postMessage()的第二个参数传"*"，但不推荐这么做。
+
+接收到XDM消息后，window对象上会触发message事件，这个事件是异步触发的，因此从消息发送到接收到消息
+（接收窗口触发message事件）可能有延迟。传给onmessage事件处理程序的event对象包含以下3方面重要信息。
+·data：作为第一个参数传递给postMessage（）的字符串数据
+·origin：发送消息的文档源，如“http://www.wrox.com”
+·source:发送消息的文档中window对象的代理。这个代理对象主要用于在发送上一条消息的窗口中执行postMesage
+方法。如果跟发送窗口有相同的源，那么这个对象应该就是window对象。
+
+接收消息之后验证发送窗口的源是非常重要的。与postMessage()的第二个参数可以包装数据不会意传给未知
+页面以用，在onmessage事件处理程序中检查发送窗口的源可以包装数据来自真确的地方
+
+window.addEventListener('message', event => {
+  if(event.origin == 'http://www.wrox.com'){
+    //数据处理
+    processMessage(event.data)
+
+    //向来源窗口发送一条消息（可选）
+    event.source.postMessage('Received!', 'http://p2p.wrox.com')
+  }
+})
+
+20.3 Encoding API
+
+主要用于实现字符串与定型数组之间的转换。规范新增了4个用于执行转换的全局类：
+TextEncoder
+TextEncoderStream
+TextDecoder
+TextDecoderStream
+
+20.3.1 文本编码
+
+Encoding API提供了两种间字符串转换为定型数组二进制格式的方法：批量编码和流编码，转换时，编码器
+始终使用UTF-8
+
+1.批量编码
+
+所谓批量，指的是js引擎会同步编码整个字符串。对于非常长得字符串，可能会花较长时间。
+批量编码是通过TextEncoder得实例完成的：
+
+const textEncoder = new TextEncoder()
+
+encode()，接收一个字符串参数，并以Unit8Array格式返回每个字符串的UTF-8编码
+
+const textEncoder = new TextEncoder();
+const decodedText = 'foo'
+const encodedText = textEncoder.encode(decodedText)
+console.log(encodedText)
+//Uint8Array(3) [102, 111, 111]
+
+有些字符占多个索引，如😀
+
+encodeInto()方法，接收一个字符串和目标Unit8Array，返回一个字典，包含read和written属性，分别表示
+成功从源字符串读取了多少字符和向目标数组写入了多少字符。
+
+const textEncoder = new TextEncoder();
+const fooArr = new Uint8Array(3)
+const barArr = new Uint8Array(2)
+
+const fooResult = textEncoder.encodeInto('foo', fooArr)
+const barResult = textEncoder.encodeInto('bar', barArr)
+
+console.log(fooResult, fooArr)  //{read: 3, written: 3} Uint8Array(3) [102, 111, 111]
+console.log(barResult, barArr)  //{read: 2, written: 2} Uint8Array(2) [98, 97]
+
+注意：文本编码会始终使用UTF-8格式，而且必须写入Unit8Array实例。使用其他类型数组会导致encodeInto()
+抛出错误。
+
+2.流编码
+
+TextEncoderStream其实就是TransformStream形式的TextEncoder。将解码后的文本流通过管道输入流编码
+会得到编码后文本块的流：
+
+async function* chars(){
+  const decodedText = 'foo'
+  for( let char of decodedText){
+    yield await new Promise(resolve => setTimeout(resolve, 1000, char))
+  }
+}
+
+const decodedTextStream = new ReadableStream({
+  async start(controller){
+    for await (let chunk of chars()) {
+      controller.enqueue(chunk);
+    }
+    controller.close();
+  }
+})
+
+const encodedTextStream = decodedTextStream.pipeThrough(new TextEncoderStream())
+
+const readableStreamDefaultReader = encodedTextStream.getReader();
+
+(async function(){
+  while(true){
+    const { done, value } = await readableStreamDefaultReader.read();
+
+    if(done){
+      break;
+    }else{
+      console.log(value)
+    }
+  }
+})();
+
+//Uint8Array [102]
+//Uint8Array [111]
+//Uint8Array [111]
+
+20.3.2 文本解码
+Encoding API 提供了两种将定型数组转换为字符串的方式：批量解码和流解码
+
+1.批量解码
+
+指的是js引擎会同步解码 整个字符串
+const textDecoder = new TextDecoder();
+
+
+const textDecoder = new TextDecoder();
+const encodedText = Uint8Array.of(102, 111, 111)
+const decodedText = textDecoder.decode(encodedText)
+console.log(decodedText)
+//foo
+
+解码器不关心传入的是哪种定型数组，他只会专心解码整个二进制表示。
+
+const textDecoder = new TextDecoder()
+const encodedText = Uint32Array.of(102, 111, 111)
+const decodedText = textDecoder.decode(encodedText)
+console.log(decodedText)
+//"f   o   o   "
+
+与TextEncoder不同，TextDecoder可以兼容很多字符编码。比如下面的例子就是使用了UTF-16
+
+const textDecoder = new TextDecoder('utf-16')
+const encodedText = Uint16Array.of(102, 111, 111)
+const decodedText = textDecoder.decode(encodedText)
+console.log(decodedText)
+//foo
+
+2.解码流
+
+20.4 File API 与 Blob API
+
+file API 与 Blob API 是为了让web开发者能以安全的方式访问客户端机器上的文件，从而更好地与这些文件
+交互而设计的。
+
+20.4.1 File类型
+
+File API仍然以表单中的文件输入字段为基础，但是增加了直接访问文件信息的能力。HTML5在dom上为文件
+输入元素添加了files集合。当用户在文件字段中选择一个或多个文件时，这个files集合会包含一组File对象，
+表示被选中的文件。每个File对象都有一些只读属性。
+·name：本地系统中的文件名
+·size：以字节计的文件大小
+·type：包含文件MIME类型的字符串
+·lastModifiedDate：表示文件最后修改时间的字符串。这个属性只有Chrome实现了。
+
+例：
+let filesList = document.getElementById('files-list')
+filesList.addEventListener('change', event => {
+  let files = event.target.files,
+      i = 0,
+      len = files.length;
+
+  while(i < len){
+    const f = files[i]
+    console.log(`${f.name} (${f.type}, ${f.size} bytes)`);
+    i++;
+  }
+})
+
+
+不过，file API还提供了FileReader类型，让我们可以实际从文件中读取数据。
+
+20.4.2 FileReader 类型
+
+FileReader类型表示一种异步文件读取机制。可以把FileReader想象成类似于XMLHttpRequest，只不过
+是用于从文件系统读取文件，而不是从服务器读取数据。FileReader类型提供了几种读取文件数据的方法。
+
+·readAsText(file, encoding)：从文件中读取纯文本内容并保存在result属性中。
+·readAsDataURL(file)：读取文件并将内容的数据URI保存在result属性中。
+·readAsBinaryString(file)：读取文件并将每个字符的二进制数据保存在result属性中。
+·readAsArrayBuffer(file)：读取文件并将文件内容以ArrayBuffer形式保存在result属性。
+
+这些读取数据的方式为处理文件数据提供了极大的灵活性。如，为了向用户展示图片，可以将图片读取为数据
+URI，而为了解析文件内容，可以将文件读取为文本。
+
+因为这些方法是异步的，所以每个FileReader会发布几个事件，其中3个最有用的事件是：
+progress、error和load，分别表示还有更多数据、发生了错误和读取完成。
+
+progress事件每50毫秒就会触发一次，其与XHR的progress事件具有相同的信息：lengthComputable、
+loaded和total。此外，在progress事件中可以读取FileReader的result属性，即使其中尚未包含全部数据。
+
+error事件会在由于某种原因无法读取文件时触发。触发error事件时，FileReader的error会包含错误信息。
+这个属性是一个对象，只包含一个属性：code。这个错误码的值可能是1（未找到文件）、2（安全错误）、
+3（读取被中断）、4（文件不可读）或5（编码错误）。
+
+load事件会在文件成功加载后触发。如果error事件被触发，则不会在触发load事件。
+
+let filesList = document.getElementById('files-list')
+filesList.addEventListener('change', (event) => {
+  let info = '',
+      output = document.getElementById('output'),
+      progress = document.getElementById('progress'),
+      files = event.target.files,
+      type = 'default',
+      reader = new FileReader();
+
+  if(/image/.test(files[0].type)) {
+    reader.readAsDataURL(files[0])
+    type = 'image';
+  } else {
+    reader.readAsText(files[0])
+    type = 'text'
+  }
+
+  reader.onerror = function() {
+    output.innerHTML = `Could not read file, error code is ${render.error.code}`
+  }
+
+  reader.onprogress = function(event) {
+    debugger
+    if(event.lengthComputable) {
+      progress.innerHTML = `${event.loaded}/${event.total}`
+    }
+  }
+
+  reader.onload = function() {
+    let html = '';
+
+    switch(type) {
+      case 'image':
+        html = `<img src="${reader.result}"/>`
+        break;
+
+      case 'text':
+        html = reader.result;
+        break;
+    }
+
+    output.innerHTML = html;
+  }
+})
+
+
+20.4.3 FileReaderSync 类型
+
+FileReaderSync类型就是FileReader的同步版本。这个类型拥有与FileReader相同的方法，只有在这个文件
+都加载到内存之后才会继续执行。FileReaderSync只有在工作线程中可以用，因为如果读取整个文件耗时太长
+则会影响全局。
+
+假设通过postMessage()向工作线程发送了一个File对象。以下代码会让工作线程同步将文件读取到内存中，
+然后将文件的数据URL发回来。
+
+//worker.js
+
+self.onmessage = messageEvent => {
+  const syncReader = new FileReaderSync();
+  console.log(syncReader)
+
+  //读取文件时阻塞工作线程
+  const result = syncReader.readerAsDataUrl(messageEvent.data)
+
+  //PDF文件的示例响应
+  console.log(result) // data:application/pdf;base64,JVBERi0xLjQK...
+
+  //把URL发回去
+  self.postMessage(result)
+}
+
+20.4.4 Blob与部分读取
+
+某些情况下，可能需要读取部分文件而不是整个文件。为此，File对象提供了一个名为slice()的方法。
+slice()方法接收两个参数：其实字节和要读取的字节数。这个方法返回一个Blob的示例，而Blob实际上是
+File的超类。
+
+blob表示二进制大对象（binary  larget object），是js对不可修改二进制数据的封装类型。包含字符串
+的数组、ArrayBuffers、ArrayBufferViews，甚至其他Blob都可以用来创建blob。Blob构造函数可以接收
+一个options参数，并在其中指定MIME类型：
+
+console.log(new Blob(['foo']))
+//Blob {size: 3, type: ""}
+
+console.log(new Blob(['{"a": "b"}'], {type: 'application/json'}))
+//Blob {size: 10, type: "application/json"}
+
+console.log(new Blob(['<p>Foo</p>','<p>Bar</p>'], {type: 'text/html'}))
+//Blob {size: 20, type: "text/html"}
+
+Blob对象有一个size属性和type属性，还有一个slice()方法用于进一步切分数据。另外也可以使用FileReader
+从Blob中读取数据。下面的例子只会读取文件的前32字节：
+
+let filesList = document.getElementById('files-list')
+filesList.addEventListener('change', (event) => {
+  let info = '',
+      output = document.getElementById('output'),
+      progress = document.getElementById('progress'),
+      files = event.target.files,
+      type = 'default',
+      reader = new FileReader(),
+      blob = new Blob().slice(files[0], 0, 32);
+  if(blob){
+    reader.onerror = function() {
+      output.innerHTML = `Could not read file, error code is ${render.error.code}`
+    }
+
+    reader.onload = function() {
+      output.innerHTML = reader.result;
+    }
+
+    reader.readAsText(blob);
+  } else {
+    console.log(`Your browser doesn't support slice().`)
+  }
+})
