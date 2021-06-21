@@ -358,3 +358,140 @@ filesList.addEventListener('change', (event) => {
     console.log(`Your browser doesn't support slice().`)
   }
 })
+
+
+20.4.5 对象URL与Blob
+
+对象URL有时候也称为Blob URL，是指引用存储在File或Blob中数据的URL。对象URL的优点时不用把文件内容
+读取到javascript也可以使用文件。只要在适当位置提供对象URL即可。要创建对象URL，可以使用window.URL.
+createObjectURL()方法并传入File或Blob对象。这个函数返回的值是一个指向内存中地址的字符串。因为这个
+字符串是URL，所以可以在DOM中直接使用。例如，以下代码使用对象URL在页面中显示了一张图片：
+
+let filesList = document.getElementById('files-list')
+filesList.addEventListener('change', event => {
+  let info = '',
+      output = document.getElementById('output'),
+      progress = document.getElementById('progress'),
+      files = event.target.files,
+      type = 'default',
+      reader = new FileReader(),
+      url = window.URL.createObjectURL(files[0]);
+
+  console.log(url)
+
+  if(url) {
+    if(/image/.test(files[0].type)) {
+      output.innerHTML = `<img src=${url}/>`
+    } else {
+      output.innerHTML = 'Not an image.'
+    }
+  } else {
+    output.innerHTML = "Your browser doesn't support object URLs."
+  }
+})
+
+20.4.6 读取拖放文件
+
+let droptarget = document.getElementById('droptarget')
+
+function handleEvent(event) {
+  let info = '',
+      output = document.getElementById('output'),
+      files, i, len;
+  
+  event.preventDefault();
+
+  if(event.type == 'drop') {
+    files = event.dataTransfer.files;
+    i = 0;
+    len = files.length;
+
+    while(i < len) {
+      info += `${files[i].name} (${files[i].type}, ${files[i].size} bytes) <br>`
+      i++;
+    }
+
+    output.innerHTML = info;
+  }
+}
+
+droptarget.addEventListener('dragenter', handleEvent)
+droptarget.addEventListener('dragover', handleEvent)
+droptarget.addEventListener('drop', handleEvent)
+
+
+20.5 媒体元素
+
+20.6 原生拖放
+
+20.6.1 拖放事件
+
+在某个元素被拖动时，会（按顺序）触发以下事件：
+1.dragstart
+2.drag
+3.dragend
+
+在按住鼠标键不放并开始移动鼠标的那一刻，被拖动元素上会触发dragstart事件。此时光标会变成非放置符号
+表示元素不能放到自身上。拖动开始时，可以在ondragstart事件处理程序中通过js执行某些操作。
+
+dragstart事件触发后，只要目标还被拖动就会持续触发drag事件。这个事件类似于Mousemove，即随着鼠标
+移动而不断触发。当拖动停止时（把元素放到有效或无效的放置目标上），会触发dragend事件
+
+所有这3个事件的目标都是被拖动的元素。默认情况下，元素在拖动开始后不会改变拖动元素的外观，因此是否
+改变外观由你来决定。不过大多数浏览器此时会创建元素的一个半透明副本，始终跟随在光标下方。
+
+把元素拖动到一个有效的放置目标上时，会一次触发以下事件：
+1.dragenter
+2.dragover
+3.dragleave或drop
+
+只要一把元素拖动到放置目标上，dragenter事件（类似mouseover事件）就会触发。dragenter事件触发之后
+会立即触发dragover事件，并且元素在放置目标范围内被拖动期间此事会持续触发。当元素被拖动放置目标之外
+dragover事件停止触发，dragleave事件触发(类似于mouseout事件)。如果被拖动元素被放到了目标上，则会
+触发drop事件而不是dragleave事件。这些事件的目标是放置目标元素。
+
+20.6.2 自定义放置目标
+
+20.6.3 dataTransfer 对象
+
+20.6.4 dropEffect 与 effectAllowed
+
+20.6.5 可拖动能力
+
+//禁止拖动图片
+<img src="smile.gif" draggable="false" alt="Smiley face" />
+
+20.6.6 其他成员
+
+20.7 Notifications API
+
+用于向用户显示通知。 类似alert()对话框
+
+Notifications API在Service Worker中非常有用。渐进web应用（PWA，progressive web application）
+通过触发通知可以在页面不活跃时向用户显示消息，看起来就像原生应用。
+
+Notification.requestPermission()
+  .then(permission => {
+    console.log('user responded to permission request:', permission)
+  })
+
+
+new Notification('Title text!', {
+  body: 'Body text',
+  vibrate: true
+})
+
+
+20.8 Page Visibility API
+
+判断页面是否被最小化或隐藏在其他标签页后面。
+
+document.visibilityState
+
+20.9 Streams API
+
+Streams API是为了解决一个简单但又基础的问题而生的：Web应用如何消费有序的小信息快而不是大块信息？
+
+20.10 计时器 API
+
+

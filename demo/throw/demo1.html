@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    //捕获异常（可以捕获）
+    /* 
+    try{
+      err();
+    }catch(e){
+      console.log(e)
+    }
+
+    function err(){
+      throw new Error('something is error')
+    }
+    */
+
+    //捕获深层次异常（可以捕获）
+    /* 
+    try{
+      outer();
+    }catch(e){
+      console.log(e)
+    }
+
+    function outer(){
+      console.log('start outer')
+
+      inner();
+
+      console.log('end outer')
+    }
+
+    function inner(){
+      throw new Error('something is error')
+    }
+    */
+
+    //异步捕获异常（没有捕获到）
+    /* 
+    try{
+      err();
+    }catch(e){
+      console.log(e)
+    }
+
+    function err(){
+      setTimeout(() => {
+        throw new Error('something is error')
+      },500)
+    }
+    */
+
+    //异步捕获异常-使用async/await（可以捕获）
+    /* 
+    (async () => {
+      try{
+        await err();
+      }catch(e){
+        console.log(e)
+      }
+
+      function err(){
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            //throw new Error('something is error')
+            reject('something is error');
+          },500)
+        })
+      }
+    })(); */
+    const callApi1 = async () => {
+      //保存前数据处理
+      let res = await Promise.resolve({code:500, msg: 'xxx'});
+      
+      if(res.code != 200){
+        throw new Error(res.msg);
+      }
+    }
+    const saveMethod = async () => {
+      try{
+        await callApi1();  //异步方法
+      }catch(e){
+        console.log(e)
+      }
+    }
+
+    saveMethod();
+  </script>
+</body>
+</html>
