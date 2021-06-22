@@ -494,4 +494,147 @@ Streams API是为了解决一个简单但又基础的问题而生的：Web应用
 
 20.10 计时器 API
 
+页面性能始终是web开发者关心的话题。Performance接口通过js API暴露了浏览器内部的度量指标，允许开发者
+直接访问这些信息并基于这些信息实现自己想要的功能。这些接口暴露在window.performance对象上。所有与
+页面相关的指标，包括已经定义和将来会定义的，都会存在于这个对象上
 
+Performance接口由多个API构成：
+·High Resolution Time API
+·Performance Timeline API
+·Navigation Timing API
+·User Timing API
+·Resource Timing API
+·Paint Timing API
+
+20.10.1 High Resolution Time API
+
+window.performance.now(),这个方法返回一个微秒精度的浮点值。
+
+20.10.2 Performance Timeline API
+
+Performance Timeline API使用一套用于度量客户端延迟的工具扩展了Performance接口。
+
+20.11 Web 组件
+
+20.11.1 HTML模板
+
+<template id="foo">
+  <p>I'm inside a template!</p>
+</template>
+
+1.使用DocumentFragment
+
+在浏览器中渲染时，上面例子中的文本不会被渲染到页面上。因为<template>的内容不属于活动文档，所以
+document.querySelector()等DOM查询方法不会发现其中的<p>标签。这是因为<p>存在于一个包含在html
+模板中的DocumentFragment节点内。
+
+在浏览器中通过开发者工具检查网页内容时，可以看到<template>中的DocumentFragment:
+
+<template>
+  #document-fragment
+    <p>I'm inside a template!</p>
+</template>
+
+通过<template>元素的content属性可以取得这个DocumentFragment的引用：
+console.log(document.querySelector('#foo').content)
+//#document-fragment
+
+此时的DocumentFragment就像一个对应子树的最小化document对象。换句话说，DocumentFragment上的
+DOM匹配方法可以查询其子树中的节点
+
+const fragment = document.querySelector('#foo').content
+console.log(fragment.querySelector('p'))
+
+documentFragment也是批量想HTML中添加元素的高效工具。比如，我们想以最开的方式给某个HTML元素添
+多个子元素。如果连续调用document.appendChild(),则不仅费事，还会导致多次布局重排。而使用
+DocumentFragment可以一次性添加多有子节点，最多只会有一次布局重排：
+
+const fragment = new DocumentFragment();
+const foo = document.querySelector('#foo')
+
+fragment.appendChild(document.createElement('p'))
+fragment.appendChild(document.createElement('p'))
+fragment.appendChild(document.createElement('p'))
+
+console.log(fragment.children.length)
+foo.appendChild(fragment)
+console.log(fragment.children.length)
+console.log(document.body.innerHTML)
+
+2. 使用<template>标签
+
+注意，在前面的例子中，DocumentFragment的所有子节点都高效地转移到了foo元素上，转移之后DocumentFragment
+变空了，同样的过程也可以使用<template>标签重现：
+
+const fooElement = document.querySelector('#foo')
+const barTemplate = document.querySelector('#bar')
+const barFragment = barTemplate.content;
+
+console.log(document.body.innerHTML)
+
+fooElement.appendChild(barFragment)
+console.log(document.body.innerHTML)
+
+如果想要复制模板，可以使用ImportNode()方法克隆DocumentFragment;
+
+const fooElement = document.querySelector('#foo')
+const barTemplate = document.querySelector('#bar')
+const barFragment = barTemplate.content;
+console.log(document.body.innerHTML)
+
+fooElement.appendChild(document.importNode(barFragment, true))
+console.log(document.body.innerHTML)
+
+3.模板脚本
+
+脚本执行可以推迟到将DocumentFragment的内容实际添加到DOM树。
+
+<div id="foo"></div>
+<template id="bar">
+  <script>console.log('Template script executed')</script>
+</template>
+
+const fooElement = document.querySelector('#foo')
+const barTemplate = document.querySelector('#bar')
+const barFragment = barTemplate.content;
+
+console.log('About to add template')
+fooElement.appendChild(barFragment)
+console.log('Added template')
+
+20.11.2 影子DOM
+
+概念上讲，影子DOM（shadow DOM）web组件相当直观，通过它可以将一个完整的DOM树作为节点添加到父DOM树。
+这也可以实现dom封装，意味着css样式和css选择符可以限制在影子DOM子树而不是整个顶级DOM树中。
+
+影子DOM与HTML模板很相似，因为i他们都是类似document的结构，并允许与顶级DOM有一定程度的分离。不过，
+影子DOM与html模板还时有区别的，主要表现在影子DOM的内容会实际渲染到页面上，而HTML模板的内容不会。
+
+1.理解影子DOM
+
+2.创建影子DOM
+
+考虑到安全及避免影子DOM冲突，并未所有元素都可以包含影子DOM。尝试给无效元素或已有了影子DOM的元素
+添加影子DOM会导致抛出错误。
+
+以下是可以容纳影子DOM的元素
+
+·仍和以有效名称场景的自定义元素
+·<article>
+·<aside>
+·<blockquote>
+·<body>
+·<div>
+·<footer>
+·<h1>
+·<h2>
+·<h3>
+·<h4>
+·<h6>
+·<header>
+·<main>
+·<nav>
+·<p>
+·<section>
+·<span>
+影子DOM是通过attachShadow()方法创建并添加给有效HTML元素的。
