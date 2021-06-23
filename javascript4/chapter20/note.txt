@@ -637,4 +637,125 @@ console.log('Added template')
 ·<p>
 ·<section>
 ·<span>
-影子DOM是通过attachShadow()方法创建并添加给有效HTML元素的。
+影子DOM是通过attachShadow()方法创建并添加给有效HTML元素的。容纳影子Dom的元素被称为影子宿主
+（shadow host）。银子DOM的根节点被称为影子根(shadow root)
+
+attachShadow()方法需要一个shadowRootInit对象，返回影子DOM的实例。shadowRootInit对象必须包含
+mode属性，值为'open'或'closed'。对‘open’影子DOM的引用可以通过shadowRoot属性在html元素上获得，
+而对'closed'影子DOM的应用无法这样获取。
+
+document.body.innerHTML = `
+  <div id="foo"></div>
+  <div id="bar"></div>
+`
+
+const foo = document.querySelector('#foo')
+const bar = document.querySelector('#bar')
+
+const openShadowDom = foo.attachShadow({mode: 'open'})
+const closedShadowDom = bar.attachShadow({mode: 'closed'})
+
+console.log(openShadowDom)
+console.log(closedShadowDom)
+
+console.log(foo.shadowRoot)
+console.log(bar.shadowRoot)
+
+一般来说，需要创建保密(closed)影子DOM的场景很少。虽然这可以限制通过影子宿主访问影子dom，但恶意代码
+有很多方法绕过这个限制，恢复对影子DOM的访问。简而言之，不能为了安全而创建保密影子DOM
+
+注意：如果想保护独立的DOM树不受未信任代码影响，影子DOM并不适合这个需求。对<iframe>事件的跨源限制更
+可靠。
+
+3.使用影子DOM
+
+把影子DOM添加到元素之后，可以像使用常规DOM一样使用影子DOM。
+
+for(let color of ['red', 'green', 'blue']) {
+  const div = document.createElement('div')
+  const shadowDOM = div.attachShadow({mode: 'open'})
+
+  document.body.appendChild(div)
+  shadowDOM.innerHTML = `
+    <p>Make me ${color}</p>
+    <style>
+    p {
+      color: ${color}
+    }
+    </style>
+  `
+}
+
+可以验证这些元素分别位于他们自己的影子DOM中：
+
+function countP(node){
+  console.log(node.querySelectorAll('p').length)
+}
+countP(document);
+//0
+
+for(let element of document.querySelectorAll('div')){
+  if(element.shadowRoot){
+    countP(element.shadowRoot)
+  }
+}
+//1
+//1
+//1
+
+影子DOM并非铁板一块。HTML元素可以在DOM树间无限制移动
+
+document.body.innerHTML = `
+  <div></div>
+  <p id="foo">Move me</p>
+`;
+
+const divElement = document.querySelector('div')
+const pElement = document.querySelector('P')
+
+const shadowDom = divElement.attachShadow({mode:'open'})
+
+divElement.parentElement.removeChild(pElement)
+shadowDom.appendChild(pElement)
+
+console.log(shadowDOM.innerHTML)
+
+4.合成与影子DOM槽位
+
+影子DOM是为自定义Web组件设计的，为此需要支持嵌套DOM片段。从概念上讲，可以这么说：位于影子宿主中的
+HTML需要一种机制以渲染到影子DOM中去，但这些HTML又不必属于影子DOM树。
+
+默认情况下，嵌套内容会隐藏。
+
+document.body.innerHTML = `
+  <div>
+    <p>Foo</p>
+  </div>
+`
+
+setTimeout(() => document.querySelector('div').attachShadow({mode:'open'}), 1000)
+
+影子DOM一添加到元素中，浏览器就会赋予它最高优先级，优先渲染它的内容而不是原来的文本。这个例子中
+由于影子DOM是空的，因此<div>会在1000毫秒后变成空的。
+
+为了显示文本内容，需要使用<slot>标签只是浏览器在哪里放置原来的HTML。下面的代码修改了前面的例子，
+让影子宿主中的文本出现在了影子dom中；
+
+document.body.innerHTML = `
+  <div>
+    <p>Foo</p>
+  </div>
+`
+
+document
+  .querySelector('div')
+  .attachShadow({mode:'open'})
+  .innerHTML = `<div id="bar">
+    <slot></slot>
+  </div>`
+
+  现在，投射进入的内容就像自己存在于影子DOM中一样。检查页面会发现原来的内容实际上代替了<slot>
+
+  注意，虽然在页面检查窗口中看到内容在影子DOM中，但这实际上只是dom内容的投射，实际元素仍然处于外部
+  dom中
+  console.log(document.querySelector('p').parentElement)
