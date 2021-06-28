@@ -130,3 +130,96 @@ null，就会出现问题，因此，我们用一个栈结构来保存watcher，
 相互调用，从而递归地将obj设置为响应式对象
 2.渲染页面时实例化watcher，这个过程会读取依赖数据的值，从而完成在getter中获取依赖
 3.依赖变化时触发setter，从而派发更新，执行回调，完成在setter中派发更新。
+
+
+1.为什么要对数组特殊处理
+
+上一篇文章讲了vue数据响应式的基本原理，结尾提到了，我们要对数据进行一个单独的处理。
+
+如果我们访问和获取arr的值，getter和setter也会被触发，这不是可以吗？但是如果arr.unshift(0)呢？
+数组的每个元素要依次向后移动一位，这就会触发getter和setter导致依赖发生变化。由于数组是顺序结构，
+所以索引（key)和值不是绑定的，因此这种护理方法是有问题的。
+
+那既然不能监听数组的索引，那就监听数组本身吧。vue对js中7种会改变数组的方法进行了重写：
+push,pop,unshift,shift,splice,reverse,sort.那么，我们就要对Observer进行修改了：
+
+
+关键之处就在于代理原型
+
+2.代理原型
+
+相信大家对原型链比较熟悉了，当我们调用arr.push()的时候，实际上调用的是Array.prototype.push，我们
+像对push方法进行特殊处理，除了重写该方法，还有一种手段，就是设置一个代理原型。
+
+我们在数组和Array.prototype之间增加一层代理来实现派发更新（依赖收集部分后面单独讲），数组调用代理
+原型的方法来派发更新，代理原型再调用真实原型的方法实现原有的功能：
+
+问题来了，我们如何派发更新呢？对于对象，我们使用dep.notify来派发更新，所以能够拿到dep数组，因为我们
+利用getter和setter形成了闭包，保存dep数组，并且这样能够保证每个属性都有属于自己的dep。那数组呢？如果
+再array.js种定义一个dep，那所有的数组都会共享这个dep，显然是不行的，因此，vue再每个对象身上添加了
+一个自定义属性：__ob__，这个属性保存自己的Observer实例，然后再Observer上添加一个属性dep不久可以了吗？
+
+3.__ob__属性
+
+对observe做一个修改
+
+
+到这里，我们通过在对象身上新增一个__ob__属性，完成了数组的派发更新，接下来是依赖收集
+
+
+4.依赖收集
+
+在将依赖收集之前，我们先看一下__ob__这个属性
+
+const ob = {
+  arr: [
+    {
+      a: 1
+    }
+  ]
+}
+
+执行observe(obj)后，obj变成了下面的样子
+obj: {
+  arr: [
+    {
+      a: 1,
+      __ob__: {...}
+    },
+    __ob__: {...}
+  ],
+  __ob__: {...}
+}
+
+我们的defineReactive函数中，为了递归地为数据设置响应式，调用了observe(val),而现在的observe()会
+返回ob，也就是value.__ob__，那我们不放接收一下这个返回值
+
+那这个childOb是什么呢？比如看obj.arr吧：
+
+1.执行observe(obj)会触发new Observer(obj)，设置了obj.__ob__属性，接下来遍历obj的属性，执行
+defineReactive(obj, arr, obj.arr)
+
+2.执行defineReactive(obj, arr, obj.arr)时，会执行observe(obj.arr),返回值就是obj.arr.__ob__
+也就是说，每个属性（比如arr属性）的getter和setter不仅通过闭包保存了自己的dep，而且通过__ob__保存了
+自己的Observer实例，Observer实例上又有一个dep属性。如果添加以下代码：
+
+get: function reactiveGetter() {
+  if(Dep.target) {
+    dep.depend()
+    childOb.dep.depend()
+  }
+  return val;
+}
+
+
+就会有下面的情况：每个属性的getter和setter通过闭包保存了dep，这个dep收集依赖自己的watcher，闭包中
+还保存了childOb，childOb.dep也保存了依赖自己的watcher，这两个属性保存的watcher相同，那前文讲到
+的派发更新就能够实现了
+obj.prop闭包中保存的childOb就是obj.prop.__ob__,闭包中的dep于childOb.dep保存的内容相同
+
+但是dep和childOb.dep保存的watcher并不完全相同，看obj[arr][0].a，由于这是一个基本类型，对它调用
+observe会直接返回，因此所有没有__ob__属性，但是这个属性闭包中的dep能够收集到依赖自己的watcher。
+
+
+
+
