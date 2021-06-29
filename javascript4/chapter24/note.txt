@@ -1,0 +1,72 @@
+第24章 网络请求与远程资源
+
+本章内容
+·使用XMLHttpRequest对象
+·处理XMLHttpRequest事件
+·源域Ajax限制
+·Fetch API
+·Streams API
+
+注意 本章会全面介绍XMLHttpRequest，但它实际上是过时web规范的产物，应该只在旧版浏览器中使用，实际开发
+中尽可能使用fetch()
+
+24.1 XMLHttpRequest对象
+
+所有现代浏览器都通过XMLHttpRequest构造函数原生支持XHR对象：
+
+let xhr = new XMLHttpRequest()
+
+24.1.1 使用XHR
+
+使用XHR对象首先要调用open()方法，这个方法接收3个参数：请求类型('get'、'post'等)，请求URL，以及
+表示请求是否异步的布尔值
+xhr.open('get', 'example.php', false)
+
+调用open()不会实际发送请求，只是为发送请求做好准备。
+
+注意 是能访问同源URL，也就是域名相同、端口相同、协议相同。如果请求的URL与发送请求的页面在任何方面
+有所不同，则会抛出安全错误。
+
+xhr.open('get', 'example.php', false)
+xhr.send(null)
+
+send()方法接收一个参数，是作为请求体发送的数据，如果不需要发送请求体，则必须传入null，因为这个
+参数在某些浏览器中是必须的。调用send()之后，请求就会发送到服务器。
+
+因为这个请求时同步的，所以js代码会等待服务器响应之后再继续执行。收到响应后，xhr对象的以下属性会被
+填充上数据
+·responeseText:作为响应体返回的文本
+·responseXML:如果响应的内容类型是'text/xml'或'application/xml'，那就是包含响应数据的xml dom文档
+·status：响应的http状态
+·statusText：响应的http状态描述。
+
+XHR对象有一个readyState属性，表示当前处在请求/响应过程的哪个阶段。
+
+·0：未初始化
+·1：已打开(open)
+·2：以发送(send)
+·3：接收中(Receiving)
+·4：完成(Complete)
+
+每次readyState从一个值变成另一个值，都会触发readystatechange事件。
+
+let xhr = new XMLHttpRequest()
+xhr.onreadystatechange = function(){
+  if(xhr.readyState == 4) {
+    console.log('xxx')
+  } else {
+    console.log('unsuccessful')
+  }
+}
+xhr.open('get', 'http://www.baidu.com', true);
+xhr.send(null)
+
+
+在收到响应之前如果向取消异步请求，可以调用abort()方法
+
+xhr.abort()
+
+调用这个方法后，XHR对象会停止触发事件，并阻止访问这个对象上任何与响应相关的属性。
+中断请求后，应该取消XHR对象的引用。由于内存问题，不推荐重用XHR对象。
+
+24.1.1 HTTP 头部

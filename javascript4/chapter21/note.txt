@@ -76,3 +76,12 @@ throw { name: 'javascript' }
 使用throw操作符时，代码立即停止执行，除非try/catch语句捕获了抛出得值。
 
 21.2.3 error事件
+
+任何没有被try/catch语句处理得错误都会在window对象上触发error事件。
+
+window.onerror = (message, url, line) => {
+  console.log(message, url, line)
+  return false;
+}
+
+一般来说，原始类型得值应该使用typeof检测，而对象值应该使用instanceof检测。
