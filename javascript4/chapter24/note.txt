@@ -70,3 +70,112 @@ xhr.abort()
 中断请求后，应该取消XHR对象的引用。由于内存问题，不推荐重用XHR对象。
 
 24.1.1 HTTP 头部
+
+每个HTTP请求和响应都会携带一些头部字段，这些字段可能对开发者有用。XHR对象会通过一些方法暴露与请求和
+响应相关的头部字段。
+
+默认情况下，XHR请求会发送一下头部字段。
+
+·accept：浏览器可以处理的内容类型
+·accept-charset：浏览器可以显示的字符集
+·accept-Encoding：浏览器可以处理的压缩编码类型
+·Accept-Language：浏览器使用的语言。
+·Connection：浏览器与服务器的连接类型。
+·Cookie：页面中设置的Cookie
+·Host：发送请求的页面所在的域。
+·Referer：发送请求的页面的URI。注意，这个字段在HTTP规范中就拼错了，所以考虑到兼容性也必须将错就错。
+·User-Agent：浏览器的用户代理字符串
+
+xhr.setRequestHeader('MyHeader', 'myvalue')
+xhr.send(null)
+
+
+可以使用getResponseHeader()方法从XHR对象获取响应头部，
+getAllResponseHeaders()可以取得所有响应头部
+
+
+24.1.3 GET请求
+
+发送GET请求最常见的一个错误是查询字符串格式不对。查询字符串中的每个名字和值都必须使用encodeURIComponent()
+编码，所有名/值对必须以和号(&)分隔，
+
+xhr.open('get', 'example.php?name1=value1&name2=value2', true)
+
+
+可以使用以下函数将查询字符串参数添加到现有的URL末尾：
+
+function addURLParam(url, name, value) {
+  url += (url.indexOf('?') == -1 ? '?' : '&')
+  url += encodeURIComponent(name) + '=' + encodeURIComponent(value)
+  return url;
+}
+
+24.1.4 POST请求
+
+默认情况下，对服务器而言，POST请求与提交表单时不一样的。服务器逻辑需要读取原始POST数据才能取得浏览器
+发送的数据。不过，可以使用XHR模拟表单提交。为此，第一步需要把Content-Type头部设置为application/x-www-formurlencoded
+这是提交表单时的内容类型。第二步是创建对应格式的字符串。POST数据此时使用与查询字符串相同的格式。如果
+网页中确实有一个表单需要序列表并通过XHR发送到服务器，可以使用serialize()函数来创建响应的字符串。
+
+24.1.5 XMLHttpRequest Level 2
+
+1.FormData类型
+
+现代web应用程序经常需要对表单数据进行序列化，因此2新增了FormData类型。FormData类型便于表单序列化，
+也便于创建于表单类似格式的数据然后通过XHR发送
+
+let data = new FormData()
+data.append('name', 'nicholsa')
+
+
+-------------------------
+
+let form = document.getElementById('user-info')
+xhr.send(new FormData(form))
+
+使用FormData的另一个方便之处是不再需要给XHR对象显式设置任何请求头部了。XHR对象能够识别作为FormData
+实例传入的数据类型并自动配置相应的头部。
+
+2.超时
+
+xhr.timeout = 1000 //设置1秒超时
+xhr.ontimeout = function(){
+  alert(xxx)
+}
+
+3.overrideMimeType()方法
+
+overrideMimeType()方法用于重写xhr响应的MIME类型。
+
+因为响应返回的MIME类型决定了XHR对象如何处理响应，所以如果有办法覆盖服务器返回的类型，那么是有帮助的。
+
+let xhr = new XMLHttpRequest()
+xhr.open('get', 'text.php', true)
+xhr.overrideMimeType('text/xml')
+xhr.send(null)
+
+这个例子强制让XHR把响应当初xml而不是纯文本来处理。为了正确覆盖响应的MIME类型，必须在调用send之前
+overrideMimeType()
+
+24.2 进度事件
+
+24.3 跨资源共享
+
+通过XHR进行ajax同学的一个主要限制是跨源安全策略。默认情况下，XHR只能访问于发起请求的页面在同一个
+域内的资源。这个安全限制可以放置某些恶意行为。不过，浏览器也需要支持合法跨源访问的能力
+
+跨源资源共享（CORS, Cross-Origin Resource Sharing）定义了浏览器域服务器如何实现跨源通信。CORS背后
+的基本思路就是使用自定义的HTTP头部允许浏览器和服务器相互了解，以确实请求活响应应该成功还是失败。
+
+对于简单的请求，比如GET或POST请求，没有自定义头部，而且请求体是text/plain类型，这样的请求在发送时
+会有一个额外的头部叫Origin。Origin头部包含发送请求的页面的源（协议、域名和端口），以便服务器确定
+是否为其提供响应。
+
+Origin: http://www.nczonline.net
+
+如果服务器决定响应请求，那么应该发送Access-Control-Allow-Origin头部，包含相同的源或者如果资源是公开
+的，那么就包含“*”。比如：
+Access-Control-Allow-Origin: http://www.nczonline.net
+
+如果没有这个头部，或者有但源不匹配，则表示不会响应浏览器请求。否则，服务器就会处理这个请求。注意，无论
+请求还是响应都不会包含cookie信息。
