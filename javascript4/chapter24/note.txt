@@ -179,3 +179,100 @@ Access-Control-Allow-Origin: http://www.nczonline.net
 
 如果没有这个头部，或者有但源不匹配，则表示不会响应浏览器请求。否则，服务器就会处理这个请求。注意，无论
 请求还是响应都不会包含cookie信息。
+
+24.3.1 预检请求
+
+CORS通过一种预检请求(preflighted request)的服务器验证机制，允许使用自定义头部。除了GET和POST之外
+的方法，以及不同请求体内容类型。在要发送涉及上述某种高级选项的请求时，会先向服务器发送一个“预检”请求。
+这个请求使用OPTIONS方法发送并包含以下头部
+
+·Origin：与简单请求相同。
+·Access-Control-Request-Method：请求希望使用的方法
+·Access-Control-Request-Headers：（可选）要使用的逗号分隔的自定义头部列表。
+
+在这个请求发送后，服务器可以确定是否允许这种类型的请求。服务器会通过在响应中发送如下头部与浏览器沟通
+这些信息。
+·Access-Control-Allow-Origin：与简单请求相同
+·Access-Control-AllowMethods：允许的方法（逗号分隔的列表）
+·Access-Control-Allow-Headers：服务器允许的头部（逗号分隔的列表）
+·Access-Control-Max-Age：缓存预检请求的秒数。
+
+预检请求返回后，结果会按响应指定的时间缓存一段时间。换句话或，只有第一次发送这种类型的请求时才会
+多发送一次额外的HTTP请求
+
+24.3.2 凭据请求
+
+默认情况下，跨源请求不提供凭据（cookie、HTTP认证和客户端SSL证书）。可以通过将withCredentials属性
+设置为true来表明请求会发送凭据。如果服务器允许带凭据的请求，那么可以在响应中包含如下的HTTP头部
+
+Access-Control-Allow-Credentials: true
+
+如果发送了凭据请求而服务器返回的响应中没有这个头部，则浏览器不会把响应交给javascript（responseText
+是空字符串，status是0，onerror()被调用了）。注意，服务器也可以在预检请求的响应中发送这个HTTP头部，
+以表明这个源允许发送凭据请求。
+
+24.4 代替性跨源技术
+
+24.4.1 图片探测
+
+24.4.2 JSONP
+
+JSONP是“JSON with padding”的简写，是在web服务上留下的一种json变体。JSONP看起来和JSON一样，只是
+会被包含在一个函数调用里，比如：
+callback({'name':'nicholas'})
+
+JSONP格式包含两部分：回调和数据。回调是在页面接收到响应之后应该调用的函数，通常回调函数的名称是通过
+请求来动态指定的。而数据就是作为参数传给传给回调函数的JSON数据。
+如下：
+http://freegeoip.net/json/?callback=handleResponse
+
+JSONP调用时通过动态创建<script>元素并为src属性指定跨域URL实现的。此时的<script>与<img>元素类似，
+能够不受限制地从其他域加载资源。因为JSONP是有效的javasciprt，所以JSONP响应在被加载完成之后会立即
+执行。
+
+JSONP缺点
+
+1.JSONP是从不同的域拉取可执行代码，如果这个域并不可信，则可能在响应中加入恶意内容
+2.不好确定JSONP请求是否加载失败。虽然html5规定<script>元素的onerror时间处理程序，但还没有任何浏览器
+实现。
+
+24.5 Fetch API
+
+Fetch API能够执行XMLHttpRequest对象的所有任务，但更容易使用，接口也更现代化，能够在web工作线程
+等现代工具中使用。XMLHttpRequest可以选择异步，而Fetch API则必须是异步。
+
+24.4.1 基本用法
+
+fetch()方法是暴露在全局作用域中的，包括主页面执行线程、模块和工作线程。调用这个方法，浏览器就会
+向给定URL发送请求。
+
+1.分派请求
+
+fetch()只有一个必须的参数input。多数情况下，这个请求是要获取资源的URL。这个方法返回一个期约：
+let r = fetch('/bar')
+console.log(r); //Promise <pending>
+
+
+fetch('bar.txt')
+  .then(res => {
+    console.log(res)
+  })
+
+2.读取响应
+读取响应内容的最简单方法是取得纯文本格式的内容，这要用到text()方法。这个方法返回一个期约
+
+fetch('bar.txt')
+  .then(res => {
+    res.text().then(data => {
+      console.log(data)
+    })
+  })
+
+fetch('bar.txt')
+  .then(res => res.text())
+  .then(data => console.log(data))
+
+3.处理状态码和请求失败
+
+res.status  //200
+res.statusText  //OK
