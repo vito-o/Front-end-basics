@@ -274,5 +274,84 @@ fetch('bar.txt')
 
 3.处理状态码和请求失败
 
+状态码
 res.status  //200
+状态文本
 res.statusText  //OK
+
+fetch('/bar')
+  .then(res => {
+    console.log(res.status)
+    console.log(res.statusText)
+  })
+
+
+24.7 Web Socket
+
+Web Socket(套接字)的目标是通过一个长时连接实现域服务器全双工、双向的通信。
+
+在js中创建web Socket时，一个HTTP请求会发送到服务器以初始化连接。服务器响应后，连接使用HTTP的
+Upgrade头部从HTTP协议切换到Web Socket协议。这意味着Web Socket不能通过标准HTTP服务器实现，而
+必须使用支持该协议的专有服务器。
+
+使用自定义协议而非HTTP协议的好处时，客户端域服务器之间可以发送非常少的数据，不会对HTTP造成任何
+负担。使用更小的数据包让WebSocket非常适合带宽和延迟问题比较明显的移动应用。
+使用自定义协议的确定是，定义协议的时间比定义js API要长。
+
+web Socket得到了所有主流浏览器支持。
+
+24.7.1 API
+
+let socket = new WebSocket('ws://www.example.com/server.php')
+
+注意，必须给WebSocket构造函数传入一个绝对URL。同源策略不适用于WebSocket，因此可以打开到任意站点
+的连接。至于是否与来自特定源的页面通信，则完全取决于服务器
+
+24.7.2 发送和接收数据
+
+//客户端
+let socket = new WebSocket('ws://www.example.com/server.php')
+
+let stringData = 'Hello world'
+
+socket.send('stringData)
+
+//服务端
+socket.onmessage = function(event) {
+  let data = event.data;
+}
+
+
+24.8 安全
+
+CSRF cross-site request forgery 跨站请求伪造
+
+关于安全防护Ajax相关URL的一般理论认为，需要验证请求发送着拥有对资源的访问权限。
+可以通过如下方式实现：
+·要求通过SSL访问能够被Ajax访问的资源
+·要求每个请求都发送一个按约定算法计算好的令牌
+
+注意，以下手段对防护CSRF攻击时无效的
+
+·要求POST而非GET请求（很容易修改请求方法）
+·使用来源URL验证来源（来源URL很容易伪造）
+·基于cookie验证（同样很容易伪造）
+
+24.9 小结
+
+Ajax四无须刷新当前页面即可从服务器获取数据的一个方法，具有如下特点。
+
+·让Ajax迅速流行的中心对象时XMLHttpRequest(XHR)
+
+XHR的一个主要限制时同源策略，即通信只能在相同域名、相同端口和相同协议的提前下完成。访问超出这些
+限制之外的资源会导致安全错误，除非使用了正式的跨域方案。这个方案叫做跨源资源共享（CORS, Cross-
+Origin Resource Sharing）,XHR对象原生支持CORS。图片探测和JSONP时另外两种跨域通信技术，但没有
+CORS可靠。
+
+Fetch API是作为对XHR对象的一种端到端的代替方案而提出的。这个API提供了优秀的基于期约的结构、更
+直观的接口，以及对Stream API的最好支持。
+
+Web Socket时与服务器的全双工、双向通信渠道。与其他方案不同，Web Socket不使用HTTP，而使用了自定义
+协议，目的时更块地发送小数据。这需要专用的服务器，但速度优势明显。
+
+
