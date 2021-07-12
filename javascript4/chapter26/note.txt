@@ -1,0 +1,87 @@
+第26章 模块
+
+26.3 使用ES6之前的模块加载器
+
+26.3.1 CommonJS
+
+CommonJS规范概述了同步声明依赖的模块定义。这个模块主要用于在服务器端实现模块化代码组织，但也可以
+定义在浏览器中使用的模块依赖。CommonJS模块语法不能再浏览器中直接运行
+
+注意：一般任务，Node.js的模块系统使用了CommonJS规范，实际上并不完全正确。Node.js使用了轻微修改
+版本的CommonJS，因为Node.js主要再服务器环境下使用，所以不需要考虑网络延迟问题。考虑到以执行，本节
+使用Node.js风格的模块定义语法。
+
+CommonJS模块定义需要使用require()定义依赖，而使用exports对象定义自己的公共API。
+
+var moduleB = request('./moduleB')
+
+module.exports = {
+  stuff: moduleB.doStuff()
+}
+
+moduleA通过使用模块定义的相对路径来指定自己对moduleB的依赖。什么是“模块定义”，以及如何将字符串
+解析为模块，完全取决于模块系统的实现。比如再Node.js中，模块标识符可能指向文件，也可能指向包含
+index.js文件的目录。
+
+请求模块会加载模块，而把模块赋值给变量是非常常见，但赋值给变量不是必需的。调用require()意味着模块会
+原封不动地加载进来
+require('./moduleA')
+
+无论一个模块再require()中被引用多少次，模块用于是单例。再下面的例子中，moduleA只会被打印一次。这是
+因为无论请求多少次，moduleA只会被加载一次。
+
+var a1 = require('./moduleA')
+var a2 = require('./moduleA')
+
+console.log(a1 === a2) //true
+
+模块第一次加载后被缓存，后续加载会取得缓存的模块。模块加载顺序由依赖图决定。
+
+在CommonJS中，模块加载时模块系统指向的同步操作。因此require()可以像下面这样以变成方式嵌入在模块中：
+
+if(loadCondition) {
+  require('./moduleA')
+}
+
+这里，moduleA只会在loadCondition请求只true时才会加载。这个加载是同步的，因此if()块之前的任何代码
+都会在加载moduleA之前指向，而if()块之后的任何代码都会在加载moduleA之后指向。同样，加载顺序规则也
+会适用。因此，如果moduleA已经在前面某个地方记载过了，这个条件require()就意味着只暴露moduleA这个
+命名空间而已。
+
+
+26.3.2 异步模块定义
+
+CommonJS以服务器端为目标环境，能够一次性把所有模块都记载到内容，而异步模块定义(AMD, Asynchronous
+Module Definition) 的模块定义系统则以浏览器为目标执行环境，这需要考虑网络延迟的问题。AMD的一般
+策略是让模块声明自己的依赖，而运行在浏览器中的模块系统会按需获取依赖，并在依赖加载完成后立即执行
+依赖他们的模块。
+
+AMD模块实现的核心是用函数包装模块定义。这样可以防止声明全局变量，并允许加载器库控制何时加载模块。
+包装函数也便于模块代码的移植，因为包装函数内部的所有模块代码使用的都是原生js结构。包装模块的函数
+是全局define的函数，它是由AMD加载器库的实现定义的。
+
+AMD模块可以使用字符串标识符指定自己的依赖，而AMD加载期会在所有依赖模块加载完毕后立即调用模块工厂
+函数。
+
+//ID为moduleA的模块定义。moduleA依赖moduleB，
+//moduleB会异步加载
+define('moduleA', ['moduleB'], function(moduleB) {
+  return {
+    stuff: moduleB.doStuff()
+  }
+})
+
+AMD也支持require和exports对象，通过他们可以在AMD模块工厂函数内部定义CommonJS风格的模块。这样可以
+像请求模块一样请求他们，但AMD加载器会将他们识别为原生AMD结构，而不是模块定义
+
+define('moduleA', ['require', 'exports'], function(require, exports) {
+  var moduleB = require('moduleB')
+  exports.stuff = moduleB.doStuff()
+})
+
+//动态依赖也是通过这种方式支持的
+define('moduleA', ['require'], function(require) {
+  if(condition) {
+    var moduleB = require('moduleB')
+  }
+})
