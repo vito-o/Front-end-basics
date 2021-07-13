@@ -85,3 +85,148 @@ define('moduleA', ['require'], function(require) {
     var moduleB = require('moduleB')
   }
 })
+
+26.3.3 通用模块定义
+
+为了统一CommonJS和AMD生态系统，通用模块定义（UMD, Universal Module Definition）规范引用而生。
+UMD可以用于创建这两个系统都可以使用的模块代码。本质上，UMD定义的模块会在启动时检测要使用哪种模块
+系统，然后进行适当配置，并把所有逻辑包装在一个立即调用的函数表达式（IIFE）中。虽然这种组合并不
+完美，但在很多常见下足以实现两个生态的共存。
+
+(function (root, factory) {
+  if(typeof define === 'function' && define.amd) {
+    //AMD 注册为匿名模块
+    define(['moduleB'], factory);
+  } else if (typeof module === 'object' && module.exports) {
+    //Node 不支持严格CommonJS
+    //但可以在Node这样支持module.exports的类CommonJS环境下使用
+    module.exports = factory(require('moduleB'))
+  } else {
+    //浏览器全局上下文（root是window）
+    root.returnExports = factory(root, moduleB)
+  }
+}(this, function (moduleB) {
+  //以某种方式使用moduleB
+
+  //将返回值作为模块的导出
+  //这个例子返回了一个对象
+  //但模块也可以返回函数作为导出值
+  return {}
+}))
+
+26.4 使用ES6模块
+
+<script type="module">
+  //模块代码
+</script>
+
+<script type="module" src="path/t/myModule.js"></script>
+
+与传统脚本不同，所有模块都会像<script defer>加载的脚本一样按顺序执行。解析到<script type="module">
+标签后会立即下载模块文件，但执行会延迟到文件解析完成。无论对嵌入的模块代码，还是引入的外部模块文件，
+都是这样，<script type="module">在页面中出现的顺序就是他们执行的顺序。与<script defer>一样，修改
+模块标签的位置，无论是在<head>还是在<body>中，只会影响文件什么时候加载，而不会印象模块什么时候加载。
+
+const foo = 'foo'
+export { foo }
+
+export const foo = 'foo'
+
+导出时也可以提供别名
+
+const foo = 'foo'
+export { foo as myFoo }
+
+因为ES6命名导出可以将模块作为容器，所有可以在一个模块中声明多个命名导出
+
+ES6模块也支持对导出声明分组，可以同时为部分或全部导出值指定别名：
+
+const foo = 'foo'
+const bar = 'bar'
+const baz = 'baz'
+export { foo, bar as myBar, baz }
+
+默认导出
+
+export default foo;
+
+另外，ES6模块系统会识别作为别名提供的default关键字。此时，虽然对应的值时使用命名语法导出的，实际上
+则会成为默认导出：
+
+const foo = 'foo'
+
+//等同于 export default foo;
+export { foo as default }
+
+会导致错误的不同形式
+
+//行内默认导出中不能出现变量声明
+export default const foo = 'bar'  /error
+
+//只有标识符可以出现在export子句中
+export { 123 as foo }             /error
+
+//别名只能在export子句中出现
+export const foo = 'foo' as myFoo;/error
+
+注意：什么可以或不可以与export关键字出现在同一行可能很难记住。一般来说，声明、赋值和导出标识符
+最好分开。这样就不容易搞错了，同时也可以让export语句集中在一块。
+
+
+26.4.5 模块导入
+
+import必须出现在模块的顶级
+//允许
+import ...
+
+//不允许
+if( condition ) {
+  import ...
+}
+
+导入对模块而言是只读的，实际上相当于const声明的变量。
+
+import foo, * as Foo './foo.js'
+------------------------------------------
+
+const foo = 'foo', bar = 'bar', baz = 'baz'
+export { foo, bar, baz }
+
+import * as Foo from './foo.js
+
+console.log(Foo.foo)
+
+------------------------------------------
+
+import { foo, bar, baz as myBaz } from './foo.js'
+
+console.log(foo)
+
+------------------------------------------
+
+默认导出就好像整个模块就是导出的值一样。可以使用default关键字并提供别名来导入。也可以不是使用
+大括号，此时指定的标识符就是默认导出的别名
+
+//等效
+import { default as foo } from './foo.js'
+import foo from './foo.js'
+
+如果模块同时导出了命名导出和默认导出，则可以在import语句中同时取得他们。可以依次列出特定导出的标识符
+来取得，也可以使用*来取得
+
+import foo, { bar, baz } from './foo.js'
+import { default as foo, bar, baz } from './foo.js'
+import foo, * as Foo './foo.js'
+
+26.4.6 模块转移导出
+
+export * from './foo.js'
+
+export { foo, bar as myBar } from './foo.js'
+
+//外部模块的默认导出可以重用为当前模块的默认导出
+export { default } from './foo.js'
+
+export { foo as default } from './foo.js'
+
+26.4.7 工作者模块
