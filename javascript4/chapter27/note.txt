@@ -139,7 +139,72 @@ console.log(worker)
 
 这个例子非常简单，但涉及几个基本概念。
 ·emptyWorker.js文件是从绝对路径加载的。根据应用程序的结构，使用绝对URL经常是多余的。
-·这个文件是在后台夹杂的，工作者线程的初始化完全独立于main.js
+·这个文件是在后台加载的，工作者线程的初始化完全独立于main.js
 ·工作者线程本身存在于一个独立的js环境中，因此main.js必须以Worker对象为代理实现于工作者线程通信。
 在上面的例子中，该对象被赋值给了worker变量。
-·虽然响应的工作者线程可能换不存在，但该Worker对象已哎原始环境中可用了。
+·虽然响应的工作者线程可能换不存在，但该Worker对象已在原始环境中可用了。
+
+2.工作者线程安全限制
+
+工作者线程的脚本文件只能与父页面相同的源记载。从其他源加载工作者线程的脚本文件会导致错误。
+
+注意：不能使用非同源脚本创建工作者线程，并不影响执行执行其他源的脚本。再工作者线程内部，使用
+importScripts()可用加载其他源的脚本。
+
+基于加载脚本创建的工作者线程不受文档的内容安全策略限制，因为工作者线程在与父文档不同的上下文中运行。
+不过，如果工作者线程加载的脚本带有全局唯一标识符（与加载自一个二进制大文件一样），就会受父文档内容
+安全策略的限制。
+
+
+3.使用Worker对象
+
+注意：要管理好使用Worker()创建的每个Worker对象。在终止工作者线程之前，它不会被垃圾回收，也不能通过
+编程方式恢复对之前Worker对象的引用。
+
+Worker对象支持下列时间处理程序：
+·onerror：在工作者线程中发生ErrorEvent类型的错误事件时会调用指定给该属性的处理程序。
+    -该事件会在工作者线程中抛出错误时发生
+    -该事件也可以通过worker.addEventListener('error', handler)的形式处理。
+·onmessage：在工作者线程中发生MessageEvent类型的消息事件时会调用指定给该属性的处理程序。
+    -该事件会在工作者线程向父上下文发送消息时发生
+    -该事件也可以通过使用worker.addEventListener('message', handler)处理。
+·onmessageerror：在工作者线程中发生MessageEvent类型的错误事件时会调用指定给该属性的处理程序。
+    -该事件会在工作者线程收到无法发序列化的消息时发生。
+    -该事件也可以通过使用worker.addEventListener('messageerror', handler)处理
+Worker对象还支持下列方法。
+
+·postMessage():用于通过异步消息事件向工作者线程发送信息
+·terminate()：用于立即终止工作者线程。没有为工作者线程提供清理的机会。脚本会突然停止。
+
+4.DedicatedWorkerGlobalScope
+
+在专用工作者线程内部，全局作用域是DedicatedWorkerGlobalScope的实例。因为这继承自WorkerGlobalScope，
+所以包含它的所有属性和方法。工作者线程可以通过self关键字访问该全局作用域。
+
+顶级脚本和工作者线程中的console对象都将写入浏览器看控制台，这对于调试非常有用。因为工作者线程具有
+不可忽略的启动延迟，所以即使Worker对象存在，工作者线程的日志也会在主线程的日志之后打印出来。
+
+注意：这里两个独立的js线程都向一个console对象发消息，该对象随后将消息序列化并在刘阿龙年起控制台打印
+出来。浏览器从两个不同的js线程收到消息，并按照子集认为合适的顺序输出这些消息。为此，在多线程应用程序
+中使用日志确定操作顺序时必须要当心。
+
+DedicatedWorkerGlobalScope在WorkerGlobalScope基础上增加了一下属性和方法。
+·name：可以提供给Worker构造函数的一个可选的字符串标识符
+·postMessage()：与worker.postMessage()对应的方法，用于从工作者线程内部向父上下文发送消息。
+·close()：与worker.terminate()对应的方法，用于立即终止工作者线程。没有为工作者线程提供清理的机会，
+脚本会突然停止。
+·importScripts()：用于向工作者线程中导入任意数量的脚本。
+
+27.2.2 专用工作者线程与隐式MessagePosts
+
+专用工作者线程与Worker对象和DedicatedWorkerGlobalScope与MessagePorts有一些相同接口处理程序和
+方法：onmessage、onmessageerror、close()和postMessage()。这不是偶然的，因为专用工作者线程隐式
+使用了MessagePorts在两个上下文之间通信。
+
+父上下文中的Worker对象和SedicatedWorkerGlobalScope实际上MessagePort，并在子集的接口中分别暴露了
+响应的处理程序和方法。换句话说，消息还时通过MessagePort发送，只是没有直接使用MessagePort而已。
+
+也有不一致的地方，比如start()和close()约定。专用工作者线程会自动发送排队的消息，因此start()也就
+没有必要了。另外，close()在专用工作者线程的上下文中没有意义，因为这样关闭MessagePort会使工作者线程
+孤立。因此，在工作者线程内部调用close()（或在外部调用terminate()）不仅会关闭MessagePort，也会
+终止线程。 
