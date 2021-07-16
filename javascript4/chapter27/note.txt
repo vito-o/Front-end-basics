@@ -208,3 +208,139 @@ DedicatedWorkerGlobalScope在WorkerGlobalScope基础上增加了一下属性和�
 没有必要了。另外，close()在专用工作者线程的上下文中没有意义，因为这样关闭MessagePort会使工作者线程
 孤立。因此，在工作者线程内部调用close()（或在外部调用terminate()）不仅会关闭MessagePort，也会
 终止线程。 
+
+27.2.3 专用工作者线程的生命周期
+
+调用Worker()构造函数是一个专用工作者线程的起点。调用之后，他会初始化对工作者线程脚本的请求，并把
+Worker对象返回给父上下文。虽然父上下文中可以立即使用这个Worker对象，但与之关联的工作者线程可能还
+没有创建，因为存在请求脚本的网络延迟和初始化延迟。
+
+一般来说，专用工作者线程可以非正式区分为处于下列三个状态：初始化(initializing)、活动(active)和
+终止(terminated)。这几个状态对其他上下文是不可见的。虽然Worker对象可能会存在于父上下文中，但也无法
+通过它确定工作者线程当前是处理初始化、活动还是终止状态。换句话说，与活动的专用工作者线程关联的Worker
+对象和与终止的专用工作者线程关联的Worker对象无法分别。
+
+初始化时，虽然工作者线程脚本尚未执行，但可以先把要发送给工作者线程的消息加入队列。这些消息会等待工作
+着线程的状态变为活动，再吧消息添加到它的消息队列。下面的代码演示了这个过程。
+
+创建之后，专用工作者线程就会伴随页面的整个生命期而存在，除非自我终止（self.close()）或者通过外部
+终止(worker.terminate())。即使线程脚本已运行完成，线程的环境仍会存在。只要工作者线程仍存在，
+与之关联的Worker对象就不会被当初垃圾收集掉。
+
+自我终止和外部终止最终都会执行相同的工作者线程终止历程。
+
+虽然调用了close()，但显然工作者线的执行并没有立即终止。close()在这里会通知工作者线程取消事件循环
+中的所有任务，并阻止继续添加新任务。这也是为什么'baz'没有打印出来的原因。工作者线程不需要执行同步
+停止，因此在父上下文的事件循环中处理的'bar'仍会打印出来。
+
+一旦调用了terminate()，工作者线程的消息队列就会被清理并锁住，
+
+注意close()和terminate()是幂等操作，多次调用没有问题。
+
+在整个什么周期中，一个专用工作者线程只会关联一个网页（Web工作者线程规范称其为一个文档）。除非明确
+终止，否则只要关联存在，专用工作者线程就会存在。如果浏览器离开网页（通过导航或关闭标签页或关闭窗口）
+它会将于其关联的工作者线程标记为终止，他们的执行也会立即停止。
+
+
+27.2.4 配置Worker选项
+
+Worker()构造函数允许将可选的配置对象作为第二个参数。该配置对象支持下列属性。
+
+·name：可以在工作者线程中通过self.name读取到的字符串标识符
+·type：表示加载脚本的允许方式，可以是'classic'或'module'。'classic'将脚本作为常规脚本来执行，
+'module'将脚本作为模块来执行。
+
+·credentials：在type为'module'时，指定如何获取与传输 凭证数据相关的工作者线程模块脚本。值可以是
+'omit'、'same-origin'或'include'。这些选项与fetch()的凭证选项相同。在type为'classic'时，默认
+'omit'。
+
+27.2.5 在js行内创建工作者线程
+
+工作者线程需要基于脚本文件来创建，但着并不意味着该脚本必须是远程资源。专用工作者线程也可以通过Blob
+对象URL在行内脚本创建。这样可以更快速地初始化工作者线程，因为没有网络延迟。
+
+例：
+
+//创建要执行的js代码字符串
+const workerScript = `
+    self.onmessage = ({data}) => console.log(data)
+`
+
+//基于脚本字符串生成Blob对象
+const workerScriptBlob = new Blob([workerScript])
+
+//基于Blob实例创建对象URL
+const workerScriptBlobUrl = URL.createObjectURL(workerScriptBlob)
+
+//基于对象URL创建工作者线程
+const worker = new Worker(workerScriptBlobUrl)
+
+worker.postMessage('blob worker script')
+
+这个例子中，通过脚本字符串创建了Blob，然后又通过Blob创建了对象URL，最后把对象URL传给了Worker()构造
+函数。该构造函数同样传教了专用工作者线程。
+
+如果把所有代码写在一块，可以浓缩为这样
+
+const worker = new Worker(URL.createObjectURL(new Blob([`self.onmessage = ({data}) => console.log(data)`])))
+
+
+工作者线程也可以利用函数序列化来初始化行内脚本。这是因为函数的toString()方法返回函数代码的字符串，
+而函数可以在父上下文中定义但在子上下文中执行。
+例：
+function fibonacci(n) {
+    return n < 1 ? 0
+        : n <= 2 ? 1
+        : fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+const workerScript = `
+    self.postMessage(
+        (${fibonacci.toString()})(9)
+    )
+`
+
+const worker = new Worker(URL.createObjectURL(new Blob([workerScript])))
+
+worker.onmessage = ({data}) => console.log(data)
+
+该函数作为IIFE调用并传递参数，结构被发送回主线程。虽然计算斐波那契数列比较耗时，但所有计算都会委托
+到工作者线程，因此并不会影响父上下文的性能。
+
+注意：像这样序列化函数有一个前提，就是函数体内不能使用通过闭包获得的引用，也包括全局变量，比如
+window，因为这些引用在工作者线程中执行时回出错。
+
+27.2.6 在工作者线程中动态执行脚本
+
+工作者线程中的脚本并发铁板一块，而是可以使用importScripts()方法通过编程方式加载和执行任意脚本。
+该方法可用于全局Worker对象。这个方法会加载脚本并按照加载顺序同步执行。
+例：demo8
+
+importScripts()方法可以接收任意数量的脚本作为参数。浏览器下载他们的属性没有限制，但执行则会严格
+按照他们的参数列表的顺序进行。因此，下面的代码与前面的效果一样：
+
+console.log('importing scripts')
+
+importScripts('./scriptA.js', './scriptB.js')
+
+console.log('scripts imported')
+
+
+脚本加载收到常规CORS的限制，但在工作者线程内部可以请求来自任何源的脚本。这里的脚本导入策略类似于使用
+生成的<script>标签动态加载脚本。在这种情况下，所有导入的脚本也会共享作用域。
+
+main.js
+
+const worker = new Worker('./worker.js', {name: 'foo'})
+
+scriptA.js
+
+console.log(`scriptA executes in ${self.name} with ${globalToken}`)
+
+scriptB.js
+
+console.log(`scriptB executes in ${self.name} with ${globalToken}`)
+
+worker.js
+
+const globalToken = 'bar'
