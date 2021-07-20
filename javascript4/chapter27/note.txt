@@ -344,3 +344,396 @@ console.log(`scriptB executes in ${self.name} with ${globalToken}`)
 worker.js
 
 const globalToken = 'bar'
+
+
+27.2.7 委托任务到子工作者线程
+
+有时候可能需要在工作者线程中再创建子工作者线程。在有多个CPU核心的时候，使用多个子工作者线程可以实现
+并行计算。使用多个子工作者线程前要考虑周全，确保并行计算的投入确实能够得到收益，毕竟同时运行多个子
+工作者线程会有很大计算成本。
+
+出了路径解析不同，创建子工作者线程与传教普通工作者线程是一样的。子工作者线程的脚本路径根据父工作者
+线程而不是相对于网页来解析。
+
+demo9
+
+注意：顶级工作者线程的脚本和子工作者线程的脚本都必须从主页相同的源加载。
+
+27.2.8 处理工作者线程错误
+
+如果工作者线程脚本抛出了错误，该工作者线程沙盒可以阻止它打断父线程的执行。如下面的例子所示，
+其中的try/catch块不会捕获到错误：
+
+demo10
+
+不过，相应的错误事件仍然会冒泡到工作者线程的全局上下文，因此可以通过在Worker对象上设置错误事件侦听
+器访问到。
+
+domo11
+
+27.2.9 与装用工作者线程通信
+
+与工作者线程的通信都是通过异步消息完成的，但这些消息可以有多种形式。
+
+1.使用postMessage()
+
+最简单也最常用的形式是使用postMessage()传递序列化的消息。
+
+demo12
+
+对于传递简单的消息，使用postMessage()在主线程和工作者线程之间传递消息，与在两个窗口间传递消息非常
+像。主要区别是没有targetOrigin的限制，该限制是争对Window.prototype.postMessage的，
+对于WorkerGlobalScope.prototype.postMessage或Worker.prototype.postMessage没有影响。
+这样约定的原因很简单：工作者线程脚本的源被限制为主页的源，因此没有必要再去过滤了。
+
+2.使用MessageChannel
+
+无论主线程还是工作者线程，通过postMessage()进行通信涉及调用全局对象上的方法，并定义一个临时的
+传输协议。这个过程可以被Channel Messaging API取代，基于该API可以在两个上下文间明确建立通信渠道。
+
+MessageChannel实例有两个端口，分别代表两个通信端点。要让父页面和工作者线程通过MessageChannel通信，
+需要把一个端口传到工作者线程中，如下所示：
+
+demo13
+
+这个例子中，父页面通过postMessage与工作者线程共享MessagePort。使用数组语法是为了在两个上下文间
+传递可转移对象。本章稍后会介绍可转移对象（Transferable）。工作者线程维护着对该端口的引用，并使用
+它代替通过全局对象传递消息。当然，消息的格式也需要临时约定：工作者线程收到的第一条消息包含端口，
+后续的消息才是数据。
+
+使用MessageChannel实例域父页面通信很大程度是多余的。这是因为全局PostMessage()方法本质上与
+channel.postMessage()执行的是相同的操作（不考虑MessageChannel接口的其他特性）。MessageChannel
+真正有用的地方是让两个工作者线程之间直接通信。这可以通过把端口传给另一个工作者线程实现。下面的例子
+把一个数组传给了一个工作者线程，这个线程又把它传给另外一个工作者线程，然后再传回主页：
+
+demo14
+
+这个例子中，数组的每一段旅程都会添加一个字符串，标识子集到过哪里。数组从父页面发送到工作者线程，
+工作者线程会加上自己的上下文标识。然后，数组又从一个工作者线程发送到另一个工作者线程。第二个线程
+又加上自己的上下文标识符，随即将数组发回主页，主页把数组打印出来。这个例子中的两个工作者线程使用了
+同一个脚本，因此要注意数组可以双向传递。
+
+3.使用BroadcastChannel
+
+同源脚本能够通过BroadcastChannel相互之间发送和接收消息。这种通道类型的设置比较简单，不需要像
+MessageChannel那样转移乱糟糟的端口。这可以通过以下方式实现：
+
+demo15
+
+这里，页面在通过BroadcastChannel发送消息之前会先等1秒钟。因为这种信道没有端口所有权的概念，所以
+如果没有实体监听这个信道，广播的消息就不会有人处理。在这种情况下，如果没有setTimeout()，则由于
+初始化工作者线程的延迟，就会导致消息已经发送了，但工作者线程上的消息处理程序还没有就位。
+
+27.2.10 工作者线程数据传输
+
+使用工作者线程时，经常需要位他们提供某种形式的数据负载。工作者线程是独立的上下文，因此在上下文间传输
+数据就会产生消耗。在支持传统多线程模型的语言中，可以使用锁、互斥量，以及volatile变量。在js中，有三种
+在上下文间转移信息的方式：结构化克隆算法（structured clone algorithm）、可转移对象（transferable 
+objects）和共享数组缓冲区(shared array buffers)
+
+1.结构化克隆算法
+
+结构化克隆算法可用于在两个独立上下文间共享数据。该算法由浏览器在后台实现，不能直接调用。
+在通过postMessage()传递对象时，浏览器会遍历该对象，并在目标上下文中生成它的一个副本。
+
+下列类型时结构化克隆算法支持的类型
+·除Symbol之外的所有原始类型
+·Boolean对象
+·String对象
+·BDate
+·RegExp
+·Blob
+·File
+·FileList
+·ArrayBuffer
+·ArrayBufferView
+·ImageData
+·Array
+·Object
+·Map
+·Set
+
+关于结构化克隆算法，有以下几点需要注意.
+
+·赋值之后，源上下文中对该对象的修改，不会传播到目标上下文中的对象。
+·结构化克隆算法可以识别对象中包含的循环引用，不会无穷遍历对象
+·克隆Error对象、Function对象或DOM节点会抛出错误。
+·结构化克隆算法并不总是创建完全一致的副本
+·对象属性描述符、获取方法和设置方法不会克隆，必要时会使用默认值
+·原型链不会克隆
+·RegExp.prototype.lastIndex属性不会克隆
+
+注意  结构化克隆算法在对象比较复杂时会存在计算性消耗。因此，实践中要尽可能避免过大、或过多的复制。
+
+2.可转移对象
+
+使用顾客转移对象（transferable objects）可以把所有权从一个上下文转移到另一个上下文。在不太可能
+在上下文间复制大量数据的情况下，这个功能特别有用。只有如下几种对象时可转移对象：
+·ArrayBuffer
+·MessagePort
+·ImageBitmap
+·OffscreenCanvas
+
+postMessage()方法的第二个可选参数是数组，它指定应该将哪些对象转移到目标上下文。在遍历消息负载对象
+时，浏览器根据转移对象数组检查对象引用，并对转移对象进行转移而不是复制他们。这意味着被转移的对象可以
+通过消息符在发送，，消息负载本身会被复制，比如对象或数组。
+
+下面的例子演示了工作者线程对ArrayBuffer的常规结构化克隆。这里没有对象转移：
+
+demo16
+
+如果把ArrayBuffer指定为可转移对象，那么对缓冲区内存的引用就会从父上下文中抹去，然后分配给工作者
+线程。下面的例子演示了这个操作，结构分配给ArrayBuffer的内容从父上下文转移到了工作者线程。
+
+demo17
+
+在其他类型的对象中嵌套可转移对象也完全没有问题。包装对象会被复制，而嵌套的对象会被转移
+
+demo18
+
+3.SharedArrayBuffer
+
+既不克隆，也不转移，SharedArrayBuffer作为ArrayBuffer能够在不同浏览器上下文间共享。在把
+SharedArrayBuffer传递个postMessage()时，浏览器只会传递原始缓冲区的引用。结果是，两个不同
+的JavaScript上下文会分别维护对同一个内存块的引用。每个上下文都可以随意修改这个缓冲区，就跟修改
+常规ArrayBuffer一样。
+
+demo19
+
+当然，在两个并行线程中共享内存块有资源争用的风险。换句话说，SharedArrayBuffer实例实际上会被当成
+易变(volatile)内存
+
+Atomics对象让一个工作者线程获得SharedArrayBuffer实例的锁，在执行完全不读写读操作后，再允许另一个
+工作者线程执行操作。把Atomics.add()放到这个例子中得到正确的最终值。
+Atomics.add(view, 0, 1)
+
+第20章消息介绍了SharedArrayBuffer和Atomics API
+
+27.2.11 线程池
+
+因为启用工作作者线程代价很大，所以某些情况下可以考虑始终报纸固定数量的线程活动，需要时就把任务分派
+给他们。工作者线程再执行计算时，会被标记位忙碌状态。直到它通知线程池字节空闲了，才准备好接收新任务。
+这些活动线程就称为“线程池”或“工作者线程”
+
+线程池中线程的数量多少适合并没有权威的答案，不过可以参考navigator.hardware Concurrency属性返回的
+系统可用的核心数量。因为不太可能直到每个核心的多线程能力，所以最好把这个数字作为线程池大小的上限。
+
+一种使用线程池的策略是每个线程都指向同样的任务，但具体执行什么任务由几个参数来控制。通过使用特定于
+任务的线程池，可用分派固定数量的工作者线程，并根据需要位他们提供参数。工作者线程会接收这些参数，
+执行耗时的计算，并把结果返回给线程池。然后线程池可用再将其他工作分派给工作者线程去执行。接下来的例子
+将构建一个相对简单的线程池，但可用涵盖上述思想的所有基本要求。
+
+首先是定义一个TaskWorker类，它可用扩展Worker类。TaskWorker类型负责两件事：跟踪线程是否正忙于工作，
+并管理进出线程的信息与事件。另外，传入给这个工作者线程的任务会封装到一个期约中，然后正确地接近和拒绝。
+
+
+27.3 共享工作者线程
+
+共享工作者线程或共享线程与专用工作者线程类似，但可以被多个可信任的执行上下文访问。例如，同源的两个
+标签页可以访问同一个共享工作者线程。SharedWorker与Worker的消息接口稍有不同，包括外部和内部。
+
+共享线程适合开发者希望通过再多个上下文间共享线程减少计算性消耗的情形。比如，可以用一个共享线程管理
+多个同源页面WebSocket消息的发送与接收。共享线程也可以用在同源上下文希望通过一个线程通信的情形。
+
+27.3.1 共享工作者线程介绍
+
+从行为上讲，共享工作者线程可以看作是专用工作者线程的一个扩展。线程创建、线程选项、安全限制和
+importScripts()的行为都是相同的。与专用工作者线程一样，共享工作者线程也在独立执行上下文中运行，
+也只能与其他上下文呢异步通信。
+
+1.创建共享工作者线程
+与专用工作者线程一样，创建共享工作者线程非常常用的方式是通过加载js文件创建。此时，需要给SharedWorker
+构造函数传入文件路径，该构造函数在后台异步加载脚本并实例化共享工作者线程。
+
+demo21
+
+也可以在行内脚本中创建共享工作者线程，但这样做没什么意义。因为每个基于行内脚本字符串创建的Blob都会
+被赋予字节唯一的浏览器内部URL，所以行内脚本中创建的共享工作者线程始终是唯一的
+
+2.SharedWorker标识与独占
+
+共享工作者线程与专用工作者线程的一个重要区别在于，虽然Worker()构造函数始终会创建新实例，而SharedWorker()
+则只会在相同的标识不存在的情况下才创建新实例。如果的确存在与标识匹配的共享工作者线程，则只会与已有
+共享这线程建立新的连接。
+
+共享工作者线程标识源自解析后的脚本URL、工作者线程名称和文档源。例如，下面的脚本将实例化一个共享工作者
+线程并添加两个连接：
+
+//实例化一个共享工作者线程
+//  - 全部基于同源调用构造函数
+//  - 所有脚本解析为相同的URL
+//  - 所有线程都有相同的名称
+new SharedWorker('./sharedWorker.js')
+new SharedWorker('./sharedWorker.js')
+new SharedWorker('./sharedWorker.js')
+
+类似地，因为下面三个脚本字符串都解析到相同的URL，所以也只会创建一个共享工作者线程：
+
+//实例化一个共享工作者线程
+//  - 全部基于同源调用构造函数
+//  - 所有脚本解析为相同的URL
+//  - 所有线程都有相同的名称
+new SharedWorker('./sharedWorker.js')
+new SharedWorker('sharedWorker.js')
+new SharedWorker('https://www.example.com/sharedWorker.js')
+
+因为可选的工作者线程名称也是共享工作者线程标识的一部分，所以不同的线程名称会强制浏览器创建多个共享
+工作者线程。对下面的例子而言，一个名为'foo'，另一个名为'bar'，尽管他们同源且脚本URL相同。
+
+//实例化一个共享工作者线程
+//  - 全部基于同源调用构造函数
+//  - 所有脚本解析为相同的URL
+//  - 一个线程名为'foo'，一个线程名为'bar'
+new SharedWorker('./sharedWorker.js', {name: 'foo'})
+new SharedWorker('./sharedWorker.js', {name: 'foo'})
+new SharedWorker('./sharedWorker.js', {name: 'bar'})
+
+共享线程，顾名思义，可以在不同标签页、不同窗口、不同内嵌框架或同源的其他工作者线程之间共享。因此，
+下面的脚本如果在多个标签页运行，只会在第一次执行时创建一个共享工作者线程，后续执行会连接到该线程：
+
+//  实例化一个共享工作者线程
+//  - 全部基于同源调用构造函数
+//  - 所有脚本解析为相同的URL
+//  - 所有线程都有相同的名称
+new SharedWorker('./sharedWorker.js')
+
+初始化共享线程的脚本只会限制URL，因此下面的代码会创建两个共享工作者线程，尽管加载了相同的脚本：
+
+//  实例化一个共享工作者线程
+//  - 全部基于同源调用构造函数
+//  - '?'导致了两个不同的URL
+//  - 所有线程都有相同的名字
+new SharedWorker('./sharedWorker.js')
+new SharedWorker('./sharedWorker.js？')
+
+如果该脚本在两个不同的标签页中运行，同样页只会创建两个共享工作者线程。每个构造函数都会检查匹配的共享
+工作者线程，然后连接到已存在的那个。
+
+27.4 服务工作者线程
+
+服务工作者线程(service worker)是一种类似浏览器中代理服务器的线程，可以拦截外出请求和缓存响应。这
+可以让网页在没有网络连接的情况下正常使用。因为部分或全部页面可以从服务工作者线程缓存中提供服务。
+服务工作者线程页可以使用Notifications API、Push API、Background Sync API和Channel Messaging API。
+
+与共享共享工作者线程类似，来自一个域的多个页面共享一个服务工作者线程。不过，为了使用Push API等特性，
+服务工作者线程也可以在相关的标签页或浏览器关闭后继续等待到来的推送事件。
+
+无论如何，对于大多数开发者而言，服务工作者线程在两个主要任务上最有用：冲到网络请求的缓存层和启用推送
+通知。在这个意义上，服务工作者线程就是用与把网页变成像原生应用程序意义的工具。
+
+
+27.4.1 服务工作者线程基础
+
+独立上下文中运行，只能通过异步消息通信
+
+服务工作者线程和共享工作者线程还是有很多本质区别的。
+
+1.ServiceWorkerContainer
+
+服务工作者线程与专用工作者线程或共享工作者线程的一个区别是没有全局构造函数。服务工作者线程是通过
+ServiceWorkerContainer来管理的，它的实例保存在navigator.serviceWorker属性中。该对象是一个顶级
+接口，通过它可以让浏览器创建、更新、销毁或者与服务工作者线程交互
+
+navigator.serviceWorker
+//ServiceWorkerContainer{}
+
+2.创建服务工作者线程
+
+与共享工作者线程类似，服务工作者线程同样是在换不存在时创建新势力，在存在时连接已有实例。
+ServiceWorkerContainer没有通过全局构造函数创建，而是暴露register()方法，该方法与Worker()或
+SharedWorker()构造函数相同的方法传递脚本URL；
+
+demo23
+
+服务工作者线程对于何时注册时比较灵活的。在第一次调用register()激活服务工作者线程后，后续在同一个
+页面使用相同URL对register()的调用时加上什么页不会执行。此外，即使浏览器为全局支持服务工作者线程
+，服务工作者线程本身对页面也是不可见的。这是因为它的行为类似代理，就算有需要它处理的操作，页仅仅是
+发送常规的网络请求。
+
+考虑到上述情况，注册服务工作者线程的一种非常常见的模式是基于特性检测，并在页面的load事件中操作
+
+if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('xxx.js')
+    })
+}
+
+如果没有load事件这个门槛，服务工作者线程的注册就会与页面资源的加载重叠，进而拖慢初始页面渲染的过程。
+除非该服务工作者线程负责管理缓存，否则等待load事件是个明治的选择，这样同样可以发挥服务工作者线程的价值。
+
+3.使用ServiceWorkerContainer对象
+
+ServiceWorkerContainer接口是浏览器对服务工作者线程生态的顶部封装。它为管理服务工作者线程状态和
+生命周期提供了便利。
+
+ServiceWorkerContainer始终可以在客户端上下文中访问：
+
+console.log(navigator.serviceWorker)
+//ServiceWorkerContainer {controller: null, ready: Promise, oncontrollerchange: null, onmessage: null, onmessageerror: null}
+
+ServiceWorkerContainer支持以下事件处理程序。
+
+·oncontrollerchange:在ServiceWorkerContainer触发controllerchange事件时会调用指定的事件处理程序。
+    -此事件在获得新激活的ServiceWorkerRegistration时触发。
+    -此事件也可以使用navigator.serviceWorker.addEventListener('controllerchange', handler)处理
+
+·onerror：在关联的服务工作者线程触发ErrorEvent错误事件时会调用指定的事件处理程序。
+    -此事件在关联的服务工作者线程内部抛出错误时触发
+    -此事件也可以使用navigator.serviceWorker.addEventListener('error', handler)处理
+
+·onmessage：在服务工作者线程触发MessageEvent事件时会调用指定的事件处理程序。
+    -此事件在服务脚本向父上下文发送消息时触发
+    -此事件也可以使用navigator.serviceWorker.addEventListener('message', handler)处理
+
+ServiceWorkerContainer支持下列属性。
+
+·ready：返回promise，resolve为激活的ServiceWorkerRegistration对象。该期约不会reject。
+·controller：返回与当前页面关联的激活的ServiceWorker对象，如果没有激活的服务工作者线程则返回null
+
+ServiceWorkerContainer支持下列方法。
+
+·register()：使用接收到的url和options对象创建或更新ServiceWorkerRegistration
+·getRegistration()：返回期约，resolve为与提供的作用域匹配的ServiceWorkerRegistration对象；如果没有
+匹配的服务工作者线程返回undefined。
+·getRegistrations()：返回期约，resolve为与ServiceWorkerContainer关联的ServiceWorkerRegistration对象
+的数组；如果没有关联的服务工作者线程则返回空数组。
+
+·startMessage()：开始传送通过Client.postMessage()派发的消息。
+
+4.使用ServiceWorkerRegistration对象
+
+ServiceWorkerRegistration对象标识注册成功的服务工作者线程。该对象可以在register()返回的resolve
+期约的处理程序中访问到。通过它的一些属性可以确定关联服务工作者线程的生命周期状态。
+
+调用navigator.serviceWorker.register()之后返回的期约会将注册成功的ServiceWorkerRegistration对象
+（注册对象）发送给处理函数。在同一页面使用同一URL多次调用该方法会返回相同的注册对象。
+
+navigator.serviceWorker.register('./serviceWorker.js')
+.then(registrationA => {
+    console.log(registrationA)
+
+    navigator.serviceWorker.register('./serviceWorker2.js')
+    .then(registrationB => {
+        console.log(registrationA === registrationB)
+    })
+})
+
+//ServiceWorkerRegistration {installing: ServiceWorker, waiting: null, active: null, navigationPreload: NavigationPreloadManager, scope: "http://127.0.0.1:8080/demo24/", …}
+
+ServiceWorkerRegistration支持以下事件处理程序。
+
+·onupdatefound：在服务工作者线程触发updatefound事件时会调用指定的事件处理程序。
+
+5.使用ServiceWorker对象
+
+6.服务工作者线程的安全限制
+
+由于服务工作者线程几乎可以任意修改和重定向网络请求，以及加载静态资源，服务工作者线程API只能在安全
+上下文（HTTPS）下使用。在非安全上下文（HTTP）中，navigator.serviceWorker是undefined.
+
+7.ServiceWorkerGlobalScope
+
+在服务工作者线程内部，全局上下文是ServiceWorkerGlobalScope的实例。ServiceWorkerGlobalScope
+继承自WorkerGlobalScope。服务工作者线程可以通过self关键字访问该全局上下文。
+
+注意 根据浏览器实现，在ServiceWorker中把日志打印到控制台不一定能在浏览器默认控制台中看到。
