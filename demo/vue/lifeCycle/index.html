@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script>
+    /**
+     * vue的生命周期
+     *
+     * beforeCreate
+     *
+     * 在实例初始化之后，
+     * 数据观测(data observer)和event/watch事件配置之前被调用。
+     * 在当前阶段data、methods、computed以及watch上的数据和方法都不能被访问。
+     *
+     * created
+     *
+     * 实例已经创建完成后被调用。
+     * 在这一步，实例已完成以下的配置：
+     * 数据观测(data ovserver)，属性和方法的运算，watch/event事件回调。
+     * 这里没有$el，如果非要想与Dom进行交互，可以通过vm.$nextTick来访问Dom
+     *
+     * beforeMount
+     *
+     * 在挂在开始之前被调用，相关的render函数首次被调用。
+     *
+     * mounted
+     *
+     * 在挂载完成后发生，在当前阶段，真实Dom挂在完毕，数据完成双向绑定，可以访问到Dom节点
+     *
+     * beforeUpdate
+     *
+     * 数据更新时调用
+     * 发生在虚拟DOM重新渲染和打补丁(patch)之前。可以在这个钩子中进一步地更改状态，着不会触发附加的
+     * 重渲染过程
+     *
+     * updated
+     *
+     * 发生在更新完成之后，当前阶段组件DOM已完成更新。要注意的是避免在此期间更改数据，因为这可能会导致
+     * 无线循环的更新，该狗仔在服务器端渲染期间不被调用。
+     *
+     * beforeDestroy
+     *
+     * 实例销毁之前调用。
+     * 在这一步，实例仍然完全可用。我们可用在这时进行善后收尾工作，比如清除计时器。
+     *
+     * destroyed
+     *
+     * Vue实例销毁后调用。
+     *
+     * 调用后，Vue实例指示的所有东西会解绑定，所有的事件监听会被移除，所有的子实例也会被销毁。该钩子
+     * 在服务器端渲染期间不被调用。
+     *
+     * activated
+     *
+     * keep-alive专属，组件被激活时调用
+     *
+     * deactivated
+     *
+     * keep-alive专属，组件被销毁时调用
+     *
+     *
+     * -----------------------------------------------------------------------
+     *
+     * v-if在编译过程中会被转化成三元表达式，条件不满足时不渲染此节点
+     * v-show会被编译成指令，条件不满足时控制样式将对应节点隐藏（display:none）
+     *
+     * -----------------------------------------------------------------------
+     *
+     * display:none、visibility:hidden和opacity:0之间的区别
+     *
+     * 共同点：
+     *
+     * 三者都是隐藏。
+     *
+     * 不同点：
+     *
+     * 1.是否占据空间
+     *
+     * display:none，隐藏之后不占位置
+     * visibility:hidden、opacity:0，隐藏之后仍然占据位置。
+     *
+     * 2.子元素是否继承
+     *
+     * display:none--不会被子元素继承，父元素都不存在了，子元素也不会显示出。
+     * visibility:hidden--会被子元素继承，通过设置子元素visibility:visible来显示子元素
+     * opacity:0--会被子元素继承，但是不能设置子元素opacity:1来重新显示
+     *
+     * 3.事件绑定
+     *
+     * display:none的元素都已经不再页面存在了，因此无法触发它绑定的事件。
+     * visibility:hidden不会触发它上面绑定的事件
+     * opacity:0元素上面绑定的事件是可用触发的。
+     *
+     * 4.过度动画
+     *
+     * transition对于display是无效的。
+     * transition对visibility是无效的。
+     * transition对于opacity是有效的。
+     *
+     *
+     *
+     **/
+    
+  </script>
+</body>
+
+</html>
