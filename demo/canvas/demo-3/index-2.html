@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+    }
+    .text{
+      position: absolute;
+      left: 130px;
+      top: 35px;
+      z-index: -1;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas" width="400" height="100"></canvas>
+  <div class="text">恭喜中奖！！！</div>
+
+  <script>
+
+    let dom = document.getElementById('canvas')
+    if (dom.getContext) {
+      let ctx = dom.getContext('2d')
+
+      ctx.fillStyle = 'darkgray'
+      ctx.fillRect(0, 0, 400, 100);
+
+      ctx.fillStyle = '#fff'
+      ctx.fillText('刮刮卡', 180, 50)
+
+      let isDraw = false;
+
+      dom.onmousedown = function(){
+        isDraw = true;
+        
+      }
+
+      dom.onmousemove = function(e){
+        if(!isDraw) return;
+        ctx.beginPath();
+        const x = e.pageX - dom.offsetLeft;
+        const y = e.pageY - dom.offsetTop;
+
+        ctx.globalCompositeOperation = 'destination-out'
+
+        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+      }
+      
+      dom.onmouseup = function(){
+        isDraw = false;
+        
+      }
+    }
+
+
+  </script>
+</body>
+
+</html>

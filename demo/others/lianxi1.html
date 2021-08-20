@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- <script src="./dist/js/animate.js"></script>
+    <script src="./dist/js/jquery.min.js"></script> -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .slideone {
+            width: 400px;
+            height: 300px;
+            background-color: turquoise;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .slideone li {
+            list-style: none;
+            height: 40px;
+            line-height: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="slideone">
+        <ul>
+            <li>公告</li>
+            <li>今天是我们</li>
+            <li>开业电影</li>
+            <li>流浪地球</li>
+            <li>的首映</li>
+            <li>主演的演员是</li>
+            <li>吴京 张柏芝 刘涛</li>
+            <li>谢霆锋 成龙</li>
+            <li>啦啦啦啦啦啦啦啦啦啦</li>
+            <li>啦啦啦啦啦啦啦结尾</li>
+        </ul>
+        <!-- <div class="two">
+
+        </div> -->
+    </div>
+    <script>
+        /* var slideone = document.querySelector('.slideone');
+        var ul = document.querySelector('ul');
+        var lis = document.querySelectorAll('li');
+        console.log(lis);
+        // var liH = li.offsetHeight;
+        var ulH = ul.offsetHeight;
+        // var two = document.querySelector('.two');
+        // two.innerHTML = ul.innerHTML;
+        // console.log(two);
+        var num = 0;
+        // var first = ul.children[0].cloneNode(true);
+        // ul.appendChild(first);
+        setInterval(function() {
+            run();
+        }, 60);
+
+        function run() {
+            for (var i = 0; i < lis.length; i++) {
+                lis[i].style.transform = "translateY(" + num + "px)";
+                num = num - 1;
+                if (num == -ulH) {
+                    // ul.style.height = 10 
+                    num = 0;
+                }
+            }
+        } */
+
+
+        var ul = document.querySelector('ul');
+        var lis = document.querySelectorAll('li');
+        var liHeight = lis[0].offsetHeight;
+        var num = 0;
+
+        setInterval(function() {
+            run();
+        }, 30);
+
+        function run() {
+            //判断是否向上移动一个li高度
+
+            //if 如果移动高度小于li的高度
+            if(Math.abs(num) < Math.abs(liHeight)) {
+                ul.style.transform = "translateY(" + num + "px)";
+                num = num - 1;
+
+            //else 如果移动高度大于li的高度
+            } else {
+                num = 0;
+                
+                //将ul中的第一个元素，移动到ul的最后一个元素，然后将ul的translateY改为0
+                //注释：已经显示在界面的元素，你将这个元素放到其他位置，他会从原来位置消失
+                //显示在新的位置，不用删除
+                let first = document.querySelectorAll('li')[0];
+                ul.appendChild(first);
+                ul.style.transform = "translateY(0px)";
+                
+            }
+        }
+    </script>
+</body>
+
+</html>
