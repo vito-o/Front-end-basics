@@ -1,0 +1,18 @@
+{
+  "name": "demo03",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bundle.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup --config rollup.config.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "rollup-plugin-vue": "^5.0.1",
+    "vue-loader": "^15.7.1",
+    "vue-template-compiler": "^2.6.14"
+  }
+}

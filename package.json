@@ -1,0 +1,11 @@
+{
+  "name": "font-end-basics",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/vito-o/Front-end-basics.git",
+  "author": "wt-demos <taiwangwan@163.com>",
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^4.4.2"
+  }
+}

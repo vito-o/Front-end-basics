@@ -1,0 +1,17 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.fn-clear{
+  zoom: 1;
+  &::after{
+      content:'';
+      display: block;
+      height: 0;
+      font-size: 0;
+      clear: both;
+      visibility: hidden;
+  }
+}
