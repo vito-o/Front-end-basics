@@ -16,3 +16,5 @@ app
 if(process.env.NODE_ENV_NAME == 'w1') {
   console.log('process.env is w1')
 }
+
+import '@/utils/http/axios'

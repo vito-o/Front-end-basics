@@ -1,8 +1,14 @@
 const webpack = require('webpack')
+const { resolve } = require('path')
 
 module.exports = {
   publicPath: "/",
   productionSourceMap: false,
+
+  chainWebpack: config => {
+    config.resolve.alias
+      .set('#', resolve(__dirname, 'types'))
+  },
 
   configureWebpack: {
     plugins: [
