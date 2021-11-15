@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://webapi.amap.com/maps?v=2.0&key=76764080cdd77eaefe3d698ff359dba8"></script>
+  <script src="https://webapi.amap.com/loca?v=2.0.0&key=76764080cdd77eaefe3d698ff359dba8"></script>
+  <script language="javascript" src="https://webapi.amap.com/maps?v=2.0&key=76764080cdd77eaefe3d698ff359dba8&plugin=AMap.DistrictSearch"></script> 
+  <script src="https://webapi.amap.com/ui/1.1/main.js"></script>
+  <style>
+    html,body{
+      margin:0;
+    }
+    .map-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="map" class="map-container"></div>
+
+  <script>
+    var opts = {
+        subdistrict: 0,
+        extensions: 'all',
+        level: 'city'
+    };
+
+    //利用行政区查询获取边界构建mask路径
+    //也可以直接通过经纬度构建mask路径
+    var district = new AMap.DistrictSearch(opts);
+
+    district.search('兰州市', function(status, result) {
+      var bounds = result.districtList[0].boundaries;
+      var mask = []
+      for(var i =0;i<bounds.length;i+=1){
+        mask.push([bounds[i]])
+      }
+
+      var map = new AMap.Map('map', {
+        mask:mask,
+        rotateEnable:true,
+        pitchEnable:true,
+        center: [103.88326, 36.055031],//中心点坐标
+        viewMode:'3D',//使用3D视图
+        showBuildingBlock: false,
+        showIndoorMap:false,
+        showLabel:true,
+        zoom:17,//级别
+        //pitch:45,
+        pitch:50,
+        rotation:-15,
+        zooms:[2,20],
+        mapStyle: 'amap://styles/grey',
+        //features:['bg','point','road'],
+      });
+
+      //添加描边
+      for(var i =0;i<bounds.length;i+=1){
+        new AMap.Polyline({
+            path:bounds[i],
+            strokeColor:'#99ffff',
+            strokeWeight:4,
+            map:map
+        })
+      }
+
+      var buildingLayer = new AMap.Buildings({
+          heightFactor: 4,
+          wallColor: '#011d40',
+          roofColor: '#114a82',
+      });
+      map.addLayer(buildingLayer);
+
+      // 创建 Loca 实例
+      var loca = new Loca.Container({
+          map: map
+      });
+
+      loca.ambLight = {
+          intensity: 2.2,
+          color: '#babedc',
+      };
+      loca.dirLight = {
+          intensity: 0.46,
+          color: '#d4d4d4',
+          target: [0, 0, 0],
+          position: [0, -1, 1],
+      };
+      // loca.pointLight = {
+      //     color: 'rgb(15,19,40)',
+      //     position: [103.88326, 36.055031, 2600],
+      //     intensity: 25,
+      //     // 距离表示从光源到光照强度为 0 的位置，0 就是光不会消失。
+      //     distance: 3900,
+      // };
+
+       // 黄色呼吸点
+      var geoLevelE = new Loca.GeoJSONSource({
+        // data: [],
+        url: './src/sz_road_E.json',
+      });
+      var breathYellow = new Loca.ScatterLayer({
+          loca,
+          zIndex: 112,
+          opacity: 1,
+          visible: true,
+          zooms: [2, 22],
+      });
+      breathYellow.setSource(geoLevelE);
+      breathYellow.setStyle({
+          unit: 'meter',
+          size: [100, 100],
+          borderWidth: 0,
+          texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/breath_yellow.png',
+          duration: 500,
+          animate: true,
+      });
+
+
+      AMapUI.loadUI(['geo/DistrictExplorer'], function(DistrictExplorer) {
+        //启动页面
+        initPage(DistrictExplorer);
+      });
+
+      function initPage(DistrictExplorer) {
+        //创建一个实例
+        var districtExplorer = new DistrictExplorer({
+            map: map //关联的地图实例
+        });
+
+        var adcode = 620100; //全国的区划编码
+
+        districtExplorer.loadAreaNode(adcode, function(error, areaNode) {
+
+            if (error) {
+              console.error(error);
+              return;
+            }
+            console.log(areaNode)
+
+
+            // let json = areaNode._data.geoData
+
+            // var geo = new Loca.GeoJSONSource({
+            //   //data: json
+            //   url: '/lanzhou.geoJson'
+            //   //url: 'https://a.amap.com/Loca/static/loca-v2/demos/mock_data/sh_building_center.json',
+            // });
+            // console.log(geo)
+
+            // var pl = new Loca.PolygonLayer({
+            //     //loca: loca,
+            //     /* zooms: [2, 20],
+            //     zIndex: 10,
+            //     visible: true,
+            //     opacity: 1,
+            //     cullface: 'back',
+            //     acceptLight: true,
+            //     shininess: 30,
+            //     hasSide: true,
+            //     depth: true, */
+            //     zIndex: 120,
+            //     shininess: 10,
+            //     hasSide: true,
+            //     cullface: 'back',
+            //     depth: true,
+            // })
+            // pl.setSource(geo);
+            // pl.setStyle({
+            //     // 除了下面设置的属性，其他的缺省属性将恢复默认值。
+            //     topColor: '#111',
+            //     texture: 'https://a.amap.com/Loca/static/loca-v2/demos/images/windows.jpg',
+            //     textureSize: [1000, 820],
+            //     height: function (index, feature) {
+            //         return 50;
+            //     },
+            // });
+            
+            // pl.setLoca(loca);
+
+            // map.on('complete', function () {
+            //   console.log('112321 - complete')
+
+            //     loca.animate.start();
+                
+                
+            // });
+            setTimeout(animate, 2000);
+
+            var speed = 1;
+            function animate(){
+              
+              // 镜头动画
+              // map.setZoom(11.8, true);
+              // map.setPitch(0, true);
+              // map.setCenter([103.88326, 36.055031], true);
+              // map.setRotation(1, true);
+              loca.animate.start();
+              animate2()
+              
+            }
+
+            function animate1() {
+              // 下钻
+              loca.viewControl.addAnimates(
+                [
+                  {
+                    pitch: {
+                      value: 0,
+                      control: [[0, 20], [1, 0]],
+                      timing: [0, 0, 0.8, 1],
+                      duration: 3000 / speed,
+                    },
+                    zoom: {
+                      value: 15.9,
+                      control: [[0, 12.8], [1, 15.9]],
+                      timing: [0, 0, 0.8, 1],
+                      duration: 3000 / speed,
+                    },
+                    rotation: {
+                      value: -20,
+                      control: [[0, 20], [1, -20]],
+                      timing: [0, 0, 0.8, 1],
+                      duration: 2000 / speed,
+                    },
+                  }
+                ], function () {
+                  animate2()
+                }
+              );
+            }
+
+            function animate2() {
+              console.log('animate2')
+              loca.viewControl.addAnimates([
+                // 寻迹
+                /* {
+                  center: {
+                    value: [103.88326, 36.055031],
+                    control: [
+                      [103.841032, 36.049115], 
+                      [103.68326036376952, 36.005028642661486]
+                    ],
+                    timing: [0.3, 0, 0.1, 1],
+                    duration: 8000 / speed,
+                  },
+                  zoom: {
+                    value: 17,
+                    control: [[0.3, 15], [1, 17]],
+                    timing: [0.3, 0, 0.7, 1],
+                    duration: 4000 / speed,
+                  },
+                  pitch: {
+                    value: 50,
+                    control: [[0.3, 0], [1, 50]],
+                    timing: [0.3, 0, 1, 1],
+                    duration: 3000 / speed,
+                  },
+                  rotation: {
+                    value: -80,
+                    control: [[0, -20], [1, -80]],
+                    timing: [0, 0, 1, 1],
+                    duration: 1000 / speed,
+                  },
+                }, */
+                { 
+                  // 环绕
+                  pitch: {
+                    value: 50,
+                    control: [[0, 40], [1, 50]],
+                    timing: [0.3, 0, 1, 1],
+                    duration: 7000 / speed,
+                  },
+                  rotation: {
+                    value: 260,
+                    control: [[0, -80], [1, 260]],
+                    timing: [0, 0, 0.7, 1],
+                    duration: 7000 / speed,
+                  },
+                  zoom: {
+                    value: 17,
+                    control: [[0.3, 16], [1, 17]],
+                    timing: [0.3, 0, 0.9, 1],
+                    duration: 5000 / speed,
+                  },
+                }, 
+                /* {
+                  // 拉起
+                  center: {
+                    value: [121.500419, 31.238089],
+                    control: [[121.49986267089844,
+                               31.227628422210365], [121.49969100952148,
+                                                     31.24025152837923]],
+                    timing: [0.3, 0, 0.7, 1],
+                    duration: 2000 / speed,
+                  },
+                  pitch: {
+                    value: 0,
+                    control: [[0, 0], [1, 100]],
+                    timing: [0.1, 0, 0.7, 1],
+                    duration: 2000 / speed,
+                  },
+                  rotation: {
+                    value: 361,
+                    control: [[0, 260], [1, 361]],
+                    timing: [0.3, 0, 0.7, 1],
+                    duration: 2000 / speed,
+                  },
+                  zoom: {
+                    value: 13.8,
+                    control: [[0, 17.5], [1, 13.8]],
+                    timing: [0.3, 0, 0.7, 1],
+                    duration: 2500 / speed,
+                  },
+                } */
+              ], function () {
+                  //pl.hide(1000);
+                   //setTimeout(animate, 2000);
+                  console.log('结束');
+              });
+            }
+        })
+      }   
+    })
+
+    
+
+  
+
+
+    /* map.on('click', function(ev) {
+      // 触发事件的对象
+      var target = ev.target;
+      // 触发事件的地理坐标，AMap.LngLat 类型
+      var lnglat = ev.lnglat;
+      // 触发事件的像素坐标，AMap.Pixel 类型
+      var pixel = ev.pixel;
+      console.log(lnglat, 'lnglat')
+    }); */
+  </script>
+</body>
+</html>

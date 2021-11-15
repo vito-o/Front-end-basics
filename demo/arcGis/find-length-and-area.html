@@ -1,0 +1,113 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Get length and area</title>
+    <style>
+      html,
+      body,
+
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #measurements {
+        padding: 4px 8px;
+        font-size: 16px;
+        bottom: 15px;
+        left: 50%;
+        margin-right: -50%;
+        transform: translate(-50%,-50%);
+      }
+
+    </style>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.21/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.21/"></script>
+    <script>
+      require([
+        "esri/config",
+        "esri/Map",
+        "esri/views/MapView",
+
+        "esri/widgets/ScaleBar",
+        "esri/widgets/Sketch",
+        "esri/Graphic",
+        "esri/layers/GraphicsLayer",
+        "esri/geometry/geometryEngine",
+      ], (
+        esriConfig,
+        Map,
+        MapView,
+
+        ScaleBar,
+        Sketch,
+        Graphic,
+        GraphicsLayer,
+        geometryEngine,
+
+      ) => {
+        esriConfig.apiKey = "AAPK30257e38625545ad8ef96dd94183a257ZNGnrGwyyRwM4toe9h1tXGPnDrR2JGSLiQqFDiJGPxWn9mr7mFu6UGNozaJ0iJBL";
+
+        const map = new Map({
+          basemap: "arcgis-topographic", // Basemap layer service
+        });
+
+        const view = new MapView({
+          container: "viewDiv",
+          map: map,
+
+          center: [-10, 30],
+          zoom: 3,
+
+        });
+
+        const scalebar = new ScaleBar({
+          view: view,
+          unit: "metric"
+        });
+
+        view.ui.add(scalebar, "bottom-right");
+
+        const graphicsLayer = new GraphicsLayer();
+        map.add(graphicsLayer);
+
+        const sketch = new Sketch({
+          layer: graphicsLayer,
+          view: view,
+          availableCreateTools: ["polyline", "polygon", "rectangle"],
+          creationMode: "update",
+          updateOnGraphicClick: true,
+          visibleElements: {
+            createTools: {
+              point: false,
+              circle: false
+            },
+            selectionTools:{
+              "lasso-selection": false,
+              "rectangle-selection":false,
+            },
+            settingsMenu: false,
+            undoRedoMenu: false
+          }
+        });
+
+        view.ui.add(sketch, "top-right");
+
+        const measurements = document.getElementById("measurements");
+        view.ui.add(measurements, "manual");
+      });
+    </script>
+  </head>
+  <body>
+    <div id="viewDiv">
+
+      <div id="measurements" class="esri-widget">
+
+    </div>
+  </div>
+  </body>
+</html>

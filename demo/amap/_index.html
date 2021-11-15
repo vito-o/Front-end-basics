@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <!-- <script src="https://webapi.amap.com/maps?v=1.4.15&key=76764080cdd77eaefe3d698ff359dba8&plugin=AMap.DistrictSearch,Map3D"></script> -->
+  <script src="https://webapi.amap.com/maps?v=2.0&key=76764080cdd77eaefe3d698ff359dba8&plugin=AMap.DistrictSearch,Map3D"></script>
+  <script src="https://webapi.amap.com/loca?v=2.0.0&key=76764080cdd77eaefe3d698ff359dba8"></script>
+  <!-- <script src="https://webapi.amap.com/ui/1.1/main.js"></script> -->
+  <style>
+    html,body{
+      margin:0;
+    }
+    .map-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+    .btn{
+      position: absolute;
+      right: 15px;
+      top: 15px;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="btn">
+    <button onclick="move()">跳转</button>
+  </div>
+  <div id="map" class="map-container"></div>
+  <script src="./src/GdMap.js"></script>
+  <script>
+    function move() {
+      //window.map 
+      // window.animateMove({ 
+      //   endPos: [103.882238, 36.043402]
+      // });
+      gdMap.Animate.move({endPos: [103.882238, 36.043402]})
+    }
+
+
+    window.gdMap = new GdMap();
+
+    
+  </script>
+
+  
+</body>
+</html>

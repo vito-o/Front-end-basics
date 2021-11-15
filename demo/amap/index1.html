@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://webapi.amap.com/maps?v=2.0&key=76764080cdd77eaefe3d698ff359dba8"></script>
+  <script src="https://webapi.amap.com/loader.js"></script>
+  <script src="https://webapi.amap.com/ui/1.1/main.js?v=1.1.1"></script>
+</head>
+<body>
+    <div id="container"></div>
+  <script>
+    var map = new AMap.Map('container', {
+        zoom: 4
+    });
+    AMapLoader.load({
+        key: '76764080cdd77eaefe3d698ff359dba8',
+        version: '2.0',
+        AMapUI: {
+            plugins: ['geo/DistrictExplorer'] // 这是关键插件
+        }
+    }).then(() => {
+
+        AMapUI.loadUI(['geo/DistrictExplorer'], (DistrictExplorer) => {
+
+            const districtExplorer = new DistrictExplorer();
+            districtExplorer.loadAreaNode(620100, (error, areaNode) => {
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+                const Json = areaNode.getSubFeatures(); // 获取Features
+                console.log(areaNode, 'areaNode')
+            }) 
+        });
+    })
+    .catch((e) => {
+        console.log(e)
+    });
+  </script>
+</body>
+</html>

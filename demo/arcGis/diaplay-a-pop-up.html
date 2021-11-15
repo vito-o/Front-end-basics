@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <meta name="description" content="DevLab: Configure a popup">
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>ArcGIS API for JavaScript Tutorials: Display a pop-up (JSAPI)</title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.21/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.21/"></script>
+  </head>
+  
+   <script>
+  
+    require([
+        "esri/config",
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/FeatureLayer"
+      ],
+  
+      function(esriConfig,Map, MapView, FeatureLayer){
+  
+       esriConfig.apiKey = "AAPK30257e38625545ad8ef96dd94183a257ZNGnrGwyyRwM4toe9h1tXGPnDrR2JGSLiQqFDiJGPxWn9mr7mFu6UGNozaJ0iJBL";
+  
+        const map = new Map({
+          basemap: "arcgis-topographic" //Basemap layer service
+        });
+  
+        const view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [-118.80543,34.02700], //Longitude, latitude
+          zoom: 13
+        });
+
+        const popupTrailheads = {
+          "title": "Trailhead",
+          "content": "<b>Trail:</b> {TRL_NAME}<br><b>City:</b> {CITY_JUR}<br><b>Cross Street:</b> {X_STREET}<br><b>Parking:</b> {PARKING}<br><b>Elevation:</b> {ELEV_FT} ft"
+        }
+
+        const trailheads = new FeatureLayer({
+          url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads_Styled/FeatureServer/0",
+          outFields: ["TRL_NAME","CITY_JUR","X_STREET","PARKING","ELEV_FT"],
+          popupTemplate: popupTrailheads
+        });
+
+        map.add(trailheads);
+
+        const popupTrails = {
+          title: "Trail Information",
+          content: [{
+          type: "media",
+            mediaInfos: [{
+              type: "column-chart",
+              caption: "",
+              value: {
+                fields: [ "ELEV_MIN","ELEV_MAX" ],
+                normalizeField: null,
+                tooltipField: "Min and max elevation values"
+                }
+              }]
+          }]
+        }
+
+        const trails = new FeatureLayer({
+          url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails_Styled/FeatureServer/0",
+          outFields: ["TRL_NAME","ELEV_GAIN"],
+          popupTemplate: popupTrails
+        });
+
+        map.add(trails,0);
+  
+      });
+    </script>
+  
+  </head>
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+  </html>

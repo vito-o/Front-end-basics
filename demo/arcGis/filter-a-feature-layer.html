@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <meta name="description" content="ArcGIS JavaScript Tutorials: Filter a feature layer">
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>ArcGIS API for JavaScript Tutorials: Filter a feature layer with SQL (JSAPI)</title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.21/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.21/"></script>
+  </head>
+  
+  <script>
+    require([
+        "esri/config",
+        "esri/Map",
+        "esri/views/MapView",
+  
+        "esri/layers/FeatureLayer"
+  
+      ], function(esriConfig,Map,MapView,FeatureLayer) {
+  
+        esriConfig.apiKey = "AAPK30257e38625545ad8ef96dd94183a257ZNGnrGwyyRwM4toe9h1tXGPnDrR2JGSLiQqFDiJGPxWn9mr7mFu6UGNozaJ0iJBL";
+  
+        const map = new Map({
+          basemap: "arcgis-topographic" // Basemap layer service
+        });
+  
+        const view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [-118.80543,34.02700], // Longitude, latitude
+          zoom: 12
+        });
+
+        // Create a UI with the filter expressions
+        const sqlExpressions = ["Choose a SQL where clause...", "Roll_LandValue < 200000", "TaxRateArea = 10853", "Bedrooms5 > 0", "UseType = 'Residential'", "Roll_RealEstateExemp > 0"];0
+
+        // UI
+        const selectFilter = document.createElement("select");
+        selectFilter.setAttribute("class", "esri-widget esri-select");
+        selectFilter.setAttribute("style", "width: 275px; font-family: Avenir Next W00; font-size: 1em;");
+
+        sqlExpressions.forEach(function(sql){
+          let option = document.createElement("option");
+          option.value = sql;
+          option.innerHTML = sql;
+          selectFilter.appendChild(option);
+        });
+        
+        view.ui.add(selectFilter, "top-right");
+
+        // Add a feature layer to map with all features visible on client (no filter)
+        const featureLayer = new FeatureLayer({
+          url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/LA_County_Parcels/FeatureServer/0",
+          outFields: ["*"],
+          popupTemplate: {
+            title: "{UseType}",
+            content: "Description: {UseDescription}. Land value: {Roll_LandValue}"
+          },
+          definitionExpression: "1=0"
+        });
+        map.add(featureLayer);
+
+        // Server-side filter
+        function setFeatureLayerFilter(expression) {
+          featureLayer.definitionExpression = expression;
+        }
+
+        // Event listener
+        selectFilter.addEventListener('change', function (event) {
+          setFeatureLayerFilter(event.target.value);
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+  </html>

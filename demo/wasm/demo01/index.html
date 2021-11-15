@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <script>
+    var importObject = { imports: { i: arg => console.log(arg) } };
+
+
+    fetch('./simple.wasm', {
+      method: 'get',
+      responseType: 'arrayBuffer'
+    }).then(response => {
+      return response.arrayBuffer()
+    }).then(bytes => {
+      return WebAssembly.instantiate(bytes, importObject)
+      // return WebAssembly.compile(bytes)
+    }).then(result => {
+      //return WebAssembly.instantiate(mod)
+      // const a = instance.exports
+      console.log(result.instance.exports)
+    })
+    
+    
+    /* .then(bytes => {
+      WebAssembly.compile(bytes)
+    }).then(mod => {
+      const instance = new WebAssembly.Instance(mod)
+      const a = instance.exports
+      console.log(a)
+    })*/
+  </script> 
+</head>
+<body>
+  
+</body>
+</html>

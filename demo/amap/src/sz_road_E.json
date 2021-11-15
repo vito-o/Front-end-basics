@@ -1,0 +1,18 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+      {
+          "type": "Feature",
+          "geometry": {
+              "type": "Point",
+              "coordinates": [103.88326, 36.055031]
+          },
+          "properties": {
+              "name": "二枢纽",
+              "value": 94.96079272,
+              "level": "E",
+              "month": 202005
+          }
+      }
+  ]
+}
