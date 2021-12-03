@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script src="/xuni/bundle.js"></script>
+
+    <script>
+        //模板
+        // var templateStr =  '我买了一个{{thing}}，好{{mood}}啊';
+        var templateStr =  `
+            <div>
+                <ol>
+                    {{#students}}    
+                    <li>
+                        学生{{name}}的爱好是
+                        <ol>
+                            {{#hobbies}}    
+                            <li>{{.}}</li>
+                            {{/hobbies}}    
+                        </ol>
+                    </li>
+                    {{/students}}    
+                </ol>    
+            </div>
+        `;
+        //数据
+        var data = {
+            students: [
+                {name: 'zhangsan', hobbies: ['唱歌', '跳舞', '踢足球']},
+                {name: 'lisi', hobbies: ['游戏']},
+                {name: 'wangwu', hobbies: ['网球', '轮滑']},
+            ]
+        }
+
+        SSG_TemplateEngine.render(templateStr, data);
+    </script>
+</body>
+</html>

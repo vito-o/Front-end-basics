@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+  <title>Document</title>
+  <!-- <link rel="stylesheet" href="https://js.arcgis.com/3.38/esri/css/esri.css"> -->
+  <link rel="stylesheet" href="http://localhost:6080/arcgis_js_apitest/library/3.32/3.32/esri/css/esri.css" />
+  <style>
+    html, body { height: 100%; width: 100%; margin: 0; padding: 0; }
+    #map{ height: 100%;margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+  </script>
+  <script src="http://localhost:6080/arcgis_js_apitest/library/3.32/3.32/init.js"></script>
+  <script>
+    dojo.require('esri.map')
+    dojo.addOnLoad(function() {
+      var map = new esri.Map('map')
+      var myTiledMapServiceLayer = new esri.layers.ArcGISTiledMapServiceLayer(
+        'http://135.149.48.80:8030/arcgis/rest/services/NewMap/lanzhou/MapServer'
+      )
+      map.addLayer(myTiledMapServiceLayer)
+      
+      let graphicLayer = new esri.layers.GraphicsLayer();
+      map.addLayer(graphicLayer)
+
+      var template = new esri.InfoTemplate();
+      template.setTitle("<b>${name}</b>");
+      template.setContent(getTextContent);
+      function getTextContent(graphic){
+        let attributes = graphic.attributes
+        return `
+          类型1：${attributes.v1}<br/>
+          类型2：${attributes.v2}<br/>
+        `;
+      }
+
+      let iconPath = "M24.0,2.199C11.9595,2.199,2.199,11.9595,2.199,24.0c0.0,12.0405,9.7605,21.801,21.801,21.801c12.0405,0.0,21.801-9.7605,21.801-21.801C45.801,11.9595,36.0405,2.199,24.0,2.199zM31.0935,11.0625c1.401,0.0,2.532,2.2245,2.532,4.968S32.4915,21.0,31.0935,21.0c-1.398,0.0-2.532-2.2245-2.532-4.968S29.697,11.0625,31.0935,11.0625zM16.656,11.0625c1.398,0.0,2.532,2.2245,2.532,4.968S18.0555,21.0,16.656,21.0s-2.532-2.2245-2.532-4.968S15.258,11.0625,16.656,11.0625zM24.0315,39.0c-4.3095,0.0-8.3445-2.6355-11.8185-7.2165c3.5955,2.346,7.5315,3.654,11.661,3.654c4.3845,0.0,8.5515-1.47,12.3225-4.101C32.649,36.198,28.485,39.0,24.0315,39.0z";
+      let initColor = "#ce641d";
+      let areas = [
+        { name: '安徽1', lonlat: [103.71, 36.07], v1: Math.random(), v2: Math.random() },
+      ]
+      
+      function mapLoaded() {
+        areas.forEach(function(item) {
+          let graphicPoint = new esri.Graphic(new esri.geometry.Point(item.lonlat), createSymbol(iconPath, initColor), item, template);
+          map.graphics.add(graphicPoint);
+        });
+      }
+
+      function createSymbol(path, color){
+        var pointSymbol = new esri.symbol.SimpleMarkerSymbol();
+        pointSymbol.setPath(path);
+        pointSymbol.setColor(new dojo.Color(color));
+        pointSymbol.setOutline(null);
+        return pointSymbol;
+      }
+
+      dojo.connect(map, 'onLoad', function(){
+        mapLoaded()
+      })
+
+   
+
+
+    })
+
+      
+  </script>
+</body>
+</html>

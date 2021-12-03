@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script src="./moment.js"></script>
+  <script>
+    console.log('2021/11/3 13:24')
+    let cd = getCountDown('2021/11/3 13:24', 720);
+    console.log(cd)
+
+    function getCountDown(timeStr, hours) {
+      let m = moment(timeStr, "YYYY/MM/DD HH:mm")
+      if(hours > 23) {
+        while(hours > 0) {
+          m.add(23, 'hours')
+          hours -= 23;
+        }
+      } else {
+        m.add(hours, 'hours')
+      }
+      timeStr = m.format("YYYY/MM/DD HH:mm:ss")
+        
+      return countTime(timeStr)
+    }
+
+    //str格式 "2017/5/17 00:00:00"
+    function countTime(timeStr) {  
+      //获取当前时间  
+      var date = new Date();  
+      var now = date.getTime();  
+      //设置截止时间  
+      var endDate = new Date(timeStr); 
+      var end = endDate.getTime();  
+      
+      //时间差  
+      var leftTime = end-now; 
+      //定义变量 d,h,m,s保存倒计时的时间  
+      var d,h,m,s;  
+      if (leftTime>=0) {  
+        d = Math.floor(leftTime/1000/60/60/24);  
+        h = Math.floor(leftTime/1000/60/60%24);  
+        m = Math.floor(leftTime/1000/60%60);  
+        s = Math.floor(leftTime/1000%60);                     
+      }  
+      return `${d}天${h}时${m}分${s}秒`
+    } 
+  </script>
+</body>
+</html>
