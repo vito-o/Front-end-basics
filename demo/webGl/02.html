@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <canvas id="myCanvas" style="border:1px solid red;" width="600" height="400"></canvas>
+
+  <script>
+    /**
+     * 渲染场景
+     * 
+     * 在开始钱，我们首先需要名去最重要的一点，虽然我们的例子只是画一个二维我物体，但
+     * 我们仍然是在把它画在一个三维空间里。所以，我们依然需要创建着色器，通过他来渲染
+     * 我们的简单场景并画出我们的物体。
+     * 
+     * 着色器
+     * 
+     * 着色器是使用OpenGL ES着色语言（GLSL）编写的程序，它携带者绘制形状的顶点信息以及
+     * 构造绘制在屏幕上像素的所需数据，换句话说，它负责记录着像素点的位置和颜色。
+     * 
+     * 绘制webGL时候有两种不同的着色器函数，顶点着色器和片段着色器。你需要通过用GLSL编写
+     * 这些着色器，并将代码文本传递给WebGL，使之在GPU执行时编译。顺便一提，顶点着色器和片段
+     * 着色器的几何我们通常称之为着色器程序
+     * 
+     * 下面我们通过WebGL环境绘制一个2d图像的例子快速介绍这两种着色器
+     * 
+     * 顶点着色器
+     * 
+     * 每次渲染一个形状时，顶点着色器会在形状种的每个顶点运行。它的工作是将输入顶点从原始坐标
+     * 转换到WebGL使用的缩放空间（clipspace）坐标系，其中每个轴的坐标范围从-1.0到1.0,并不考虑
+     * 纵横比，实际尺寸或任何其他因素。
+     * 
+     * 顶点着色器需要对顶点坐标进行必要的转换，在每个顶点基础上进行其他调整或计算，然后
+     * 通过将其保存在由GLSL提供的特殊变量（我们称之为gl_Position）中来返回变换后的顶点。
+     * 
+     * 顶带你着色器根据需要，也可以完成其他工作。例如，决定哪个包含texel面部纹理的坐标，
+     * 可以应用与顶点；通过法线来确定应用到顶点的光照因子等。然后将这些信息存储在变量
+     * (varyings)或者属性(attributes)属性中，以便与片段着色器共享。
+     * 
+     * 以下的顶点着色器接收一个我们定义的属性（aVertexPosition）的顶点位置值，之后这个值
+     * 与两个4*4的矩阵(uProjectionMatrix和uModelMatrix)相乘；成绩赋值为gl_Position。
+     * 
+     * Vertex shader program
+     * 
+     * const vsSource = `
+     *  attribute vec4 aVertexPosition;
+     * 
+     *  uniform mat4 uModelViewMatrix;
+     *  uniform mat4 uProjectionMatrix;
+     * 
+     *  void main() {
+     *    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+     *  }
+     * `
+     * 
+     * 片段着色器
+     * 
+     * 片段着色器在顶点着色器处理完图形的顶点后，会被要绘制的每个图形的每个像素点调用一次。
+     * 它的职责是确定像素的颜色，通过指定应用到像素的纹理元素（也就是图形纹理中的像素），
+     * 获取纹理元素的颜色，然后将始当的光照应用于颜色。之后颜色存储在特殊gl_FragColor中，
+     * 返回到WebGL层。改颜色将最终绘制到屏幕上图形对应像素的对应位置。
+     * 
+     * const fsSource = `
+     *  var main() {
+     *    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0)
+     *  }
+     * `
+     * 
+     * 初始化着色器
+     * 
+     * 现在我们已经定义了两个着色器，我们需要将他们传递给WebGL，编译并将他们连接在一起。下面的
+     * 代码通过调用loadShader()，为着色器传递类型和来源，创建了两个着色器。然后创建一个附加
+     * 着色器的程序，将他们连接在一起。如果编译或链接失败，代码将弹出alert
+     * 
+     * 
+     **/ 
+
+
+    var canvas = document.getElementById('myCanvas')
+    //初始化WebGL上下文
+    var webgl = canvas.getContext('webgl')
+    
+    //初始化着色器程序，让WebGL知道如何绘制我们的数据
+    function initShaderProgram(gl, vsSource, fsSource) {
+      const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource)
+      const fragmentShader = loadShader(gl. gl.FRAGMENT_SHADER, fsSource);
+    }
+
+    //创建着色器程序
+    const shaderProgram = gl.createProgram();
+    gl
+
+  </script>
+</body>
+</html>

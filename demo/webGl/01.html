@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <canvas id="myCanvas" style="border:1px solid red;" width="600" height="400"></canvas>
+
+  <script>
+    var canvas = document.getElementById('myCanvas')
+    //初始化WebGL上下文
+    var webgl = canvas.getContext('webgl')
+    //使用完全不透明的黑色清除所有图像
+    webgl.clearColor(0, 0, 0, 1.0)
+    //用上面指定的颜色清除缓冲区
+    webgl.clear(webgl.COLOR_BUFFER_BIT)
+  </script>
+</body>
+</html>
