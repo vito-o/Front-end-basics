@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+</head>
+<body>
+  <canvas id="myCanvas" style="border:1px solid red;" width="600" height="400"></canvas>
+
+  <script type="text/javascript">
+    /**
+     * 使用着色器将颜色应用于WebGL
+     * 
+     * 之前的展示中我们已经创建好了一个正方形，接下来我们要做的就是给他添加一抹色彩。
+     * 添加颜色可以通过修改着色器来实现
+     * 
+     * 给顶点着色
+     * 
+     * 在GL中，物体是由一系列顶点组成的，每一个顶点都有位置和颜色信息。在默认情况下，
+     * 所有像素的颜色（以及他所有的属性，包括位置）都由线性插值计算得来的，自动形成
+     * 平滑的渐变。我们以前的顶点着色器没有给顶点添加任何特定的颜色-在顶点着色器与片段
+     * 着色器之间给每个像素着白色，于是整个正方形被渲染成纯白。
+     * 
+     * 现在我们假设正方形的每个顶点使用不同的颜色：红、黄、绿、白，以此渲染一个渐变的色彩。
+     * 第一步给这些顶点建立响应的颜色。首先我们要创建一个顶点颜色数组，然后将他们存在WebGL
+     * 的缓冲区中。为实现这一功能，我们在InitBuffers()函数中加入如下代码：
+     * 
+     * 这段代码首先建立了一个js的数组，此数组中包含四组四值向量，每一组向量代表一个顶点
+     * 的颜色。然后，创建一个WebGL缓冲区用来存储这些颜色-将数组中的值转换成WebGL所给定的
+     * 浮点型后，存储在该缓冲区中。
+     * 
+     * 为了实际使用这些颜色，我们继续修改顶点着色器，使得着色器可以从颜色缓冲区中正确取出
+     * 
+     * 与之前相比，这段代码的关键不同点在于：每个顶点都与一个颜色数组中的数值相连接
+     * 
+     * 给片段着色
+     * 
+     * 这是一个非常简单的改变，每个片段只是根据相对于顶点的位置得到一个插值过的颜色，而不是一个
+     * 指定的颜色值。
+     * 
+     * 带颜色的绘制
+     * 
+     * 接下来，我们要在initShader()中初始化属性，以便着色器程序使用
+     * 
+     **/
+    var canvas = document.getElementById('myCanvas')
+    //初始化WebGL上下文
+    var gl = canvas.getContext('webgl')
+    
+    //初始化着色器程序，让WebGL知道如何绘制我们的数据
+    function initShaderProgram(gl, vsSource, fsSource) {
+      const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource)
+      const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+      
+      //创建着色器程序
+      const shaderProgram = gl.createProgram();
+      gl.attachShader(shaderProgram, vertexShader)
+      gl.attachShader(shaderProgram, fragmentShader)
+      gl.linkProgram(shaderProgram)
+
+      //创建失败，alert
+      if(!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+        return null;
+      }
+
+      return shaderProgram;
+    }
+
+    //创建指定类型的着色器，上传source源码并编译
+    function loadShader(gl, type, source) {
+      const shader = gl.createShader(type);
+
+      //send the source to the shader object
+      gl.shaderSource(shader, source)
+
+      //compile the shader program
+      gl.compileShader(shader)
+
+      //see if it compiled successfully
+      if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader)
+        return null;
+      }
+
+      return shader;
+    }
+
+
+    const vsSource = `
+      attribute vec4 aVertexPosition;
+      attribute vec4 aVertexColor;
+    
+      uniform mat4 uModelViewMatrix;
+      uniform mat4 uProjectionMatrix;
+
+      varying lowp vec4 vColor;
+    
+      void main() {
+        gl_Position = uProjectionMatrix * uModelViewMatrix *  aVertexPosition;
+        vColor = aVertexColor;
+      }
+    `;
+
+    const fsSource = `
+      varying lowp vec4 vColor;
+
+      void main() {
+        gl_FragColor = vColor;
+      }
+    `;
+
+    const shaderProgram = initShaderProgram(gl, vsSource, fsSource)
+
+    const programInfo = {
+      program: shaderProgram,
+      attribLocations: {
+        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+        vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
+      },
+      uniformLocations: {
+        projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+        modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix')
+      }
+    }
+
+    function initBuffers(gl) {
+      const positionBuffer = gl.createBuffer();
+      const positions = [
+        1.0, 1.0,
+        -1.0, 1.0,
+        1.0, -1.0,
+        -1.0, -1.0
+      ]
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+      const colorBuffer = gl.createBuffer()
+      const colors = [
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 0.0, 0.0, 1.0,
+        0.0, 1.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 1.0
+      ]
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
+
+      return {
+        position: positionBuffer,
+        color: colorBuffer
+      }
+    }
+
+    // Here's where we call the routine that builds all the
+    // objects we'll be drawing.
+    const buffers = initBuffers(gl);
+
+    // Draw the scene
+    drawScene(gl, programInfo, buffers);
+
+    function drawScene(gl, programInfo, buffers) {
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
+      gl.clearDepth(1.0);                 // Clear everything
+      gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+      gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+
+      // Clear the canvas before we start drawing on it.
+
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      // Create a perspective matrix, a special matrix that is
+      // used to simulate the distortion of perspective in a camera.
+      // Our field of view is 45 degrees, with a width/height
+      // ratio that matches the display size of the canvas
+      // and we only want to see objects between 0.1 units
+      // and 100 units away from the camera.
+
+      const fieldOfView = 45 * Math.PI / 180;   // in radians
+      const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+      const zNear = 0.1;
+      const zFar = 100.0;
+      const projectionMatrix = mat4.create();
+
+      // note: glmatrix.js always has the first argument
+      // as the destination to receive the result.
+      mat4.perspective(projectionMatrix,
+                      fieldOfView,
+                      aspect,
+                      zNear,
+                      zFar);
+
+      // Set the drawing position to the "identity" point, which is
+      // the center of the scene.
+      const modelViewMatrix = mat4.create();
+
+      // Now move the drawing position a bit to where we want to
+      // start drawing the square.
+
+      mat4.translate(modelViewMatrix,     // destination matrix
+                    modelViewMatrix,     // matrix to translate
+                    [-0.0, 0.0, -6.0]);  // amount to translate
+
+      // Tell WebGL how to pull out the positions from the position
+      // buffer into the vertexPosition attribute.
+      {
+        const numComponents = 2;  // pull out 3 values per iteration
+        const type = gl.FLOAT;    // the data in the buffer is 32bit floats
+        const normalize = false;  // don't normalize
+        const stride = 0;         // how many bytes to get from one set of values to the next
+                                  // 0 = use type and numComponents above
+        const offset = 0;         // how many bytes inside the buffer to start from
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+        gl.vertexAttribPointer(
+            programInfo.attribLocations.vertexPosition,
+            numComponents,
+            type,
+            normalize,
+            stride,
+            offset);
+        gl.enableVertexAttribArray(
+            programInfo.attribLocations.vertexPosition);
+      }
+
+      //Tell WebGL how to pull out the colors from the color buffer
+      //into the vertexColor attribute
+      const numComponents = 4;
+      const type = gl.FLOAT;
+      const normalize = false;
+      const stride = 0;
+      const offset = 0;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color)
+      gl.vertexAttribPointer(
+        programInfo.attribLocations.vertexColor,
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset
+      )
+      gl.enableVertexAttribArray(
+        programInfo.attribLocations.vertexColor
+      )
+
+
+      // Tell WebGL to use our program when drawing
+
+      gl.useProgram(programInfo.program);
+
+      // Set the shader uniforms
+
+      gl.uniformMatrix4fv(
+          programInfo.uniformLocations.projectionMatrix,
+          false,
+          projectionMatrix);
+      gl.uniformMatrix4fv(
+          programInfo.uniformLocations.modelViewMatrix,
+          false,
+          modelViewMatrix);
+
+      {
+        const offset = 0;
+        const vertexCount = 4;
+        gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+      }
+    }
+  </script>
+</body>
+</html>      
