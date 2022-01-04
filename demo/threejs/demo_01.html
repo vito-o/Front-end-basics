@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script>
+  <script src="./js/Stats.min.js"></script>
+</head>
+<body onload="init()">
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+
+  <script type="text/javascript">
+    
+    /**
+     * 一个典型得Three.js程序至少要包括渲染器(Render)、场景（Scene）、照相机(Camera),
+     * 以及在场景中创建的物体。
+     * 
+     * 渲染器(Render)
+     * 
+     * 渲染器将和Canvas元素进行绑定
+     * 
+     * 场景(Scene)
+     * 
+     * 在Three.js中添加的物体都是添加到场景中，因此它相当于一个大容器。一般说，场景没有很复杂的操作，
+     * 在程序最开始的时候进行实例化，然后将符替添加到场景中即可。
+     * 
+     * 照相机(Camera)
+     * 
+     * 在介绍照相机设置前，我们先来简单了解一下坐标系。WebGL和Three.js使用的坐标系是右手坐标系，
+     * 
+     * 值得注意的是，照相机也需要被添加到场景中。
+     * 
+     * 那么这里长度为1得单位i是什么呢？这里得长度是在物体坐标系中得，其单位于屏幕分辨率等无关，
+     * 简单地说，他就是一个虚拟空间得坐标系，1代表多少并没有实际意义，而重要得是相对长度
+     * 
+     * 渲染
+     * 
+     * 在定义了场景中得物体，设置好得照相机之后，渲染起就知道如何渲染出二维得结果了，这时候，我们只
+     * 需要调用渲染器得渲染函数，就能使其渲染一次。
+     * 
+     * renderer.render(scene, camera)
+     * 
+     * 照相机
+     * 
+     * 我们使用Three.js创建得场景是三维得，而通常情况下显示屏是二维得，那么三维得场景如何显示到二维
+     * 得显示屏上呢？照相机就是这样一个抽象，它定义了三维空间到二维平面得投影方式，用“照相机”这样一个
+     * 类比，可以使我们直观地理解这一投影方式。
+     * 
+     * 针对投影方式得不同，照相机又分为正交投影照相机于透视投影照相机。我们需要为自己得程序选择合适得
+     * 照相机。
+     * 
+     * 举个简单得例子来说，正交投影于透视投影照相机得区别。使用透视投影照相机获得的结果是类似人眼在
+     * 真实世界中看到得有“近大远小”得效果；而使用正交投影照相机获得得结果就是我们在数学几何课上老师
+     * 教我们话得效果，对于在三维空间内平行得线，投影到二维空间中也是平行得。
+     * 
+     * 那么，你的程序需要正交投影还是透视投影得照相机呢？
+     * 
+     * 一般来说，对于制图、建模软件通常使用正交投影，这样不会因为投影而改变物体比例；而对于其他大多数应用
+     * 通常使用透视投影，因为这更接近人眼得观察效果，当然，照相机得选择并没有对错之分，你可以更具应用
+     * 得特性，选择一个效果更佳得照相机。
+     * 
+     * 正交投影照相机
+     * THRER.OrthoGraphicCamera(left, right ,top, bottom, near, far)
+     * 
+     * 这六个参数分别代表正交投影照相机拍摄到的空间的6个面的位置，这6个面未成了一个长方体，我们称其为
+     * 视景体。只有在视景体内部的物体才可能显示在平面上，而视景体外部的物体会在显示之前被裁剪掉。
+     * 
+     * 为了保持照相机的横竖比例，需要保证（right - left）于（top - bottom）的比例于canvas宽度与高度
+     * 的比例一致。
+     * 
+     * 透视投影照相机（Perspective Camera）的构造函数是:
+     * THREE.PerspectiveCamera(fov, aspect, near, far)
+     * 
+     * fov是视景体竖直方向上的张角（是角度制而非弧度制）
+     * aspect等于width/height，是照相机水平方向和竖直方向长度的比例，通常设为Canvas的纵横比例。
+     * 
+     * 材质
+     * 
+     * 材质是独立于物体顶点信息之外的与渲染效果相关的属性。通过设置材质可以改变物体的颜色、纹理贴图、
+     * 光照模式等。
+     * 
+     * 本章将介绍基本材质、两种基于光照模型的材质，以及使用法向量座位材质。除此之外，本章还将介绍如何
+     * 使用图像作为材质。
+     * 
+     * 基本材质
+     * 
+     * 使用基本材质（BasicMaterial）的物体，选然后物体的颜色始终为该材质的颜色，而不会由于光照产生
+     * 敏感、阴影效果。如果没有指定材质的颜色，则颜色是随机的。其构造函数是：
+     * THREE.MeshLambertMaterial(opt)
+     * 
+     * Lambert材质
+     * 
+     * Lambert材质（MeshLambertMaterial）是符合Lambert光照模型的材质。Lambert光照模型的主要特点
+     * 是只考虑漫反射而不考虑镜面反射的效果，因而对于金属、镜子等需要镜面反射效果的物体就不适应，
+     * 对于其他大部分物体的漫反射效果都是适用的。
+     * 
+     * Phong材质
+     * 
+     * Phong材质（MeshPhongMaterial）是符合Phong光照模型的材质。和Lambert不同的是，Phong模型
+     * 考虑了镜面反射的效果，因此对于金属、镜面的表现尤为适合。
+     * 
+     * 法向材质
+     * 
+     * 法相材质可以将材质的颜色设置为其法向量的方向，有时候对于调试很有帮助。
+     * 法向材质的设定很多简单，不用设置任何参数
+     * 
+     * 材质的颜色与照相机与该物体的角度相关，
+     * 
+     * 材质的纹理贴图
+     * 
+     * 在此之前，我们使用的材质都是单一颜色的，有时候，我们却希望使用图像作为材质。这时候，就需要
+     * 导入图像作为纹理贴图，并添加到相应的材质中。
+     * 
+     * 网格
+     * 
+     * 在学习了几何形状和材质之后，我们就能使用它们来创建物体了。最常用的一种物体就是网格（Mesh），
+     * 网格是由顶点、边、面组成的物体；其他物体包括线段、骨骼、粒子系统等。创建物体需要指定几何形状
+     * 和材质，其中，几何形状决定了物体的顶带你位置等信息，材质决定了物体的颜色、纹理等信息。
+     * 
+     * 本章将介绍创建较为常用的物体：网格，然后介绍如何修改物体的属性。
+     * 
+     * 创建网格
+     * 
+     * 在上两节中，我们学习了如何创建几何形状与材质，而网格的创建非常简单，只要把几何形状与材质传入
+     * 其构造函数。最常用的物体是网格（Mesh），它代表包含点、线、面的几何，其构造函数是：
+     * Mesh(geometry, material)
+     * 
+     * 修改属性
+     * 
+     * 除了在构造函数中指定材质，在网格被创建后，也能对材质进行修改 
+     * 
+     * 位置、缩方、旋转是物体三个常用属性。由于THREE.Mesh基础子THREE.Object3D，因此包含scale、
+     * rotation、position三个属性。他们都是THREE.Vector3实例，因此修改其值的方法是相同的，这里
+     * 以位置为例。
+     * 
+     * 动画
+     * 
+     * 用来观测每秒帧数(FPS)
+     * 
+     * 动画原理
+     * 
+     * 在这里，我们将动态画面简称为动画（animation）。正如动画片的原理一样，动画的本质是利用了人眼
+     * 的视觉暂留特效，快速地变换动画，从而产生物体在运动的假象。而对于Three.js程序而言，动画的实现
+     * 也是通过在每秒中多次重绘画面实现的。
+     * 
+     * 为了衡量画面切换速度，引入了每秒帧数FPS(Frames Per Second)的概念，是指每秒画面重绘的次数。
+     * FPS越大，则动画效果越平滑，当FPS小于20时，一半就能明显感受到画面的卡滞现响。
+     * 
+     * 那么FPS是不是越大越好呢？其实也未必。当FPS足够大（比如达到60），再增加帧数人眼也不会感受
+     * 到明显的变化，反而相应地就要消耗更多资源（比如电影的胶片就需要更长了，或者电脑刷新页面需要
+     * 消耗计算资源等）。因此，选择一个适中的FPS即可。
+     * NTSC标注你的电视FPS是30， PAL标注你的电视FPS是25，电影的FPS标注那为24。而对于THREE.JS
+     * 动画而言，一半FPS再30到60之间都是可取的。
+     * 
+     * 大多数时候，我们并不在意多久重绘一次，这时候就合适用requestAnimationFrame方法了。它告诉
+     * 浏览器再合适的时候调用指定函数，通常可能达到60FPS
+     * 
+     * 如何取舍
+     * 
+     * setInterval方法与requestAnimationFrame方法的区别较为微妙。一方面，最明显的差别表现在
+     * setInterval可以手动设定FPS，而requestAnimationFrame则会自动设定FPS；但另一方面，即使
+     * 是setInterval也不能保证按照给定的FPS执行，在浏览器处理繁忙时，很可能低于设定值。当浏览器达不到
+     * 设定的调用周期时，requestAnimationFrame采用跳过某些帧的方式来表现动画，索然会有卡滞的效果
+     * 但整体速度不会拖慢，而setInterval会因此使整个程序放慢运行，但使每一帧都会绘制出来。
+     * 
+     * 总而言之，requrestAnimationFrame适用于对事件较为敏感的环境（但使动画逻辑更加复杂），而setInterval
+     * 则可在保证程序的运算不至于导致延迟的情况下提供更加简洁的逻辑（无需自行处理时间）
+     * 
+     **/ 
+
+    /* var fontLoader = new THREE.FontLoader();
+    fontLoader.load("/font/gentilis_regular.typeface.json",function(tex){
+      init(tex)
+    }) */
+
+    /* //初始化几何形状
+    var geometry = new THREE.BufferGeometry();
+
+    //设置顶点位置
+
+    //顶部4顶点
+    const vertices = new Float32Array( [
+      -1, 1, -1,
+      1, 1, -1,
+      1, 1, 1,
+
+      -1, 1, -1,
+      1, 1, 1,
+      -1, 1, 1,
+    ] );
+    geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) ); */
+
+    var stats = null;
+
+    function init(tex) {
+      stats = new Stats()
+      stats.showPanel(0);
+      stats.dom.id = '123123'
+      stats.dom.style.position = 'absolute'
+      stats.dom.style.right = '0px';
+      stats.dom.style.top = '0px';
+      document.body.appendChild( stats.dom );
+
+
+      var renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('myCanvas')
+      });
+
+      // renderer.setClearColor(0x0000ff)
+
+      var scene = new THREE.Scene();
+
+      // var camera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 1000)
+      // var camera = new THREE.OrthographicCamera(-2, 2, 1.5, -1.5, 1, 10)
+      var camera = new THREE.PerspectiveCamera(60, 400 / 300, 1, 10)
+      camera.position.set(3, 3, 5)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var loader = new THREE.TextureLoader()
+      //loader.load('./img/1-1.png', function(texture) {
+        // var cube = new THREE.Mesh(
+        //   // geometry,
+        //   new THREE.BoxGeometry(2, 2, 2),
+        //   // new THREE.OctahedronGeometry(3),
+        //   // new THREE.IcosahedronGeometry(3),
+        //   // new THREE.TorusGeometry(3, 1, 4, 4, Math.PI / 3 * 2),
+        //   // new THREE.TorusKnotGeometry(2, 0.5, 32, 8),
+        //   /* new THREE.TextGeometry('hello', {
+        //     font: tex,
+        //     size: 1, height: 1,
+        //   }), */
+        //   /* new THREE.MeshBasicMaterial({
+        //     color: 0xff0000,
+        //     wireframe: true
+        //   }) */
+        //   /* new THREE.MeshBasicMaterial({
+        //     color: 0xffff00,
+        //     opacity: 0.75,
+        //   }) */
+        //   /* new THREE.MeshLambertMaterial({
+        //     color: 0xffff00,
+        //     emissive: 0xff0000
+        //   }) */
+        //   /* new THREE.MeshPhongMaterial({
+        //     color: 0xff0000,
+        //     specular: 0xffff00,
+        //     shininess: 1000
+        //   }) */
+        //   // new THREE.MeshNormalMaterial()
+        //   new THREE.MeshLambertMaterial({
+        //     map: texture
+        //   })
+        // )
+        
+      // })
+
+      // let t1 = loader.load('./img/1-1.png')
+      // let t2 = loader.load('./img/1-2.png')
+
+      // t1.wrapS = THREE.RepeatWrapping;
+      // t1.wrapT = THREE.RepeatWrapping;
+      // t1.repeat.set( 4, 4 );
+
+
+      // let cMaterial1 = new THREE.MeshLambertMaterial({map: t1})
+      // let cMaterial2 = new THREE.MeshLambertMaterial({map: t2})
+        
+      // setTimeout(() => {
+      //   var cube = new THREE.Mesh(
+      //     new THREE.BoxGeometry(2, 2, 2),
+      //     //[cMaterial1, cMaterial1, cMaterial1, cMaterial2, cMaterial2, cMaterial2]
+      //     cMaterial1
+      //   )
+        
+        var material = new THREE.MeshLambertMaterial({
+          color: 0xffff00
+        })
+        var geometry = new THREE.BoxGeometry(1, 2, 3)
+        var mesh = new THREE.Mesh(geometry, material);
+        
+        scene.add(mesh)
+        
+        mesh.material = new THREE.MeshLambertMaterial({
+          color: 0xff0000
+        })
+        
+        //修改单个属性
+        // mesh.position.z = 1;
+        //同时设置多个属性
+        // mesh.position.set(1.5, -0.5, 0)
+        // mesh.position = new THREE.Vector3(1.5, 2, 2)
+        // mesh.rotation.z = 50;
+        // mesh.scale.x = 0.5;
+  
+        var axes = new THREE.AxesHelper(30);
+        scene.add(axes);
+  
+        const light = new THREE.AmbientLight( 0x404040 );
+        light.castShadow = true;  // soft white light
+        scene.add( light );
+  
+        /* setInterval(() => {
+          draw()
+        }, 20) */
+
+        requestAnimationFrame(draw);
+
+        function draw() {
+          stats.begin()
+          mesh.rotation.y = (mesh.rotation.y + 0.01) % (Math.PI * 2)
+          renderer.render(scene,camera)
+          stats.end()
+          requestAnimationFrame(draw)
+        }
+
+      //}, 2000)
+
+      
+    }
+  </script>
+</body>
+</html>
