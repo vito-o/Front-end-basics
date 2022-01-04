@@ -1,0 +1,5 @@
+可以先从threejs入门，先看看webgl的强大之处，推荐机械工业出版的《threejs指南》
+
+然后就开始接触webgl底层API,推荐CSDN lufy的小屋的博客+《webgl编程指南》
+
+最后来学习图形学的一些知识，推荐《交互式计算机图形学第六版基于webgl》
