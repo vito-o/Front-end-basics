@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script>
+  <script src="./js/Stats.min.js"></script>
+</head>
+<body onload="init()">
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+  <script id="vs" type="x-shader/x-vertex">
+    varying vec2 vUv;
+
+    void main() {
+      vUv = uv;
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  </script>
+  <script id="fs" type="x-shader/x-fragment">
+    varying vec2 vUv;
+
+    void main() {
+      gl_FragColor = vec4(vUv.x, vUv.y, 1.0, 1.0);
+    }
+  </script>
+
+  <script type="text/javascript">
+    /**
+     * 着色器程序的位置
+     * 
+     * 着色器代码可以写在单独的文件中（顶带你着色器的文件命后缀为.vs，片元着色器的文件名
+     * 后缀为.fs），也可以在HTML文件中定义script标签实现。通常对于较长的着色器代码，建议
+     * 使用单独的文件；对于较短的着色器代码，在html文件中定义也是一个不错的选择。当然，从
+     * 代码可维护性的角度看，本书更建议使用单独的着色器文件。
+     * 
+     * 单独的着色器文件，需要在javascript代码中导入着色器文件。我们假设顶点着色器定义在
+     * shader/my.vs文件中，片元着色器定义在shader/my.fs中。
+     * 
+     * 可以使用Ajax完成导入文件的工作，而如果使用jquery的get函数就可以更方便地实现。
+     * 
+     * $.get('shader/my.vs', function(vShader) {
+     *  $.get('shader/my.fs', function(fShader) {
+     *  
+     *  })
+     * })
+     * 
+     * 这里我们在加载完顶点着色器后加载片元着色器。vData与fData分别为导入的着色器程序，
+     * 用来构造着色器材质。
+     * 
+     * 接下来，我们需要在加载完两个着色器后，新建一个THREE.ShaderMaterial，需要传入属性
+     * vertexShader与fragmentShader
+     * 
+     * $.get('shader/my.vs', function(vShader) {
+     *  $.get('shader/my.fs', function(fShader) {
+     *    material = new THREE.ShaderMaterial({
+     *      vertexShader: vShader,
+     *      fragementShader: fShader
+     *    })
+     *  })
+     * })
+     * 之后可以将material应用于需要该着色器效果的物体上。
+     * 
+     * HTML中的着色器代码
+     * 
+     * 定义顶点着色器
+     * <script id="vs" type="x-shader/x-vertex">
+     *  这里的内容相当于.vs文件中的内容
+     * <\/script>
+     * 
+     * 
+     * 定义片元着色器
+     * <script id="fs" type="x-shader/x-fragment">
+     *  这里相当于.fs文件中的内容
+     * <\/script>
+     * 
+     * 定义材质时的方法
+     * material = new THREE.ShaderMaterial({
+     *  vertexShader: document.getElementById('vs').textContent,
+     *  fragmentShader: document.getElementById('fs').textContent
+     * })
+     * 
+     **/  
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.shadowMap.enabled = true;
+      // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // renderer.shadowMapSoft = true;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.OrthographicCamera(-5, 5, 3.75, -3.75, 0.1, 100);
+      camera.position.set(5, 15, 25)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var light = new THREE.DirectionalLight();
+      light.position.set(3, 2, 5)
+      scene.add(light)
+
+      var axes = new THREE.AxesHelper(5);
+      scene.add(axes);
+
+      let material = new THREE.ShaderMaterial({
+        vertexShader: document.getElementById('vs').textContent,
+        fragmentShader: document.getElementById('fs').textContent,
+      })
+
+      greenCube = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        material
+        //new THREE.MeshLambertMaterial({color: 0x00ff00})
+      );
+      scene.add(greenCube)
+
+      draw()
+    }
+
+    function draw() {
+      greenCube.rotation.y += 0.01;
+
+      if(greenCube.rotation.y > Math.PI * 2) {
+        greenCube.rotation.y -= Math.PI * 2;
+      }
+
+      renderer.render(scene, camera)
+
+      requestAnimationFrame(draw)
+    }
+
+    
+  </script>
+</body>
+</html>
