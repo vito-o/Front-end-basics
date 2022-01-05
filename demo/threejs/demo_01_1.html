@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script>
+  <script src="./js/Stats.min.js"></script>
+</head>
+<body onload="init()">
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="text/javascript">
+    /**
+     * 光与影
+     * 
+     * 图像渲染的丰富效果很大程度上也要归功于光与影的利用。真实世界中的光影效果非常复杂，
+     * 但是其本质--光的传播原理却又是非常单一的，着边是自然界繁简相成的又一例证。
+     * 为了使计算机模拟丰富的光照效果，人们提出了几种不同的光源模型（环境光、平行光、
+     * 点光源、聚光灯等），在不同场合下组合利用。将能达到很好的光照效果。
+     * 
+     * 在Three.js中，光源与阴影的创建和使用是十分方便的。在学会了如何控制光照的基本方法后，
+     * 如果能将其灵活应用，将能使场景的渲染效果更佳丰富逼真。在本章中，我们将讨论四种常用的
+     * 光源（环境光、点光源、平行光、聚光灯）和阴影带来的效果，以及如何创建使用光影。
+     * 
+     * 环境光
+     * 
+     * 环境光是指场景整体的光照效果，是由于场景内若干光源的多次反射形成的亮度一致的效果。通常
+     * 用来为整个场景指定一个基础亮度。因此，环境光没有明确的光源位置，在各处形成的亮度也是一致
+     * 的。
+     * 在设置环境光时，只需要指定光的颜色
+     * THREE.AmbientLight(hex)
+     * 其中，hex时十六进制的RGB颜色信息，如红色标识为0xff0000
+     * 
+     * 但是，如果此时场景中没有物体，至天津了这个环境光，那么渲染的结果仍然是一片黑。
+     * 
+     * 如果想让环境光暗一些，可以将其设置为new THREE.AmbientLight(0xcccccc)等
+     * 
+     * 点光源
+     * 
+     * 点光源是不计光源大小，可以看作一个点发出的光源。点光源找到不同物体表面的亮度
+     * 是线性递减的，因此，离点光源距离越远的物体会显得越暗。
+     * 
+     * 点光源的构造函数是：
+     * THREE.PointLight(hex, intensity, destance)
+     * 其中，hex是光源十六进制的颜色，intensity是亮度，缺省值为1，表示100%亮度；distance
+     * 是光源最远照射到的距离，缺省值为0.
+     * 
+     * 注意，这里光在每个面上的亮度是不同的，对于每个三角面片，将根据三个顶点的亮度进行
+     * 插值。
+     * 
+     * 平行光
+     * 
+     * 我们都知道，太阳光常常被看作平行光，这是因为相对地球上物体的尺度而言，太阳离我们
+     * 的距离足够远。对于任意平行的平面，平行光照射的亮度都是相同的，而与平面所在位置无关。
+     * 
+     * 平行光的构造函数是：
+     * THREE.DirectionalLight(hex, intensity)
+     * 其中，hex是光源十六进制的颜色值intensity是亮度，缺省值为1，表示100%亮度
+     * 此外，对于平行光而言，设置光源位置尤为重要。
+     * 
+     * 注意，这里设置光源位置并不意味着所有光从(2, 5, 3)点射出（如果是的话，就成了点光源），
+     * 而实意味着，平行光将以矢量（-2, -5, -3）的方向照射到所有平面。因此，平面亮度与平面
+     * 的位置无关，而只与平面的法向量相关。只要平面是平行的，那么得到的光照也一定是相同的。
+     * 
+     * 聚光灯
+     * 
+     * 可以看出，聚光顶是一种特殊的点光源，它能够朝着一个方向投射光线。。聚光灯投射出的是
+     * 类似圆锥形的光线，这与我们现实中看到的聚光灯是一致的。
+     * 其构造函数为
+     * THREE.SpotLight(hex, intensity, distance, angle, exponent)
+     * 
+     * 相比点光源，多了angle和exponent两个参数。angle是聚光灯的张角，缺省值是Math.PI / 3,
+     * 最大值是Math.PI / 2;exponent是强光在偏离target的衰减指数（target需要在之后定义，
+     * 缺省值为（0, 0, 0））,缺省值是10。
+     * 
+     * 在调用构造函数之后，除了设置光源本身的位置，一般还需要设置target:
+     * light.position.set(x1, y1, z1)
+     * light.target.position.set(x2, y2, z2)
+     * 
+     * 除了设置light.target.position的方法外，如果想让聚光灯跟着某一物体移动（就像真的聚光灯
+     * ），可以target指定为该物体；
+     * 
+     * 阴影
+     * 
+     * 明暗是相对的，阴影的形成也就是因为比周围获得的光照更少。因此，要形成阴影，光源是必不
+     * 可少的。
+     * 
+     * 在Three.js中，能形成阴影的光源只有THREE.DirectionalLight与THREE.SpotLight；
+     * 而相对地，能表现阴影效果的材质只有THREE.LambertMaterial与THREE.PhongMaterial
+     * 
+     * 因而在设置光源和材质的时候，一定要注意
+     * 
+     * 首先，我们需要在初始化时，告诉渲染器渲染阴影：
+     * renderer.shadowMapEnabled = true;
+     * 
+     * 然后，对于光源以及所有要产生阴影的物体调用：
+     * xxx.castShadow = true;
+     * 
+     * 对于接收阴影的物体调用
+     * xxx.receiveShadow = true
+     * 
+     * 不场景中一个平面上有一个正方体，想要让聚光灯照射在正方体上面，产生的阴影投射在平面上，
+     * 那么就需要对聚光顶和正方体调用castShadow = true, 对于平面调用receiveShadow = true.
+     * 以上就是产生阴影的必要步骤了，不过通常还需要设置光源的阴影相关属性，才能正确显示出阴影
+     * 效果。
+     * 
+     * 对于聚光灯，需要设置shadowCameraNear、shadowCameraFar、shadowCameraFov三个值，
+     * 类比我们在第二章学到的透视照相机，只有介于shadowCameraNear与shadowCameraFar之间
+     * 的物体将产生阴影，shadowCameraFov表示张角。
+     * 
+     * 对于平行光，需要设置shadowCameraNear、shadowCameraFar、shadowCameraLeft、
+     * shadowCameraRight、shadowCameraTop以及shadowCameraBottom六个值，相当于正交投影
+     * 照相机的6个面。同样，只有在这6个面围成的长方体内的物体才能产生阴影效果。
+     * 
+     * 为了看到阴影照相机的位置，通常可以在调试时开启light.shadowCameraVisible = true;
+     * 至此，阴影效果以及能正常显示了。
+     * 
+     * 如果想要修改阴影的深浅，可以通过设置shadowDarkness，该值得范围时0到1，越小越浅。
+     * 
+     * 另外，这里实现阴影效果的方法是Shadow Mapping，即阴影是作为渲染钱计算好的贴图贴上去
+     * 的，因而会受到贴图像素大小的限制，所以可以通过设置shadowMapWidth与shadowMapHeight
+     * 值控制贴图的大小，来改变阴影的精确度。
+     * 
+     * 而如果像实现软阴影的效果，可以通过renderer。shadowMapSoft = true；方便地实现。
+     * 
+     * 
+     * 
+     **/  
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.shadowMap.enabled = true;
+      // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // renderer.shadowMapSoft = true;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.OrthographicCamera(-5, 5, 3.75, -3.75, 0.1, 100);
+      camera.position.set(0, -3, 3)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      // const light = new THREE.AmbientLight(0xffffff);//{ambient: 0xff0000}
+      // scene.add(light);
+
+      // var pLight = new THREE.PointLight(0xffffff, 2 ,100);
+      // pLight.position.set(0, 1.5, 2)
+      // scene.add(pLight)
+
+      // var dLight = new THREE.DirectionalLight();
+      // dLight.position.set(2, 5, 3)
+      // scene.add(dLight)
+
+      var axes = new THREE.AxesHelper(5);
+      scene.add(axes);
+
+      var greenCube = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshLambertMaterial({color: 0x00ff00})
+        // new THREE.MeshLambertMaterial({ambient: 0x00ff00})
+      );
+      greenCube.position.x = 0;
+      greenCube.position.z = 1;
+      greenCube.castShadow = true;
+      scene.add(greenCube)
+
+      // var whiteCube = new THREE.Mesh(
+      //   new THREE.BoxGeometry(2, 2, 2),
+      //   new THREE.MeshLambertMaterial({color: 0xffffff})
+      //   // new THREE.MeshLambertMaterial({ambient: 0xffffff})
+      // );
+      // whiteCube.position.x = -3;
+      // scene.add(whiteCube)
+
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(6, 6, 16, 16),
+        new THREE.MeshLambertMaterial({
+          color: 0xcccccc,
+          side: THREE.DoubleSide
+        })
+      )
+      // plane.rotation.x = -Math.PI / 2;
+      // plane.rotation.y = -1;
+      plane.position.z = 0;
+      plane.receiveShadow = true;
+      scene.add(plane)
+
+      var sLight = new THREE.SpotLight(0xffff00, 1, 100, Math.PI / 6, 25)
+      sLight.target = greenCube
+      sLight.position.set(3, 3, 5)
+      sLight.castShadow = true;
+      // sLight.shadow.camera.near = 1;
+      // sLight.shadow.camera.far = 10;
+      // sLight.shadow.camera.fov = 20;
+      // sLight.shadowCameraVisible = true;
+      // sLight.shadow.mapSize.width = 1024;
+      // sLight.shadow.mapSize.height = 1024;
+      // sLight.shadowDarkness = 0.3;
+      scene.add(sLight)
+
+      // const helper = new THREE.CameraHelper( sLight.shadow.camera );
+      // scene.add(helper);
+
+      renderer.render(scene, camera)
+    }
+  </script>
+</body>
+</html>

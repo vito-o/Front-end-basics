@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script>
+  <script src="./js/Stats.min.js"></script>
+</head>
+<body onload="init()">
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="text/javascript">
+    /**
+     * 着色器
+     * 
+     * 本章将介绍关于渲染的一些高级话题，使用着色器可以更灵活地控制渲染效果，解和纹理，
+     * 可以进行多次渲染，达到更强大的效果。
+     * 
+     * 渲染与着色器
+     * 
+     * 渲染是即使非计算机专业的都不会觉得陌生的词，虽然在很多人说这个词的时候，并不清除
+     * 究竟意味着什么。相反，“着色器”（Shader）很可能大家比较陌生的词，从名字上看去似乎是
+     * 用来上色的，但它具体能做什么？
+     * 
+     * 渲染
+     * 
+     * 用通俗的话来说，渲染就是将模型数据在屏幕上显示出来的过程。
+     * 
+     * 这听起来好像很简单！但正如你打开一个word写文档一样，之所以这个过程看起来毫不费力是
+     * 因为那些复杂而枯燥的活都让计算机完成了。同样，要渲染出一幅画面GPU也需要做很多工作，
+     * 如果能有兴趣了解的话，可以查阅渲染流水线的相关知识。
+     * 
+     * Three.js最重要的一个好处就是让你在无需知道图形学知识的前提下完成从建模到渲染的一
+     * 整套工作。因而，在泵书中我们不会对图形学知识做开展，否则就是违背了这一本意了。
+     * 在这里，我们只要理解渲染做的将你的模型数据呈现在屏幕上的过程即可。
+     * 
+     * 着色器
+     * 
+     * 在定义了场景中的物体、照相机、光源等等之后，渲染的结果就确定了嘛？
+     * 
+     * 在可编程GPU时代到来之前，答案是可定的，但限制我们以及可以通过着色器程序对GPU变成来
+     * 控制渲染的结果。着色器是屏幕上呈现画面之前的最后一步，用它可以对先前渲染的结果做修改，
+     * 包括对颜色、位置等等信息的修改，甚至可以对现取渲染的结果做后处理，实现高级的渲染效果。
+     * 
+     * 比如，我们要渲染一个宇航员，使用同样的模型、同样的光源、同样的照相机，但是不同的着色器，
+     * 我们就能得到不同的渲染效果：
+     * 
+     * 我们知道WebGL是基于OpenGL的，而OpenGL用GLSL(openGl Shading Language)这一着色器语言
+     * 完成着色器工作，因此，WebGl的着色器程序大致与GLSL相同，是一种接近c语言的代码，着色器
+     * 通常分为几何着色器（Geometry shader）、顶带着色器（Vertex shader），片元着色器（Fragment
+     * shader）等等。由于WebGL基于OpenGL ES2.0，因此WebGL支持的着色器只有顶点着色器与片元着色器。
+     * 
+     * 顶点着色器
+     * 
+     * 顶点着色器中的“顶点”指的正是Mesh中的顶点，对于顶带你调用一次。因此，如果场景中有一个
+     * 正方体，那么对八个顶点将各自调用一次顶点着色器，可以修改顶点的位置或者颜色灯信息，然后
+     * 传入片元着色器。
+     * 
+     * 片元着色器
+     * 
+     * 片元是栅格化之后，在形成像素之前的数据。片元着色器是每个片元会调用一次的程序，因此，片元
+     * 着色器特别适合用来做图像后处理。
+     * 
+     * Three.js与着色器
+     * 
+     * 由此，我们看到，着色器可以用来渲染高级的效果。但是对于很多应用而言，并不需要着色器。
+     * 
+     * webGL强制需要程序员定义着色器，即使你只时希望采用默认的渲染方法。这似乎有些不近人情，尤其
+     * 对于图形学理解不多的开发者而言。
+     * 
+     * 幸运的是，Three.js允许你不定义着色器采用默认的方法渲染，而仅在你有需要时，才使用此定义的
+     * 着色器，这大大减少了程序眼的工作量，而且对于初学者而言，无疑是减少入门难度的福音。
+     * 
+     * 初窥着色器
+     * 
+     * 在这节中，我们将通过具体的着色器代码，初步理解着色器变成。至于具体如何将着色器应用
+     * 于程序。
+     * 着色器时一段在GPU中执行的接近c语言的代码，顶点着色器对于每个顶带你调用一次，片元着色器
+     * 对于每个片元调用一次。
+     * 
+     * 顶点着色器
+     * 
+     * 着色器是类似c语言的代码。
+     * 
+     * varying vec2 vUv;
+     * 
+     * void main() {
+     *  vUv = uv;
+     * 
+     *  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+     * }
+     * 
+     * 我们可以猜测到，和c语言一样，着色器程序也从main函数开始调用。
+     * 
+     * 让我们一起来认时一下varing。它是WebGL定义的限定符(Qualifier)，限定符用于数据类型
+     * 之前，表明该变量的性质。
+     * 
+     * 限定符共有四个：
+     * ·const：这是我们熟悉的常量的意思
+     * ·attribute：从js代码传递到顶点着色器中，每个顶点对于不同的值
+     * ·uniform：每个顶点/片元对于相同的值
+     * ·varying：从顶点着色器传递到片元着色器中
+     * 
+     * 如果不写限定符，那么默认只有在当前文件中能访问。
+     * 所以，varying vec2 vUv;的意思是，声明了一个教vUv的变量，它的类型为vec2，该变量是为了
+     * 将顶点着色器中的信息传递到片元着色器中。那么它传递了什么信息呢？我们看到于之相关的只有
+     * vUv = uv；可是uv都没声明过！这是哪里来的呢？
+     * 
+     * 其实，vu是Three.js帮你传进来的一个很有用的属性，它代表了该顶带你在uv映射时的横纵坐标。
+     * 简单地说，一个物体的模型可能很复杂，对其贴图的一个特简单有校的方法就是uv映射，将每个面
+     * 片贴的图统一映射到一张纹理上，记录每个面片贴图在纹理上对应的位置。得到这样的效果：
+     * 
+     * 而之所以称为u和v，指的就是在纹理映射后的新坐标。我们也发现，uv变量的类型是vec2，顾名
+     * 思义就是一个二维的向量，可以使用uv.x和uv.y分别访问到uv两个维度的值。
+     * 
+     * 使用varying vec2 vUv;将uv信息传递到片元着色器是因为片元着色器本身不能访问到uv信息，
+     * 如果需要得到这一值得话，就需要从顶点着色器中传递过去，我们将其命名为vUv。
+     * 
+     * 那么, gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0)
+     * 又是干什么呢？学过图形学得读者一定对投影矩阵、模型矩阵并不陌生，这里做的事情就是
+     * 计算三维模型在二维显示屏上得坐标。这里，我们看到position也没有预先定义过，不过通过
+     * 上面得uv应该也能猜到position也是Three.js为我们提供得一个方便。
+     * position是顶点在物体坐标系（而不是世界坐标系）中得位置。这就意味着，一个正方体位于
+     * 世界坐标系得（2, 0, 0）与位于（0, 0, 0）将不会改变任何订单得position，这个position
+     * 是相对于正方体得锚点而言得。
+     * 
+     * 因此，这段顶点着色器得作用就是将uv信息传递到片元着色器中，并按默认得方式计算顶点位置。
+     * 
+     * 片元着色器
+     * 
+     * 有了前面顶点着色器传过来的vUv信息，我们能做些有意思的事情了吧？比如来看看看使用颜色
+     * 表示uv信息如何？
+     * 
+     * varying vec2 vUv;
+     * 
+     * void main() {
+     *  gl_FragColor = vec4(vUv.x, vUv.y, 1.0, 1.0);
+     * }
+     * 
+     * varying vec2 vUv;同样声明了从顶点着色器传递到片元着色器中的vUv，记得要在片元着色器
+     * 中再写一遍。主程序只有gl_FragColor = vec4(vUv.x, vUv.y, 1.0, 1.0);gl_FragColor用来
+     * 设置片元的颜色，vec4的四个维度分别表示红、绿、蓝以及alpha通道。因此，这里我们是将
+     * vUv的两个维度分别对应到红绿通道，得到的效果是：
+     * 
+     * 
+     * 
+     * 
+     **/  
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.shadowMap.enabled = true;
+      // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // renderer.shadowMapSoft = true;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.OrthographicCamera(-5, 5, 3.75, -3.75, 0.1, 100);
+      camera.position.set(0, -3, 3)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      // const light = new THREE.AmbientLight(0xffffff);//{ambient: 0xff0000}
+      // scene.add(light);
+
+      // var pLight = new THREE.PointLight(0xffffff, 2 ,100);
+      // pLight.position.set(0, 1.5, 2)
+      // scene.add(pLight)
+
+      // var dLight = new THREE.DirectionalLight();
+      // dLight.position.set(2, 5, 3)
+      // scene.add(dLight)
+
+      var axes = new THREE.AxesHelper(5);
+      scene.add(axes);
+
+      var greenCube = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshLambertMaterial({color: 0x00ff00})
+        // new THREE.MeshLambertMaterial({ambient: 0x00ff00})
+      );
+      greenCube.position.x = 0;
+      greenCube.position.z = 1;
+      greenCube.castShadow = true;
+      scene.add(greenCube)
+
+      // var whiteCube = new THREE.Mesh(
+      //   new THREE.BoxGeometry(2, 2, 2),
+      //   new THREE.MeshLambertMaterial({color: 0xffffff})
+      //   // new THREE.MeshLambertMaterial({ambient: 0xffffff})
+      // );
+      // whiteCube.position.x = -3;
+      // scene.add(whiteCube)
+
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(6, 6, 16, 16),
+        new THREE.MeshLambertMaterial({
+          color: 0xcccccc,
+          side: THREE.DoubleSide
+        })
+      )
+      // plane.rotation.x = -Math.PI / 2;
+      // plane.rotation.y = -1;
+      plane.position.z = 0;
+      plane.receiveShadow = true;
+      scene.add(plane)
+
+      var sLight = new THREE.SpotLight(0xffff00, 1, 100, Math.PI / 6, 25)
+      sLight.target = greenCube
+      sLight.position.set(3, 3, 5)
+      sLight.castShadow = true;
+      // sLight.shadow.camera.near = 1;
+      // sLight.shadow.camera.far = 10;
+      // sLight.shadow.camera.fov = 20;
+      // sLight.shadowCameraVisible = true;
+      // sLight.shadow.mapSize.width = 1024;
+      // sLight.shadow.mapSize.height = 1024;
+      // sLight.shadowDarkness = 0.3;
+      scene.add(sLight)
+
+      // const helper = new THREE.CameraHelper( sLight.shadow.camera );
+      // scene.add(helper);
+
+      renderer.render(scene, camera)
+    }
+  </script>
+</body>
+</html>
