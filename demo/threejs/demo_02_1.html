@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="text/javascript">
+    /**
+     * 构建Three.js场景的基本组件
+     * 
+     * ·在Three.js场景中使用的组件
+     * ·THREE.Scene对象的作用
+     * ·几何图形和网格是如何关联的
+     * ·正交投影摄像机和透视投影摄像机的区别
+     * 
+     * 一个场景想要显示任何东西，需要三种类型的组件
+     * ·摄像机：决定屏幕上哪些东西需要渲染
+     * ·光源：决定材质如何显示以及用于产生阴影
+     * ·对象：他们是摄像机透视图里主要的渲染对象，如方块、球体
+     * 
+     * THREE.Scene对象是所有不同对象的容器，但这个对象本身没有那么多的选项和函数。
+     * 
+     * 场景的基本功能
+     * 
+     * 场景相关的方法
+     * THREE.Scene.Add：用于向场景中添加对象
+     * THREE.Scene.Remove：用于移除场景中的对象
+     * THREE.Scene.children：用于获取场景中所有的子对象列表
+     * THREE.Scene.getObjectByName：利用name属性，用于获取场景中特定的对象
+     * 
+     * 这里，我们使用了THREE.Scene.travese()方法。我们可以将一个方法作为参数传递给travese()
+     * 方法，这个传递来的方法将会在每个子对象上执行。由于THREE.Scene对象存储的是对象树，所以
+     * 如果子对象本身还有子对象，travese()方法会在所有的子对象上执行，知道遍历完场景树种的所有
+     * 对象为止。
+     * 
+     * 在我们深入讨论THREE.Mesh和THREE.Geometry对象之前，先来介绍THREE.Scene对象的两个属性：
+     * fog(雾化)和overrideMaterial(材质覆盖)
+     * 
+     * 给场景添加雾化效果
+     * 
+     * 使用fog属性就可以为整个场景添加雾化效果。雾化效果是：场景种的物体里的越远就会变得越模糊。
+     * 
+     * 在three.js种为场景添加雾化效果是很简单的，在定义完场景后只要添加如下代码即可：
+     * scene.fog = new THREE.Fog(0xffffff, 0.015, 100)
+     * 
+     * 我们这里定义一个白色雾化效果0xffffff。后面的两个参数是用来调节雾的显示，0.015是near（近处）
+     * 属性的值，100是far(远处)属性的值。通过这两个属性可以确定雾化开始和结束的地方，以及加深的程度。
+     * 使用THREE.Fog创建的对象，雾的浓度时线性增长的，除此之外还有另一种添加雾化效果的方法，
+     * scene.fog =  new THREE.FogExp2(0xffffff, 0.01)
+     * 这个方法种不再指定near和far属性，只需要设置雾的颜色（0xffffff）和浓度(0.01)即可。需要注意
+     * 的是，该方法中雾得浓度不再是线性增长得，而是随着距离呈指数增长。
+     * 
+     * 使用overrideMaterial属性
+     * 
+     * 当设置了overrideMaterial属性后，场景中所有得物体都会使用该属性指向得材质。
+     * 
+     **/  
+
+    window.onload = init;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setClearColor(0xeeeeee)
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+      // scene.fog = new THREE.Fog(0xffffff, 0.015, 100)
+      scene.fog = new THREE.FogExp2(0xffffff, 0.005)
+      scene.overrideMaterial = new THREE.MeshLambertMaterial({color: 0xffffff})
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(-30, 40, 30)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 40, 1, 1),
+        new THREE.MeshLambertMaterial({color: 0xffffff})
+      );
+      plane.name = '平面'
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 15;
+      plane.position.y = 0;
+      plane.position.z = 0;
+      plane.receiveShadow = true;
+      scene.add(plane)
+
+      cube = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 4, 4),
+        new THREE.MeshLambertMaterial({
+          color: 0xff0000,
+          // wireframe: true
+        })
+      )
+      cube.position.set(-4, 3, 0);
+      cube.castShadow = true;
+      scene.add(cube)
+
+      let ambientLight = new THREE.AmbientLight(0x0c0c0c);
+      scene.add(ambientLight)
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, -10)
+      scene.add(spotLight)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      render()
+    }
+
+    function render() {
+      scene.traverse(function(obj) {
+        if(obj instanceof THREE.Mesh && obj != plane) {
+          obj.rotation.x += 0.01;
+          obj.rotation.y += 0.01;
+          obj.rotation.z += 0.01;
+        }
+      })
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+  </script>
+</body>
+</html>
