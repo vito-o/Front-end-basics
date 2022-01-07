@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="text/javascript">
+    /**
+     * 我们使用THREE.SceneUtils对象的createMultiMaterialObject()方法为几何体添加线框。
+     * 再Three.js中你还可以使用THREE.WireframeHelper()方法来添加线框
+     * var helper = new THREE.WireframeHelper(mesh, 0x000000)
+     * mesh参数为需要添加线框的网格，第二个参数为线框的颜色。使用代码scene.add(helper)就可以
+     * 将helper对象添加到场景中。由于helper对象实际上就是一个THREE.Line对象，所以你可以设置
+     * 线框如何显示，比如使用helper.material.linewidth=2来指定线框的宽度
+     * 
+     * 网格对象的属性和方法
+     * 
+     * 创建一个网格需要一个几何体，以及一个或多个材质。当网格创建好之后，我们就可以将他添加到
+     * 场景中并进行渲染。
+     * 
+     * position/rotation/scale/translateX()/translateY()/translateZ()/visible
+     * 
+     * cube.position.x = 10;
+     * cube.position.y = 10;
+     * cube.position.z = 10;
+     * 
+     * cube.position.set(10, 3, 1);
+     * 
+     * cube.position = new THREE.Vector3(10, 3, 1)
+     * 
+     * createMultiMaterialObject()方法创建了一个多材质对象，而且也解释了这个方法返回的不是一个
+     * 网格对象，而是网格组，其中每个网格的几何体都是一样的，不同的只是使用的材质不一样。如果我们
+     * 移动网格组，那么他们的偏移量是一样的
+     * 
+     * cube.rotation.x = 0.5 * Math.PI
+     * cube.rotation.set(0.5 * Math.PI, 0, 0)
+     * cube.rotation = new THREE.Vector3(0.5 * Math.PI, 0, 0)
+     * 
+     **/
+
+    window.onload = init;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('myCanvas')
+      });
+      // renderer.setClearColor(0xeeeeee)
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(-30, 40, 30)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 40, 1, 1),
+        new THREE.MeshLambertMaterial({color: 0xffffff})
+      );
+      plane.name = '平面'
+      plane.rotation.x = -0.5 * Math.PI;
+      // plane.position.x = 15;
+      // plane.position.y = 0;
+      // plane.position.z = 0;
+      plane.position = new THREE.Vector3(15, 0, 0)
+      plane.receiveShadow = true;
+      scene.add(plane)
+
+      // cube = createMultiMaterialObject(
+      //   new THREE.BoxGeometry(4, 4, 4),
+      //   [
+      //     new THREE.MeshLambertMaterial({opacity: 0.6, color: 0x44ff44, transparent: true}),
+      //     new THREE.MeshBasicMaterial({color: 0x000000, wireframe: true})
+      //   ]
+      // );
+      // cube.children.forEach(function(e) {
+      // })
+      // cube.position.set(-4, 3, 0);
+      // cube.castShadow = true;
+      // scene.add(cube)
+
+      cube = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 4, 4),
+        new THREE.MeshLambertMaterial({opacity: 0.6, color: 0x44ff44, transparent: true}),
+      );
+      cube.position.set(-4, 3, 0);
+      cube.castShadow = true;
+      scene.add(cube)
+    
+      // var helper = new THREE.WireframeHelper(cube, 0x000000) //过时了
+      // scene.add(helper)
+      let line = new THREE.LineSegments(
+        new THREE.WireframeGeometry(cube.geometry)
+      );
+      line.material.depthTest = false;
+      line.material.opacity = .25;
+      line.material.transparent = true;
+      scene.add(line)
+
+      let ambientLight = new THREE.AmbientLight(0x0c0c0c);
+      scene.add(ambientLight)
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      render()
+    }
+
+    function render() {
+      scene.traverse(function(obj) {
+        if(obj instanceof THREE.Mesh && obj != plane) {
+          // obj.rotation.x += 0.01;
+          // obj.rotation.y += 0.01;
+          // obj.rotation.z += 0.01;
+
+          // obj.rotation.set(
+          //   obj.rotation.x+0.01, 
+          //   obj.rotation.y+0.01, 
+          //   obj.rotation.z+0.01
+          // )
+
+          // obj.rotation = new THREE.Vector3(
+          //   obj.rotation.x+0.01, 
+          //   obj.rotation.y+0.01, 
+          //   obj.rotation.z+0.01
+          // )
+        }
+      })
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createMultiMaterialObject( geometry, materials ) {
+      const group = new THREE.Group();
+      for ( let i = 0, l = materials.length; i < l; i ++ ) {
+        group.add( new THREE.Mesh( geometry, materials[ i ] ) );
+      }
+      return group;
+    }
+
+    setTimeout(() => {
+      // clone()
+    }, 2000)
+
+    function clone() {
+      let clonedGeom = cube.children[0].geometry.clone();
+      let mesh2 = createMultiMaterialObject(
+        clonedGeom,
+        [
+          new THREE.MeshLambertMaterial({opacity: 0.6, color: 0x44ff44, transparent: true}),
+          new THREE.MeshBasicMaterial({color: 0x000000, wireframe: true})
+        ]
+      );
+      mesh2.position.x = 5;
+      mesh2.position.y = 5;
+      mesh2.position.z = 5;
+      mesh2.name = 'clone'
+      scene.remove(scene.getObjectByName('clone'));
+      scene.add(mesh2)
+    }
+
+  </script>
+</body>
+</html>
