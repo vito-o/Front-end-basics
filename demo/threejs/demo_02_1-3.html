@@ -17,35 +17,15 @@
 
   <script type="text/javascript">
     /**
-     * 我们使用THREE.SceneUtils对象的createMultiMaterialObject()方法为几何体添加线框。
-     * 再Three.js中你还可以使用THREE.WireframeHelper()方法来添加线框
-     * var helper = new THREE.WireframeHelper(mesh, 0x000000)
-     * mesh参数为需要添加线框的网格，第二个参数为线框的颜色。使用代码scene.add(helper)就可以
-     * 将helper对象添加到场景中。由于helper对象实际上就是一个THREE.Line对象，所以你可以设置
-     * 线框如何显示，比如使用helper.material.linewidth=2来指定线框的宽度
+     * 选择合适的摄像机
      * 
-     * 网格对象的属性和方法
+     * Three.js库提供了两种不同的摄像机：正交投影摄像机和透视投影摄像机。
      * 
-     * 创建一个网格需要一个几何体，以及一个或多个材质。当网格创建好之后，我们就可以将他添加到
-     * 场景中并进行渲染。
+     * 立方体距离摄像机越来越远，他们就惠被渲染的越小-透视视图
      * 
-     * position/rotation/scale/translateX()/translateY()/translateZ()/visible
+     * 使用正交摄像机的话，所有的立方体被渲染出来的尺寸都是一样的，因为对象相对于摄像机的距离
+     * 对渲染的结果没有影响
      * 
-     * cube.position.x = 10;
-     * cube.position.y = 10;
-     * cube.position.z = 10;
-     * 
-     * cube.position.set(10, 3, 1);
-     * 
-     * cube.position = new THREE.Vector3(10, 3, 1)
-     * 
-     * createMultiMaterialObject()方法创建了一个多材质对象，而且也解释了这个方法返回的不是一个
-     * 网格对象，而是网格组，其中每个网格的几何体都是一样的，不同的只是使用的材质不一样。如果我们
-     * 移动网格组，那么他们的偏移量是一样的
-     * 
-     * cube.rotation.x = 0.5 * Math.PI
-     * cube.rotation.set(0.5 * Math.PI, 0, 0)
-     * cube.rotation = new THREE.Vector3(0.5 * Math.PI, 0, 0)
      * 
      **/
 
@@ -60,7 +40,14 @@
 
       scene = new THREE.Scene()
 
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      //camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera = new THREE.OrthographicCamera(
+        window.innerWidth / -16, window.innerWidth / 16,
+        window.innerHeight / 16, window.innerHeight / -16,
+        -200, 500
+      )
+
+
       camera.position.set(-30, 40, 30)
       camera.lookAt(new THREE.Vector3(0, 0, 0))
       scene.add(camera)
