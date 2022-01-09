@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <!-- <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script> -->
+  <script src="./js/Stats.min.js"></script>
+  <!-- <script src="./js/RectAreaLightUniformsLib.js" type="module"></script> -->
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { Lensflare, LensflareElement } from './js/Lensflare.js'
+    /**
+     * 光晕
+     * 
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.shadowMap.enabled = true;
+      // renderer.setClearColor(0xeeeeee)
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      /* camera = new THREE.OrthographicCamera(
+        window.innerWidth / -16, window.innerWidth / 16,
+        window.innerHeight / 16, window.innerHeight / -16,
+        -200, 500
+      ) */
+      camera.position.set(-30, 40, 30)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 40, 1, 1),
+        new THREE.MeshStandardMaterial({color: 0xffffff})
+      );
+      plane.name = '平面'
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 15;
+      plane.receiveShadow = true;
+      scene.add(plane)
+
+      cube = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 4, 4),
+        new THREE.MeshLambertMaterial({color: 0x44ff44}),
+      );
+      cube.position.set(4, 3, 0);
+      cube.castShadow = true;
+      scene.add(cube)
+    
+      let ambientLight = new THREE.AmbientLight(0x0c0c0c);
+      scene.add(ambientLight)
+
+      const texture = new THREE.TextureLoader().load('./img/lensflare0.png')
+
+      const light = new THREE.PointLight( 0xffffff, 1.5, 1000 );
+      light.position.set(5, 15, 15)
+      scene.add(light)
+
+      const lensflare = new Lensflare();
+      lensflare.addElement( new LensflareElement( texture, 100, 0 ) );
+      light.add(lensflare)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      render()
+    }
+
+    function render() {
+      scene.traverse(function(obj) {
+        if(obj instanceof THREE.Mesh && obj != plane) {
+      
+        }
+      })
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createMultiMaterialObject( geometry, materials ) {
+      const group = new THREE.Group();
+      for ( let i = 0, l = materials.length; i < l; i ++ ) {
+        group.add( new THREE.Mesh( geometry, materials[ i ] ) );
+      }
+      return group;
+    }
+
+  </script>
+</body>
+</html>

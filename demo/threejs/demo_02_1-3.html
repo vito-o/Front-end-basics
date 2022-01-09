@@ -26,6 +26,22 @@
      * 使用正交摄像机的话，所有的立方体被渲染出来的尺寸都是一样的，因为对象相对于摄像机的距离
      * 对渲染的结果没有影响
      * 
+     * 透视摄像机
+     * 摄像机的fov属性决定了横向视场。基于aspect属性，纵向视场也就相应地决定了。
+     * near决定了近面距离，far属性决定了远面距离。近面距离和远面距离之前的区域将会被渲染
+     * 
+     * 正交投影摄像机
+     * 
+     * 由于正交投影摄像机渲染出来的物体大小都是一样的，所以它并不关心使用什么长宽比，或者以
+     * 什么样的视角来观察场景。当使用正交投影摄像机时，你要定义的是一个需要被渲染的方块区域。
+     * 
+     * 将摄像机聚焦在指定点上
+     * 
+     * 到目前为止，我们以及介绍了如何创建摄像机，以及各个参数的含义。
+     * 通常来说，摄像机会指向场景的中心，用坐标来表示就是position(0, 0, 0).但是我们可以很容易
+     * 地改变摄像机所指向的位置。
+     * camera.lookAt(new THREE.Vector3(x, y, z))
+     * 
      * 
      **/
 
@@ -114,6 +130,11 @@
     function render() {
       scene.traverse(function(obj) {
         if(obj instanceof THREE.Mesh && obj != plane) {
+          // obj.position.x += 0.1
+          // obj.position.y -= 0.2
+          // obj.position.z += 0.5
+          // obj.lookAt(new THREE.Vector3(0, 0, 0))
+
           // obj.rotation.x += 0.01;
           // obj.rotation.y += 0.01;
           // obj.rotation.z += 0.01;

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <!-- <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script> -->
+  <script src="./js/Stats.min.js"></script>
+  <!-- <script src="./js/RectAreaLightUniformsLib.js" type="module"></script> -->
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+     * 材质
+     * 
+     * 你已经了解到一个材质结合THREE.Geometry对象，可以构成THREE.Mesh对象。
+     * 材质就像附体的皮肤，决定了几何体的外表。例如，皮肤定义了一个几何体看起来是否像金属、透明与否，
+     * 或者显示为线框。
+     * 然后得到的THREE.Mesh对象才可以添加到three.js渲染的场景中。
+     * 
+     * MeshBasicMaterial(网格基础材质)
+     * 基础材质，用于给几何体赋予一种简单的颜色，或者显示几何体的线框
+     * 
+     * MeshDepthMaterial(网格深度材质)
+     * 这个材质使用从摄像机到网格的距离来决定如何给网格上色
+     * 
+     * MeshNormalMaterial(网格法向材质)
+     * 这是一种简单的材质，根据法向向量来计算物体表面的颜色
+     * 
+     * MeshFaceMaterial(网格面材质)
+     * 这是一个容器，可以为几何体的各个表面指定不同的材质
+     * 
+     * MeshLambertMaterial（网格Lambert材质）
+     * 这是一种考虑光照影响的材质，用于创建暗淡的、不光亮的物体
+     * 
+     * MeshPhongMaterial(网格Phong式材质)
+     * 这是一种考虑光照影响的材质，用于创建光亮的物体。
+     * 
+     * ShaderMaterial（着色器材质）
+     * 这种材质允许使用自定义的着色器程序，直接控制顶点的放置方式以及像素的着色方式
+     * 
+     * LineBasicMaterial(直线基础材质)
+     * 这种材质可以用于THREE.Line(直线)几何体，用于创建着色的直线。
+     * 
+     * LineDashMaterial(虚线材质)
+     * 这种材质与LineBasicMaterial(直线基础材质)一样，但允许创建出一种虚线的效果
+     * 
+     * 理解材质的共有属性
+     * 
+     * 你可以快速看一下哪些属性是所有材质共有的。Three.js提供了一个材质基类THREE.Material，它列出来
+     * 所有的共有属性。我们将这些共有属性分成了三类，如下所示：
+     * ·基础属性
+     * ·融合属性：每个物体都有一系列的融合属性。这些属性决定了物体如何与背景融合
+     * ·高级属性：有一些高级属性可以控制底层WebGL上下文对象渲染物体的方式。大多数情况下是不需要使用这些属性的
+     * 
+     * 联合材质
+     * 
+     * THREE.MeshDepthMaterial的属性，没有属性可以设置方块的颜色。一切都是由材质的默认属性决定。
+     * 但是，Three.js库可以通过联合材质创建出新效果（这也是材质融合起作用的地方）
+     * 
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+      // scene.overrideMaterial = new THREE.MeshDepthMaterial();
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 40, 30)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 40, 1, 1),
+        new THREE.MeshLambertMaterial({color: 0xffffff})
+      );
+      plane.name = '平面'
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 15;
+      scene.add(plane)
+
+      let cubeMaterial = new THREE.MeshDepthMaterial();
+      let colorMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00ff00,
+        transparent: true,
+        blending: THREE.MultiplyBlending
+      })
+      cube = createMultiMaterialObject(
+        new THREE.BoxGeometry(4, 4, 4),
+        [colorMaterial, cubeMaterial]
+      )
+      // cube.children[1].scale.set(0.99, 0.99, 0.99);
+
+      // cube = new THREE.Mesh(
+      //   new THREE.BoxGeometry(4, 4, 4),
+      //   new THREE.MeshLambertMaterial({color: 0xffffff}),
+      // );
+      cube.position.set(4, 3, 0);
+      scene.add(cube)
+
+      // let cube1 = new THREE.Mesh(
+      //   new THREE.BoxGeometry(4, 4, 4),
+      //   new THREE.MeshLambertMaterial({color: 0xffffff}),
+      // );
+      let cube1 = createMultiMaterialObject(
+        new THREE.BoxGeometry(4, 4, 4),
+        [colorMaterial, cubeMaterial]
+      )
+      cube1.position.set(40, 3, -20);
+      scene.add(cube1)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      // let spotLight = new THREE.SpotLight(0xffffff);
+      // spotLight.position.set(-40, 60, 10)
+      // scene.add(spotLight)
+
+      render()
+    }
+
+    function render() {
+      scene.traverse(function(obj) {
+        if(obj instanceof THREE.Mesh && obj != plane) {
+          obj.rotation.x += 0.01;
+          obj.rotation.y += 0.01;
+          obj.rotation.z += 0.01;
+        }
+      })
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createMultiMaterialObject( geometry, materials ) {
+      const group = new THREE.Group();
+      for ( let i = 0, l = materials.length; i < l; i ++ ) {
+        group.add( new THREE.Mesh( geometry, materials[ i ] ) );
+      }
+      return group;
+    }
+  </script>
+</body>
+</html>
