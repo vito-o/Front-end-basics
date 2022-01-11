@@ -54,7 +54,8 @@
       initStats();
 
       renderer = new THREE.WebGLRenderer({
-        canvas: document.getElementById('myCanvas')
+        canvas: document.getElementById('myCanvas'),
+        antialias: true,
       });
       renderer.setClearColor(0xeeeeee)
       renderer.setSize(window.innerWidth, window.innerHeight);

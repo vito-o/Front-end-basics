@@ -11,16 +11,6 @@
   <canvas id="myCanvas" style="border:1px solid red;" width="600" height="400"></canvas>
 
   <script type="text/javascript">
-    /**
-<<<<<<< HEAD
-=======
-     * 获取视频
-     * 
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
-     * 
-     **/ 
-
-
     var canvas = document.getElementById('myCanvas')
     //初始化WebGL上下文
     var gl = canvas.getContext('webgl')
@@ -264,14 +254,6 @@
     // Here's where we call the routine that builds all the
     // objects we'll be drawing.
     const buffers = initBuffers(gl);
-<<<<<<< HEAD
-    const texture = loadTexture(gl)
-    const video = setupVideo('Firefox.mp4')
-
-    var copyVideo = false;
-    var cubeRotation = 0.0;
-    var then = 0;
-=======
     // const texture = loadTexture(gl, 'cubetexture.png')
     const texture = loadTexture(gl);
     const video = setupVideo('Firefox.mp4');
@@ -279,7 +261,6 @@
     var cubeRotation = 0.0;
     var then = 0;
     var copyVideo = false;
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
 
     // Draw the scene repeatedly
     function render(now) {
@@ -287,11 +268,8 @@
       const deltaTime = now - then;
       then = now;
 
-<<<<<<< HEAD
-      if(copyVideo) {
-=======
+
       if (copyVideo) {
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
         updateTexture(gl, texture, video);
       }
 
@@ -459,11 +437,8 @@
       cubeRotation += deltaTime;
     }
 
-<<<<<<< HEAD
+
     function loadTexture(gl) {
-=======
-    function loadTexture(gl, url) {
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
       const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -478,18 +453,12 @@
       gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                 width, height, border, srcFormat, srcType,
                 pixel);
-<<<<<<< HEAD
       
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
-=======
 
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
       return texture;
     }
 
@@ -507,48 +476,27 @@
     }
 
     function setupVideo(url) {
-<<<<<<< HEAD
-      var video = document.createElement('video')
-=======
       const video = document.createElement('video');
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
-
       var playing = false;
       var timeupdate = false;
 
-<<<<<<< HEAD
       video.autoplay = true;
-=======
-      video.autoplay = false;
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
       video.muted = true;
       video.loop = true;
 
       video.addEventListener('playing', function() {
         playing = true;
-<<<<<<< HEAD
         checkReady()
       }, true)
-=======
-        checkReady();
-      }, true);
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
+
 
       video.addEventListener('timeupdate', function() {
         timeupdate = true;
         checkReady();
-<<<<<<< HEAD
       }, true)
 
       video.src = url;
-      video.play()
-=======
-      }, true);
-
-      video.src = url;
       video.play();
-
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
 
       function checkReady() {
         if(playing && timeupdate) {
@@ -558,11 +506,7 @@
 
       return video;
     }
-<<<<<<< HEAD
 
-
-=======
->>>>>>> a51c4b02b3b0c79230c71eda4eaba1d817eebad6
   </script>
 </body>
 </html>
