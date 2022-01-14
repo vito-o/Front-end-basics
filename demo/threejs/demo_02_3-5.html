@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+     * LineBasicMaterial
+     * LineDashedMaterial
+     * 
+     * Three.js提供了很多材质用于给几何体指定皮肤。从简单的THREE.MeshBasicMaterial到复杂的
+     * THREE.ShaderMaterial，通过THREE.ShaderMaterial可以提供自己的顶点着色器和像素着色器
+     * 程序。材质共享很多基础属性。如果你知道如何使用一种材质，可能也知道如何使用其他材质。注意，
+     * 不是所有的材质都对场景中的光源做出反应。如果希望一个材质计算光照的影响，应该使用
+     * THRE.MeshPhongMaterial或THREE.MeshLamberMaterial。仅仅从代码确定某种材质属性的效果
+     * 是非常困难的。
+     * 
+     * 同样该记住的是，材质的大部分属性都可以在运行时修改。但是有一些属性不能再运行时修改。如果你要
+     * 修改这些属性的值，需要将needsUpdate属性设置为true。
+     * 
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 40, 30)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      let color = new THREE.Color()
+      let points = gosper(4, 60);
+      let colors = [];
+      points = points.map(function(e, i) {
+        color.setHSL(e.x / 100 + 0.5, (e.y * 20) / 300, 0.8);
+        colors.push(color.r, color.g, color.b);
+        return new THREE.Vector3(e.x, e.z, e.y)
+      })
+      const geometry = new THREE.BufferGeometry().setFromPoints( points );
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+
+      // const material = new THREE.LineBasicMaterial({
+      //   vertexColors: true
+      // });
+      const material = new THREE.LineDashedMaterial({
+        vertexColors: true,
+        dashSize: .2,
+        gapSize: .2,
+        scale: 1
+      });
+      const line = new THREE.Line( geometry, material );
+      line.computeLineDistances();
+      scene.add( line );
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      render()
+    }
+
+    function render() {
+      scene.traverse(function(obj) {
+        if(obj instanceof THREE.Mesh && obj != plane) {
+          obj.rotation.x += 0.01;
+          obj.rotation.y += 0.01;
+          obj.rotation.z += 0.01;
+        }
+      })
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function gosper(a, b) {
+
+      var turtle = [0, 0, 0];
+      var points = [];
+      var count = 0;
+
+      rg(a, b, turtle);
+
+
+      return points;
+
+      function rt(x) {
+        turtle[2] += x;
+      }
+
+      function lt(x) {
+        turtle[2] -= x;
+      }
+
+      function fd(dist) {
+        //                ctx.beginPath();
+        points.push({
+          x: turtle[0],
+          y: turtle[1],
+          z: Math.sin(count) * 5
+        });
+        //                ctx.moveTo(turtle[0], turtle[1]);
+
+        var dir = turtle[2] * (Math.PI / 180);
+        turtle[0] += Math.cos(dir) * dist;
+        turtle[1] += Math.sin(dir) * dist;
+
+        points.push({
+          x: turtle[0],
+          y: turtle[1],
+          z: Math.sin(count) * 5
+        });
+        //                ctx.lineTo(turtle[0], turtle[1]);
+        //                ctx.stroke();
+
+      }
+
+      function rg(st, ln, turtle) {
+
+        st--;
+        ln = ln / 2.6457;
+        if (st > 0) {
+          //                    ctx.strokeStyle = '#111';
+          rg(st, ln, turtle);
+          rt(60);
+          gl(st, ln, turtle);
+          rt(120);
+          gl(st, ln, turtle);
+          lt(60);
+          rg(st, ln, turtle);
+          lt(120);
+          rg(st, ln, turtle);
+          rg(st, ln, turtle);
+          lt(60);
+          gl(st, ln, turtle);
+          rt(60);
+        }
+        if (st == 0) {
+          fd(ln);
+          rt(60);
+          fd(ln);
+          rt(120);
+          fd(ln);
+          lt(60);
+          fd(ln);
+          lt(120);
+          fd(ln);
+          fd(ln);
+          lt(60);
+          fd(ln);
+          rt(60)
+        }
+      }
+
+      function gl(st, ln, turtle) {
+        st--;
+        ln = ln / 2.6457;
+        if (st > 0) {
+          //                    ctx.strokeStyle = '#555';
+          lt(60);
+          rg(st, ln, turtle);
+          rt(60);
+          gl(st, ln, turtle);
+          gl(st, ln, turtle);
+          rt(120);
+          gl(st, ln, turtle);
+          rt(60);
+          rg(st, ln, turtle);
+          lt(120);
+          rg(st, ln, turtle);
+          lt(60);
+          gl(st, ln, turtle);
+        }
+        if (st == 0) {
+          lt(60);
+          fd(ln);
+          rt(60);
+          fd(ln);
+          fd(ln);
+          rt(120);
+          fd(ln);
+          rt(60);
+          fd(ln);
+          lt(120);
+          fd(ln);
+          lt(60);
+          fd(ln);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
