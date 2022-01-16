@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+     * 学习使用几何体
+     * 
+     * 
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 40, 30)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      let plane = createMesh(
+        // new THREE.PlaneGeometry(10, 10)
+        new THREE.RingGeometry(5, 10, 100)
+      )
+      scene.add(plane)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      render()
+    }
+
+    function createMesh(geometry) {
+      let meshMaterial = new THREE.MeshNormalMaterial();
+      meshMaterial.side = THREE.DoubleSide;
+
+      let wireframeMaterial = new THREE.MeshBasicMaterial();
+      wireframeMaterial.wireframe = true;
+
+      let mesh = createMultiMaterialObject(
+        geometry, [meshMaterial, wireframeMaterial]
+      )
+
+      return mesh;
+    }
+
+    function render() {
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createMultiMaterialObject( geometry, materials ) {
+
+      const group = new THREE.Group();
+
+      for ( let i = 0, l = materials.length; i < l; i ++ ) {
+
+        group.add( new THREE.Mesh( geometry, materials[ i ] ) );
+
+      }
+
+      return group;
+    }
+  </script>
+</body>
+</html>

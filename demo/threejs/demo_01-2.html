@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.js"></script>
+    <script src="./js/Stats.min.js"></script>
+    <script src="./js/OBJLoader.js"></script>
+</head>
+<body onload="init()">
+<canvas id="myCanvas" width="400" height="300"></canvas>
+<script type="text/javascript">
+/**
+    支持格式
+        
+    Three.js有一系列导入外部文件的辅助函数，是在three.js之外的，
+    *.obj是最常用的模型格式，导入*.obj文件需要OBJLoader.js
+    导入带*.mtl材质的*.obj文件需要MTLLoader.js以及OBJMTLLoader.js
+    另有PLYLoader.js、STLLoader.js等分别对应不同格式的加载器，可以
+    根据模型格式自行选择。
+
+    目前，支持的模型格式有：
+    · *.obj
+    · *.obj,*.mtl
+
+
+**/
+
+var loader = new THREE.OBJLoader();
+
+function init() {
+    let renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('myCanvas')
+    });
+
+    scene = new THREE.Scene()
+
+    camera = new THREE.OrthographicCamera(-5, 5, 3.75, -3.75, 0.1, 200);
+    camera.position.set(20, 20, 100)
+    camera.lookAt(new THREE.Vector3(0, 0, 0))
+    scene.add(camera)
+
+    const light = new THREE.DirectionalLight( 0xffffff );
+    light.position.set(10, 10, 15)
+    scene.add(light);
+
+    
+
+
+    loader.load('./mx/fff.obj', function(mesh) {
+        scene.add(mesh);
+
+        renderer.render(scene, camera)
+    });
+}
+
+
+       
+</script>
+
+</body>
+</html>
