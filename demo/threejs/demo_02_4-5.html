@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { ConvexGeometry } from './js/ConvexGeometry.js';
+    /**
+     * 通过拉伸创建几何体
+     
+    threejs提供了几种方法，让我们可以从一个二维图形拉伸出三维图像。 拉伸指的是沿着
+    z轴拉伸二位图像，将它转换成三维图像。例如，如果我们拉伸THREE.CircleGeometry，
+    就会得到一个类似圆柱形的图形；如果我们拉伸THREE.PlaneGeometry，就会得到一个类似
+    方块的图形。
+
+    6.3.2 THREE.TubeGeometry
+
+    THREE.TubeGeometry沿着一条三维的样条曲线拉伸出一根管子。你可以通过指定一些顶点来
+    定义路径，然后用THREE.TubeGeometry创建这根管子。
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+    let tubeMesh = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 90, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      let options = {
+        steps: 1,
+        depth: 10,
+        bevelEnabled: true,
+        bevelThickness: 2,
+        bevelSize: 1,
+        bevelOffset: 0,
+        bevelSegments: 3,
+      }
+
+      createTube()
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      render()
+    }
+
+    function render() {
+      tubeMesh.rotation.x += 0.01;
+      tubeMesh.rotation.y += 0.01;
+      tubeMesh.rotation.z += 0.01;
+
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createTube() {
+      let points = []
+
+      for( let i = 0; i < 20; i++) {
+        let randomX = -15 + Math.round(Math.random() * 30);
+        let randomY = -15 + Math.round(Math.random() * 30);
+        let randomZ = -15 + Math.round(Math.random() * 30);
+
+        points.push(new THREE.Vector3(randomX, randomY, randomZ))
+      }
+
+      let tubeGeometry = new THREE.TubeGeometry(
+        new THREE.CatmullRomCurve3(points),
+        30,
+        1,
+        10,
+        false
+      )
+
+      tubeMesh = new THREE.Mesh(
+        tubeGeometry,
+        new THREE.MeshNormalMaterial()
+      )
+
+      scene.add(tubeMesh)
+    }
+  </script>
+</body>
+</html>
