@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { ConvexGeometry } from './js/ConvexGeometry.js';
+    /**
+     * 高级几何体和二元操作
+     * 
+     * THREE.LatheGeometry
+     * 
+     * THREE.LatheGeometry允许你从一条光滑曲线创建图形。
+     * 
+     * 
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 50, 10)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      let geometry = generatePoints();
+      const material = new THREE.MeshNormalMaterial( { color: 0xffff00 } );
+      const lathe = new THREE.Mesh( geometry, material );
+      scene.add( lathe );
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      render()
+    }
+
+    function render() {
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function generatePoints(segments, phiStart, phiLength) {
+      let points = []
+      let height = 5;
+      let count = 30;
+      
+      for(let i = 0; i < count; i++) {
+        points.push(
+          new THREE.Vector2(
+            (Math.sin(i * 0.2) + Math.cos(i * 0.3)) * height + 12, 
+            (i - count) + count / 2
+          )
+        )
+      }
+
+      let group = new THREE.Object3D();
+
+      let material = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        transparent: false
+      })
+
+      points.forEach(function(point) {
+        let geo = new THREE.SphereGeometry(0.2)
+        let mesh = new THREE.Mesh(geo, material)
+        mesh.position.set(point.x, point.y, 0)
+
+        group.add(mesh)
+      })
+      scene.add(group)
+
+      let latheGeometry = new THREE.LatheGeometry(points, 30, 0, 6)
+      return latheGeometry;
+    }
+  </script>
+</body>
+</html>

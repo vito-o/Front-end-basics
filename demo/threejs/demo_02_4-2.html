@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { ConvexGeometry } from './js/ConvexGeometry.js';
+    /**
+     * 高级几何体和二元操作
+     * 
+     * THREE.ConvexGeometry
+     * 
+     * 通过THREE.ConvexGeometry，我们可以围绕一组点创建一个凸包。
+     * 凸包就是包围这组点的最小图形。
+     * 
+     * 一个保存顶点（类型是THREE.Vector3）的数组是THREE.ConvexGeometry构造函数的唯一参数。
+     * 
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 20, 10)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      generatePoints();
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      render()
+    }
+
+    function render() {
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function generatePoints() {
+      let points = []
+      for(let i = 0; i < 20; i++) {
+        let randomX = -5 + Math.round(Math.random() * 10);
+        let randomY = -5 + Math.round(Math.random() * 10);
+        let randomZ = -5 + Math.round(Math.random() * 10);
+        points.push(new THREE.Vector3(randomX, randomY, randomZ))
+      }
+
+      let group = new THREE.Group()
+      let material = new THREE.MeshNormalMaterial({color: 0xff0000, transparent: false})
+      points.forEach(function (point) {
+        let geom = new THREE.SphereGeometry(0.2)
+        let mesh = new THREE.Mesh(geom, material)
+        mesh.position.set(point.x, point.y, point.z)
+        group.add(mesh)
+      })
+      scene.add(group)
+  
+
+      const geometry = new ConvexGeometry( points );
+      const mesh = new THREE.Mesh( geometry, material );
+      scene.add( mesh );
+    }
+  </script>
+</body>
+</html>
