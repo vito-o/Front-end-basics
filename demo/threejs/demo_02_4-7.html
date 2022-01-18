@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { ParametricGeometry } from './js/ParametricGeometry.js';
+    /**
+      6.3.4 THREE.ParametricGeometry
+
+      通过THREE.ParametricGeometry，你可以创建基于等式的几何体。
+      这个文件中，你可以找到几个公式的例子，他们可以和THREE.ParametricGeometry一起使用。
+      最基础的例子是创建平面的函数，代码如下所示：
+
+      function plane(u, v) {
+        var x = u * width;
+        var y = 0;
+        var z = v * depth;
+        return new THREE.Vector3(x, y, z)
+      }
+
+      THREE.ParametricGeometry会调用这个函数。u和v的取值范围从0到1，而且对0到1之间
+      的所有值该函数还会被调用很多次。在这个例子里，u值用来确定向量的x坐标，v值用来确定
+      z坐标。当这个函数被调用时，你就会得到一个宽为width、深为depth的基础平面
+
+      在进入本章的下一节之前，先对slices和stacks属性的使用做一下最后的说明。我们曾经提到过
+      u、v属性会传递给由function属性指定的函数，并且这两个属性的取值范围时从0到1.通过
+      slices和stacks属性，我们可以指定传入的function函数的调用频率。例如，如果我们将slice
+      属性设置为5并且将stacks属性设置为4，那么在调用函数时将使用一下参数值
+      u: 0/5, v: 0/4
+      u: 1/5, v: 0/4
+      u: 2/5, v: 0/4
+      u: 3/5, v: 0/4
+      u: 4/5, v: 0/4
+      u: 5/5, v: 0/4
+      u: 0/5, v: 1/4
+      u: 1/5, v: 1/4
+      ...
+      u: 5/5, v: 3/4
+      由此可知，值越大，那么生成的向量越多，创建出来的几何体越平滑。
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+    let tubeMesh = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 90, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      let options = {
+        steps: 1,
+        depth: 10,
+        bevelEnabled: true,
+        bevelThickness: 2,
+        bevelSize: 1,
+        bevelOffset: 0,
+        bevelSegments: 3,
+      }
+
+      let geo = new ParametricGeometry(radialWave, 50, 50)
+      geo.center()
+
+      tubeMesh = new THREE.Mesh(
+        geo,
+        new THREE.MeshNormalMaterial({side: THREE.DoubleSide})
+      )
+      scene.add(tubeMesh)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      render()
+    }
+
+    function render() {
+      tubeMesh.rotation.x += 0.01;
+      tubeMesh.rotation.y += 0.01;
+      tubeMesh.rotation.z += 0.01;
+
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function radialWave(u, v, optionalTarget) {
+      let result = optionalTarget || new THREE.Vector3()
+      let r = 50;
+
+      let x = Math.sin(u) * r;
+      let z = Math.sin(v / 2) * 2 * r;
+      let y = (Math.sin(u * 4 * Math.PI) + Math.cos(v * 2 * Math.PI)) * 2.8;
+      
+      return result.set(x, y, z)
+    }
+
+  </script>
+</body>
+</html>

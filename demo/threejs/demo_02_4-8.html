@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { TextGeometry } from './js/TextGeometry.js';
+    import { FontLoader } from './js/FontLoader.js';
+    /**
+      6.4 创建三维文本
+
+      如何使用threejs提供的字体来渲染文本。如何使用自定义的字体
+
+      6.4.1 渲染文本
+
+      threejs中渲染 文本非常简单。你所要做的只是指定想要用的字体，以及我们在讨论THREE.
+      ExtrudeGeometry时见过的基本拉伸属性。
+
+      如果你想渲染二维文字并用作材质的纹理，那么就不应该使用THREE.TextGeometry。
+      THREE.TextGeometry在内部使用THREE.ExtrudeGeometry构建三维文本，并且js字体
+      引入了大量开销。渲染一个简单的二维字体，使用HTML5画布会更好。通过context.font，
+      可以设置要使用的字体，通过context.fillText，可以将文本输出到画布。然后，你可以
+      使用此画布作为纹理的输入。
+
+      6.4.2 添加自定义字体
+
+      Three.js提供了几种可以在场景中使用的字体。这些字体基于typeface.js提供的字体。
+      typeface.js时一个可以将TrueType和OpenType字体转换为js的库。转换出来的js文件可以
+      包含在你的页面中，然后字体即可在Three.js中使用。
+
+      由此可以看出，我们可以使用helvetiker字体，其粗细为blod或者normal，注意，每个字体粗细
+      都在其单独的js文件中，需要单独加载。另外一种查看字体名称的方式时查看改字体的js源码文件
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let plane = null;
+    let cube = null;
+    let text1 = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(-30, 90, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      const loader = new FontLoader();
+      loader.load(
+        // 资源URL
+        'font/helvetiker_regular.typeface.json',
+        function(font) {
+          let options = {
+            size: 90,
+            height: 90,
+            weight: 'normal',
+            font: font,
+            fontName: 'helvetiker',
+            // style: 'normal',
+            bevelThickness: 2,
+            bevelSize: 4,
+            bevelSegments: 3,
+            bevelEnabled: true,
+            curveSegments: 12,
+            steps: 1
+          }
+
+          text1 = createMesh(new TextGeometry('Learning', options));
+          text1.position.z = -10;
+          text1.position.y = 30;
+          scene.add(text1)
+        }
+      )
+
+      
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      render()
+    }
+
+    function render() {
+      if(text1) {
+        text1.rotation.x += 0.01;
+        text1.rotation.y += 0.01;
+        text1.rotation.z += 0.01;
+      }
+
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createMesh(geo) {
+      geo.applyMatrix(new THREE.Matrix4().makeScale(0.05,0.05,0.05));
+      geo.center();
+      return new THREE.Mesh(geo, new THREE.MeshNormalMaterial())
+    }
+
+  </script>
+</body>
+</html>

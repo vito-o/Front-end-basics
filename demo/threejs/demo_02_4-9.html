@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./js/Stats.min.js"></script>
+  <script src="./js/three.js"></script>
+  <script src="./js/ThreeBSP.js"></script>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    /**
+      6.5 使用二元操作组合网格
+
+      本节我们将看到另一种特别的创建几何体的方法。在本章之前的小节以及前一章里，我们一直
+      使用Three.js默认提供的几何体。通过默认的属性组合，你可以创建出漂亮的模型，但是你所能
+      做的也会受限于Three.js所提供的内容。在本节，我们将想你展示如何将各种标准几何体组合
+      在一起创建出新的几何体----一种被称为构造实体几何体（CSG）的技术，为此，我们引入了
+      ThreeBSP。
+
+      这个扩展库提供了三个函数：
+      intersect(相交)
+      使用该函数可以基于两个现有几何体的交集创建出新的几何体。两个几何体重叠的部分定义此几何体
+      的形状。
+      
+      union（联合）
+      使用改函数可以将两个几何体联合起来创建出一个新的几何体。你可以将这个函数与mergeGeometry
+      功能相比较
+
+      subtract（相减）
+      subtract函数与union函数相反。通过这个函数你可以在第一个几何体中移除两个几何体重叠
+      的部分来创建新的几何体
+
+      6.5.1 subtract函数
+
+      在我们开始讲解subtract函数之前，有一个重要的内容需要记住：这三个函数在计算时使用的是
+      网格的绝对位置，所以如果你在应用这些函数之前将网格组合在一起或是使用多种材质，你可能
+      得到一些奇怪的结果。为了得到最好的、可预测的结果，应当确保使用的是未经组合的网格。
+
+      在这段代码中，我们首先将网格（那些我们能看到的线框）包装成一个ThreeBSP对象。只有
+      这样才能在这些对象上调用subtract、intersect和union函数。现在，我们可以在中间那个球体
+      的ThreeBSP对象上调用指定的函数，并且该函数的结果将包含了创建一个新的网格所需的所有信息。
+      要创建这个网格，我们只需在sphere1BSP对象上调用toMesh()函数。在生成的对象上，我们必须
+      确保所有的法线都是通过先调用computeFaceNormals，然后调用computeVertexNormals()正确
+      计算出来的。之所以要调用这两个函数，是因为在执行任一二元操作之后，几何体的顶点和面会
+      改变，并且面的法向量也会改变。显示地重新计算他们，可以确保新生成的对象着色光滑（当材质
+      上的着色方式设置成THREE.SmoothShading时），并且正确呈现。最后，我们将结果添加到场景中。
+      对于intersect和union，我们使用完全相同的方法。
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let result = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 20, 20)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      let sphere1 = createMesh(new THREE.SphereGeometry(5, 20, 30))
+      sphere1.position.x = -2;
+      
+      let sphere2 = createMesh(new THREE.SphereGeometry(5, 20, 30))
+      sphere2.position.set(3, 0, 0);
+
+      let cube = createMesh(new THREE.BoxGeometry(5, 5, 5))
+      cube.position.x = -7;
+
+      scene.add(sphere1)
+      scene.add(sphere2)
+      scene.add(cube)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      createBSP(sphere1, sphere2, cube);
+
+      render()
+    }
+
+    function render() {
+      if(result) {
+        result.rotation.x += 0.01;
+        result.rotation.y += 0.01;
+        result.rotation.z += 0.01;
+      }
+
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createMesh(geo) {
+      let wireFrameMat = new THREE.MeshBasicMaterial({
+        transparency: true,
+        opacity: 0.5,
+        wireframeLinewidth: 0.5
+      })
+      wireFrameMat.wireframe = true;
+
+      return new THREE.Mesh(geo, wireFrameMat)
+    }
+
+    function createBSP(sphere1, sphere2, cube) {
+      setTimeout(() => {
+        let sphere1BSP = new ThreeBSP(sphere1)
+        let sphere2BSP = new ThreeBSP(sphere2)
+        let cube2BSP = new ThreeBSP(cube)
+  
+        // let resultBSP = sphere1BSP.subtract(sphere2BSP)
+        // resultBSP = resultBSP.subtract(cube2BSP)
+        let resultBSP = sphere1BSP.subtract(sphere2BSP)
+        resultBSP = resultBSP.intersect(cube2BSP)
+  
+        result = resultBSP.toMesh();
+        result.geometry.computeFaceNormals();
+        result.geometry.computeVertexNormals();
+        scene.add(result);
+
+        sphere1.material.visible = false;
+        sphere2.material.visible = false;
+        cube.material.visible = false;
+      }, 1000)
+    }
+
+
+  </script>
+</body>
+</html>

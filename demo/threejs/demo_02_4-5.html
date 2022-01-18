@@ -98,6 +98,7 @@
         points.push(new THREE.Vector3(randomX, randomY, randomZ))
       }
 
+      // console.log(new THREE.LineCurve3(points))
       let tubeGeometry = new THREE.TubeGeometry(
         new THREE.CatmullRomCurve3(points),
         30,

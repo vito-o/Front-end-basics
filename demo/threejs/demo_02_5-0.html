@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+      粒子、精灵和点云
+
+      粒子（particle）。使用粒子（有时也叫精灵(sprite)），可以非常容易地创建很多细小的物体，
+      可以用来模拟雨滴、雪花、烟和其他有趣的效果。
+
+      例如，可以将整个几何体渲染成一组例子，并分别控制他们。
+
+      本章主题：
+      ·使用THREE.SpriteMaterial创建和设置粒子
+      ·使用点云（point cloud）创建一个粒子集合
+      ·使用现有的几何体创建一个点云
+      ·让粒子和粒子系统动起来
+      ·使用纹理对粒子进行样式化
+      ·使用画布通过THREE.SpriteCanvasMaterial对粒子进行样式化
+
+      7.1 理解粒子
+
+      跟THREE.Mesh一样，THREE.Sprit对象也是THREE.Object3D对象的扩展。也就是说
+      THREE.Mesh的大部分属性和函数都可以用于HTREE.Sprite。你可以用position属性来定位，
+      用scale属性来进行缩放，用translate属性指定相对位移。
+
+      通过THREE.Sprite，你可以非常容易地创建一组对象并在场景中移动他们。当你使用少量的
+      对象时，这很有校，但当你项使用大量的THREE.Sprite对象时，你会很快遇到性能问题，
+      因为每个对象需要分别由Three.js进行管理。Three.js提供了另一种方式来处理大量的粒子，
+      这需要使用THREE.PointCloud。通过THREE.PointCloud，Three.js不再需要管理大量单个
+      的THREE.Sprite对象，而只需管理THREE.PointCloud实例。
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let result = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 150)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      createParticles()
+
+      render()
+    }
+
+    function render() {
+      if(result) {
+        result.rotation.x += 0.01;
+        result.rotation.y += 0.01;
+        result.rotation.z += 0.01;
+      }
+
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createSprites() {
+      for(let x = -5; x < 5; x++) {
+        for( let y = -5; y < 5; y++) {
+          let material = new THREE.SpriteMaterial({
+            color: Math.random() * 0xffffff
+          });
+          let sprite = new THREE.Sprite(material)
+          sprite.position.set(x * 10, y * 10, 0)
+          scene.add(sprite)
+        }
+      }
+    }
+
+    function createParticles() {
+      let geo = new THREE.BufferGeometry()
+      let material = new THREE.PointsMaterial({
+        size: 4,
+        vertexColors: true,
+        color: 0xffffff
+      })
+
+      let pointsArray = []
+      for(let x = -5; x < 5; x++) {
+        for( let y = -5; y < 5; y++) {
+          pointsArray.push(new THREE.Vector3(x * 10, y * 10, 0))
+          // geo.vertices.push(particle)
+          // geo.colors.push(new THREE.Color(Math.random() * 0x00ffff))
+        }
+      }
+
+      let cloud = new THREE.Points(geo, material)
+      scene.add(cloud)
+
+    }
+
+  </script>
+</body>
+</html>
