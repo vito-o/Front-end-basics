@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+      粒子、精灵和点云
+
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let result = null;
+    let cloud = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 150)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      createParticles()
+
+      render()
+    }
+
+    function render() {
+      if(cloud) {
+        cloud.rotation.x += 0.001;
+        cloud.rotation.y += 0.001;
+        cloud.rotation.z += 0.001;
+      }
+
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    function createParticles() {
+      let geo = new THREE.BufferGeometry()
+      let material = new THREE.PointsMaterial({
+        size: 4,
+        vertexColors: true,
+        // color: 0x00ff00
+      })
+
+      let color = new THREE.Color();
+
+      let range = 500;
+      let pointsArray = []
+      let colors = []
+      for(let i = 0; i < 15000; i++) {
+        let x = Math.random() * range - range / 2;
+        let y = Math.random() * range - range / 2;
+        let z = Math.random() * range - range / 2;
+
+        pointsArray.push(x, y, z);
+
+        colors.push(
+          parseInt(Math.random() * 255),
+          parseInt(Math.random() * 255),
+          parseInt(Math.random() * 255),
+          1
+        )
+      }
+      console.log(new THREE.InterleavedBuffer( new Uint8Array(colors), 16 ))
+      geo.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array(pointsArray), 3 ) );
+      // geo.setAttribute( 'color', new THREE.BufferAttribute( new Uint8Array(colors), 3, 12, true ))
+      geo.setAttribute( 'color', new THREE.InterleavedBufferAttribute( new THREE.InterleavedBuffer( new Uint8Array(colors), 16 ), 3, 12, true ))
+      
+
+      cloud = new THREE.Points(geo, material)
+      scene.add(cloud)
+
+    }
+
+  </script>
+</body>
+</html>
