@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+      粒子、精灵和点云
+
+      通过THREE.SpriteMaterial，给粒子添加纹理
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let result = null;
+    let sprite = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 150)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      createParticles()
+      
+      render()
+    }
+
+    function render() {
+      if(sprite) {
+        sprite.rotation.x += 0.001;
+        sprite.rotation.y += 0.001;
+        sprite.rotation.z += 0.001;
+      }
+      renderer.render(scene, camera)
+      requestAnimationFrame(render)
+    }
+
+    let color = new THREE.Color();
+
+    function createParticles() {
+      let geo = new THREE.BufferGeometry()
+      // const map = new THREE.TextureLoader().load( 'img/lensflare0.png' );
+      let material = new THREE.PointsMaterial({
+        size: 4,
+        map: createGhostTexture(),
+        // map,
+      })
+      // let material = new THREE.SpriteMaterial({
+      //   map: createGhostTexture(),
+      // })
+
+
+      let range = 500;
+      let pointsArray = []
+      let colors = []
+      for(let i = 0; i < 15000; i++) {
+        let x = Math.random() * range - range / 2;
+        let y = Math.random() * range - range / 2;
+        let z = Math.random() * range - range / 2;
+        pointsArray.push(x, y, z);
+        colors.push(Math.random(), Math.random(), Math.random())
+      }
+      geo.setAttribute( 'position', new THREE.Float32BufferAttribute(pointsArray, 3));
+      geo.setAttribute( 'color', new THREE.Float32BufferAttribute(colors, 3))
+
+      sprite = new THREE.Points(geo, material)
+
+      scene.add(sprite)
+
+    }
+
+    function createGhostTexture() {
+      var canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+
+      var ctx = canvas.getContext('2d');
+      // the body
+      ctx.translate(-81, -84);
+
+      ctx.fillStyle = "orange";
+      ctx.beginPath();
+      ctx.moveTo(83, 116);
+      ctx.lineTo(83, 102);
+      ctx.bezierCurveTo(83, 94, 89, 88, 97, 88);
+      ctx.bezierCurveTo(105, 88, 111, 94, 111, 102);
+      ctx.lineTo(111, 116);
+      ctx.lineTo(106.333, 111.333);
+      ctx.lineTo(101.666, 116);
+      ctx.lineTo(97, 111.333);
+      ctx.lineTo(92.333, 116);
+      ctx.lineTo(87.666, 111.333);
+      ctx.lineTo(83, 116);
+      ctx.fill();
+
+      // the eyes
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.moveTo(91, 96);
+      ctx.bezierCurveTo(88, 96, 87, 99, 87, 101);
+      ctx.bezierCurveTo(87, 103, 88, 106, 91, 106);
+      ctx.bezierCurveTo(94, 106, 95, 103, 95, 101);
+      ctx.bezierCurveTo(95, 99, 94, 96, 91, 96);
+      ctx.moveTo(103, 96);
+      ctx.bezierCurveTo(100, 96, 99, 99, 99, 101);
+      ctx.bezierCurveTo(99, 103, 100, 106, 103, 106);
+      ctx.bezierCurveTo(106, 106, 107, 103, 107, 101);
+      ctx.bezierCurveTo(107, 99, 106, 96, 103, 96);
+      ctx.fill();
+
+      // the pupils
+      ctx.fillStyle = "blue";
+      ctx.beginPath();
+      ctx.arc(101, 102, 2, 0, Math.PI * 2, true);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(89, 102, 2, 0, Math.PI * 2, true);
+      ctx.fill();
+
+
+      var texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+  </script>
+</body>
+</html>
