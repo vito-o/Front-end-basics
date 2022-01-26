@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+    let sceneOrtho = null;
+
+    let camera = null;
+    let cameraOrtho = null;
+
+    let result = null;
+    let group = null;
+    let pointNum = 15000
+    let particlesData = [];
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+      sceneOrtho = new THREE.Scene();
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      cameraOrtho = new THREE.OrthographicCamera(0, window.innerWidth, window.innerHeight, 0, -10, 10);
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      let sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(15, 20, 20),
+        new THREE.MeshNormalMaterial()
+      )
+      scene.add(sphere)
+
+      createParticles()
+
+      render()
+    }
+
+    let step = 0;
+    let sprite = 0;
+    function render() {
+      camera.position.y = Math.sin(step += 0.01) * 20;
+
+      sceneOrtho.children.forEach(function (e) {
+        if(e instanceof THREE.Sprite) {
+          e.position.x = e.position.x + e.velocityX;
+          if(e.position.x > window.innerWidth) {
+            sprite++;
+            e.velocityX = -5;
+            e.material.map.offset.set(1 / 5 * (sprite % 4), 0)
+          }
+          if(e.position.x < 0) {
+            e.velocityX = 5;
+          }
+        }
+      })
+      
+      renderer.render(scene, camera)
+      renderer.autoClear = false;
+      renderer.render(sceneOrtho, cameraOrtho);
+      
+      requestAnimationFrame(render)
+    }
+
+    function createParticles() {
+      let texture = new THREE.TextureLoader().load('img/sprite-sheet.png')
+
+      let material = new THREE.SpriteMaterial({
+        opacity: 0.6,
+        map: texture
+      })
+     
+      material.map.offset = new THREE.Vector2(0, 0)
+      material.map.repeat = new THREE.Vector2(1 / 5, 1)
+      material.blending = THREE.AdditiveBlending;
+      material.depthTest = false;
+
+
+      let sprite = new THREE.Sprite(material)
+      sprite.scale.set(150, 150, 150)
+      sprite.position.set(100, 50, -10);
+      sprite.velocityX = 5;
+      
+      sceneOrtho.add(sprite)
+    }
+
+
+  </script>
+</body>
+</html>
