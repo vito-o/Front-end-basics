@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let result = null;
+    let group = null;
+    let pointNum = 15000
+    let particlesData = [];
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 150)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      group = new THREE.Group()
+
+      createParticles()
+
+      scene.add(group)
+      console.log(group)
+      render()
+    }
+
+    function render() {
+      if(group) {
+        group.rotation.y += 0.001;
+        // sprite.rotation.y += 0.03;
+        // sprite.rotation.z += 0.01;
+      }
+      
+      animate()
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createParticles() {
+      let geo = new THREE.BufferGeometry()
+      let textureLoader = new THREE.TextureLoader()
+      const snow1 = textureLoader.load('img/snowflake1_t.png');
+      const snow2 = textureLoader.load('img/snowflake2_t.png');
+      const snow3 = textureLoader.load('img/snowflake3_t.png');
+      const snow4 = textureLoader.load('img/snowflake4_t.png');
+      const snow5 = textureLoader.load('img/snowflake5_t.png');
+
+      let material1 = new THREE.SpriteMaterial({size: 4, map: snow1})
+      let material2 = new THREE.SpriteMaterial({size: 4, map: snow2})
+      let material3 = new THREE.SpriteMaterial({size: 4, map: snow3})
+      let material4 = new THREE.SpriteMaterial({size: 4, map: snow4})
+      let material5 = new THREE.SpriteMaterial({size: 4, map: snow5})
+
+      let material;
+
+      let range = 500;
+      for(let i = 0; i < pointNum; i++) {
+        let x = Math.random() * range - range / 2;
+        let y = Math.random() * range - range / 2;
+        let z = Math.random() * range - range / 2;
+
+        if(i % 5 == 0) {
+          material = material1.clone();
+        } else if(i % 5 == 1) {
+          material = material2.clone();
+        } else if(i % 5 == 2) {
+          material = material3.clone();
+        } else if(i % 5 == 3) {
+          material = material4.clone();
+        } else if(i % 5 == 4) {
+          material = material5.clone();
+        }
+
+        particlesData.push({
+          velocity: new THREE.Vector3( 0.02, 0.1, - 1 + Math.random() * 2 ),
+        });
+
+        let sprite = new THREE.Sprite(material)
+        sprite.position.set(x, y, z)
+        sprite.scale.set(3, 3, 3)
+
+        group.add(sprite)
+      }
+    }
+
+    let rHalf = 200;
+    function animate() {
+      for(let i = 0; i < pointNum; i++) {
+        let sprite = group.children[ i ];
+        let particleData = particlesData[ i ];
+
+        sprite.position.x += particleData.velocity.x
+        sprite.position.y -= particleData.velocity.y
+        sprite.material.rotation += 0.01
+        
+        if ( sprite.position.x < - rHalf || sprite.position.x > rHalf )
+          particleData.velocity.x = - particleData.velocity.x;
+
+        if ( sprite.position.y < - rHalf  )
+          sprite.position.y = rHalf;
+
+        if ( sprite.position.z < - rHalf || sprite.position.z  > rHalf )
+          particleData.velocity.z = - particleData.velocity.z;
+      }
+      // sprite.geometry.attributes.position.needsUpdate = true;
+    }
+
+  </script>
+</body>
+</html>

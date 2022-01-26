@@ -16,12 +16,6 @@
   <script type="module">
     import * as THREE from './js/three.module.js';
     /**
-      使用纹理样式化粒子
-
-      前面我们介绍了如何使用html5画布对THREE.Points和单个THREE.Sprite对象进行样式化。既然可以
-      绘制任何想要的东西，甚至加载外部图像，那么也可以使用这种方式将各种样式加到粒子系统里。
-      然而，使用图像样式化粒子还有一种更直接的方法。你可以使用THREE.ImageUtils.loadTexture()
-      函数将图像加载为THREE.Texture，然后就可以将THREE.Textrue分配给材质的map属性。
 
      **/
 
@@ -65,14 +59,15 @@
 
     function render() {
       if(sprite) {
-        sprite.rotation.x += 0.01;
-        sprite.rotation.y += 0.01;
-        sprite.rotation.z += 0.01;
+        // sprite.rotation.x += 0.01;
+        sprite.rotation.y += 0.03;
+        // sprite.rotation.z += 0.01;
       }
       
       animate()
 
       renderer.render(scene, camera)
+      
       requestAnimationFrame(render)
     }
 
@@ -98,7 +93,7 @@
         pointsArray[i*3 + 2] = z;
 
         particlesData.push({
-          velocity: new THREE.Vector3( - 1 + Math.random() * 2, - 1 + Math.random() * 2, - 1 + Math.random() * 2 ),
+          velocity: new THREE.Vector3( - 1 + Math.random() * 2, 1 , - 1 + Math.random() * 2 ),
         });
       }
 
@@ -115,14 +110,14 @@
       for(let i = 0; i < pointNum; i++) {
         const particleData = particlesData[ i ];
         pointsArray[i*3] += particleData.velocity.x ;
-        pointsArray[i*3 + 1] += particleData.velocity.y ;
-        pointsArray[i*3 + 2] += particleData.velocity.z ;
+        pointsArray[i*3 + 1] -= particleData.velocity.y ;
+        // pointsArray[i*3 + 2] += particleData.velocity.z ;
         
         if ( pointsArray[ i * 3 ] < - rHalf || pointsArray[ i * 3 ] > rHalf )
           particleData.velocity.x = - particleData.velocity.x;
 
-        if ( pointsArray[ i * 3 + 1 ] < - rHalf || pointsArray[ i * 3 + 1 ] > rHalf )
-          particleData.velocity.y = - particleData.velocity.y;
+        if ( pointsArray[ i * 3 + 1 ] < - rHalf  )
+          pointsArray[i*3 + 1] = rHalf;
 
         if ( pointsArray[ i * 3 + 2 ] < - rHalf || pointsArray[ i * 3 + 2 ] > rHalf )
           particleData.velocity.z = - particleData.velocity.z;
