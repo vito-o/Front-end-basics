@@ -32,6 +32,9 @@
     let camera = null;
     let result = null;
     let sprite = null;
+    let particlesData = [];
+    let pointsArray = []
+    let pointNum = 15000
 
     function init() {
       renderer = new THREE.WebGLRenderer({
@@ -56,16 +59,15 @@
       scene.add(spotLight)
 
       createParticles()
-      console.log(sprite)
+
       render()
     }
 
     function render() {
-      if(sprite.position.y > -200) {
-        sprite.position.y -= 1.5;
-      } else {
-        sprite.position.y = 0
-      }
+      
+      
+      animate()
+
       renderer.render(scene, camera)
       requestAnimationFrame(render)
     }
@@ -74,34 +76,55 @@
 
     function createParticles() {
       let geo = new THREE.BufferGeometry()
-      const map = new THREE.TextureLoader().load('img/raindrop-3.png' );
+      const map = new THREE.TextureLoader().load('img/raindrop-3.png');
       let material = new THREE.PointsMaterial({
         size: 4,
         map,
       })
-      // let material = new THREE.SpriteMaterial({
-      //   map: createGhostTexture(),
-      // })
-
+      pointsArray = new Float32Array(pointNum * 3);
 
       let range = 500;
-      let pointsArray = []
-      let colors = []
-      for(let i = 0; i < 15000; i++) {
+      for(let i = 0; i < pointNum; i++) {
         let x = Math.random() * range - range / 2;
         let y = Math.random() * range - range / 2;
         let z = Math.random() * range - range / 2;
-        pointsArray.push(x, y, z);
-        colors.push(Math.random(), Math.random(), Math.random())
+
+        pointsArray[i*3] = x;
+        pointsArray[i*3 + 1] = y;
+        pointsArray[i*3 + 2] = z;
+
+        particlesData.push({
+          velocity: new THREE.Vector3( - 1 + Math.random() * 2, - 1 + Math.random() * 2, - 1 + Math.random() * 2 ),
+        });
       }
-      geo.setAttribute( 'position', new THREE.Float32BufferAttribute(pointsArray, 3));
+
+      geo.setDrawRange( 0, pointNum );
+      geo.setAttribute( 'position', new THREE.BufferAttribute(pointsArray, 3).setUsage( THREE.DynamicDrawUsage ));
 
       sprite = new THREE.Points(geo, material)
-
+      
       scene.add(sprite)
     }
 
-    
+    let rHalf = 200;
+    function animate() {
+      for(let i = 0; i < pointNum; i++) {
+        const particleData = particlesData[ i ];
+        pointsArray[i*3] += particleData.velocity.x ;
+        pointsArray[i*3 + 1] += particleData.velocity.y ;
+        pointsArray[i*3 + 2] += particleData.velocity.z ;
+        
+        if ( pointsArray[ i * 3 ] < - rHalf || pointsArray[ i * 3 ] > rHalf )
+          particleData.velocity.x = - particleData.velocity.x;
+
+        if ( pointsArray[ i * 3 + 1 ] < - rHalf || pointsArray[ i * 3 + 1 ] > rHalf )
+          particleData.velocity.y = - particleData.velocity.y;
+
+        if ( pointsArray[ i * 3 + 2 ] < - rHalf || pointsArray[ i * 3 + 2 ] > rHalf )
+          particleData.velocity.z = - particleData.velocity.z;
+      }
+      sprite.geometry.attributes.position.needsUpdate = true;
+    }
 
   </script>
 </body>
