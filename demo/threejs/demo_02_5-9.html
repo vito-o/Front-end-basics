@@ -24,10 +24,12 @@
     let renderer = null;
 
     let scene = null;
-    let sceneOrtho = null;
 
     let camera = null;
-    let cameraOrtho = null;
+
+    let group = null;
+
+    let texture = null;
 
     function init() {
       renderer = new THREE.WebGLRenderer({
@@ -37,14 +39,11 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
 
       scene = new THREE.Scene()
-      sceneOrtho = new THREE.Scene();
 
       camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
-      camera.position.set(0, 0, 50)
+      camera.position.set(0, 0, 150)
       camera.lookAt(new THREE.Vector3(0, 0, 0))
       scene.add(camera)
-
-      cameraOrtho = new THREE.OrthographicCamera(0, window.innerWidth, window.innerHeight, 0, -10, 10);
 
       var axes = new THREE.AxesHelper(20);
       scene.add(axes);
@@ -53,63 +52,53 @@
       spotLight.position.set(-40, 60, 10)
       scene.add(spotLight)
 
-      let sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(15, 20, 20),
-        new THREE.MeshNormalMaterial()
-      )
-      scene.add(sphere)
-
-      createParticles()
+      createSprites()
 
       render()
     }
 
     let step = 0;
-    let sprite = 0;
     function render() {
-      camera.position.y = Math.sin(step += 0.01) * 20;
-
-      sceneOrtho.children.forEach(function (e) {
-        if(e instanceof THREE.Sprite) {
-          e.position.x = e.position.x + e.velocityX;
-          if(e.position.x > window.innerWidth) {
-            sprite++;
-            e.velocityX = -5;
-            e.material.map.offset.set(1 / 5 * (sprite % 4), 0)
-          }
-          if(e.position.x < 0) {
-            e.velocityX = 5;
-          }
-        }
-      })
+      group.rotation.x +=0.01;
       
       renderer.render(scene, camera)
-      renderer.autoClear = false;
-      renderer.render(sceneOrtho, cameraOrtho);
       
       requestAnimationFrame(render)
     }
 
-    function createParticles() {
-      let texture = new THREE.TextureLoader().load('img/sprite-sheet.png')
+    function createSprites() {
+      group = new THREE.Group();
 
+      var range = 200;
+      for (let i = 0; i < 400; i++) {
+        group.add(createSprite(i % 5, range));
+      }
+      scene.add(group);
+    }
+
+    function getTexture() {
+      return new THREE.TextureLoader().load('img/sprite-sheet.png')
+    }
+
+    //10, false, 0.6, 0xffffff, i % 5, range
+    function createSprite(spriteNumber, range) {
       let material = new THREE.SpriteMaterial({
         opacity: 0.6,
-        map: texture
-      })
-     
-      material.map.offset = new THREE.Vector2(0, 0)
+        map: getTexture()
+      });
+      material.map.offset = new THREE.Vector2(0.2 * spriteNumber, 0)
       material.map.repeat = new THREE.Vector2(1 / 5, 1)
       material.blending = THREE.AdditiveBlending;
       material.depthTest = false;
 
-
       let sprite = new THREE.Sprite(material)
-      sprite.scale.set(150, 150, 150)
-      sprite.position.set(100, 50, -10);
-      sprite.velocityX = 5;
-      
-      sceneOrtho.add(sprite)
+      sprite.scale.set(10, 10, 10)
+      sprite.position.set(
+        Math.random() * range - range / 2,
+        Math.random() * range - range / 2,
+        Math.random() * range - range / 2,
+      );
+      return sprite;
     }
 
 

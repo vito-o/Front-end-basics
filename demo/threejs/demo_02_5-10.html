@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    let group = null;
+
+    let texture = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 150)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      createSprites()
+
+      render()
+    }
+
+    let step = 0;
+    function render() {
+      
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createSprites() {
+      let geo = new THREE.TorusKnotGeometry(13, 1.7, 156, 12, 5, 4);
+      let knot = new THREE.Mesh(geo, new THREE.MeshNormalMaterial());
+      scene.add(knot)
+    }
+
+    function generateSprite() {
+      let canvas = document.createElement('canvas')
+      canvas.width = 16;
+      canvas.height = 16;
+
+      let context = canvas.getContext('2d')
+      
+    }
+  </script>
+</body>
+</html>
