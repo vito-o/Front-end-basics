@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+      8、创建、加载高级网格和几何体
+      ·组合和合并：首先要讲解的是使用three.js自带的功能来组合和合并已有的几何体。
+       从已有的几何体中创建处新的几何体
+
+      · 从外部加载：然后我们将讲解如何从外部资源中加载网格和几何体。比如，我们将
+      会向你展示如何使用Blender以Three.js支持的格式导出网格。
+
+      我们将从组合和合并方法开始。通过这种方法，我们使用标准的Three.js组合函数和
+      THREE.Geometry.merge()函数来创建新对象。
+
+      8.1.1 对象组合
+
+      在前面某些章节里使用多种材质是，你已经见过对象组合。当从一个几何体创建网格并
+      使用多种材质时，Three.js就会创建一个组。该几何体的多份副本会添加到这个组里，
+      每份副本都有自己特定的材质。而这个组就是我们得到的结果，看上去就像是一个网格
+      拥有多种材质。但是实际上它是一个包含多个网格的组。
+
+      创建组非常简单。每个你创建的网格都可以包含子元素，子元素可以使用add函数来添加。
+      在组中添加子元素的效果是：你可以移动、缩放、旋转和变形父对象，而所有的子对象
+      都将会受到影响。
+
+      在这段代码里，你可以看到我们创建了一个THREE.Object3D对象。这是THREE.Mesh
+      和THREE.Scene的基类，但是它本身并不包含任何东西，也不会渲染任何东西。
+      请注意，在three.js的最新版本中引入了一个名为THREE.Group的新对象以支持分组。
+      改对象与THREE.Object3D对象完全相同，你可以用new THREE.Group()来代替前面
+      代码中new THREE.Object3D()来达到相同的效果。
+
+      使用组的时候，你依然可以引用、修改和定位每一个单独的几何体。唯一需要记住的是：
+      所有的定位、旋转和变行都是相对于父对象的。
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    let group = null;
+
+    let sphere;
+    let cube;
+    
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      sphere = createMesh(new THREE.SphereGeometry(5, 10, 10))  
+      cube = createMesh(new THREE.BoxGeometry(6, 6, 6))
+
+      sphere.position.set(10, 5, 0)
+      sphere.scale.set(1, 1, 1)
+
+      cube.position.set(0, 3, 10)
+      cube.scale.set(1, 1, 1)
+
+      group = new THREE.Group();
+      group.add(sphere)
+      group.add(cube)
+      scene.add(group)
+
+      render()
+    }
+
+    let step = 0.03;
+    function render() {
+      group.rotation.y += step;
+      // sphere.rotation.y += step;
+      // cube.rotation.y += step;
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createMesh(geom) {
+      return new THREE.Mesh(
+        geom,
+        new THREE.MeshNormalMaterial()
+      )
+    }
+    
+  </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+      8.1.2 将多个网格合并成一个网格
+
+      多数情况下使用组可以和容易地操纵和管理大量网格。但是当对象的数量非常多时，
+      性能就会成为一个瓶颈。使用组，每个对象还时独立的，但仍然需要对他们分别进行处理
+      和渲染。通过THREE.Geometry.merge()函数，你可以将多数几何体合并起来创建一个联合
+      体。
+
+
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    var cubeMaterial = new THREE.MeshNormalMaterial({
+      transparent: true,
+      opacity: 0.5
+    });
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      const geometry = new THREE.BufferGeometry();
+      for(let i = 0; i < 100; i++) {
+        let cubeMesh = addCube();
+        cubeMesh.updateMatrix()
+        console.log(cubeMesh)
+        geometry.merge(cubeMesh.geometry, cubeMesh.matrix)
+      }
+      scene.add(new THREE.Mesh(geometry, cubeMaterial))
+
+      render()
+    }
+
+    let step = 0.03;
+    function render() {
+      // group.rotation.y += step;
+      // sphere.rotation.y += step;
+      // cube.rotation.y += step;
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createMesh(geom) {
+      return new THREE.Mesh(
+        geom,
+        new THREE.MeshNormalMaterial()
+      )
+    }
+    
+    function addCube() {
+      let cubeGeometry = new THREE.BoxGeometry(1, 1, 1)
+      let cube = new THREE.Mesh(cubeGeometry, cubeMaterial)
+      cube.castShadow = true;
+
+      cube.position.x = -60 + Math.round((Math.random() * 100));
+      cube.position.y = Math.round((Math.random() * 10));
+      cube.position.z = -150 + Math.round((Math.random() * 175));
+
+      return cube;
+    }
+
+  </script>
+</body>
+</html>
