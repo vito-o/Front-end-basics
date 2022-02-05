@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    /**
+      8.1.3 从外部资源中加载几何体
+
+      three.js可以读取几种三维文件格式，并从中导入几何体和网格
+
+      JSON
+      Three.js又它自己的json文件可是，你可以用它以声明的方式定义几何体和场景。尽管
+      它不是一种正式的格式，但时它很容易使用，而且当你想要符用复杂的几何体活场景时
+      非常方便。
+
+      OBJ或MTL
+      OBJ时一种简单的三维文件格式，由Wavefront Technologies创建。它时使用最广泛
+      的三维文件格式，用来定义对象的几何体。MTL文件常同OBJ文件一起使用。在一个MTL
+      文件中，用OBJ文件定义对象的材质。
+      Three.js还由一个可定制的OBJ导出器，叫做OBJExporter.js可以用来将Three.js中的模型
+      导出到一个OBJ文件。
+
+      Collada
+      Collada时一种用基于XML的格式定义数字内容的格式。这也时一种被广泛使用的格式，
+      差不多所有的三维然具和渲染引擎都支持这种格式。
+
+      STL
+      STL时STereoLithography(立体成形术)的缩写，广泛用于快速成型。例如三维打印机的
+      模型文件通常时STL文件
+
+      CTM
+      CTM时由openCTM创建的一种文件格式，可以用来以压缩格式存储三维网格的三角形面片
+
+      VTK
+      VTK是由Visualization Toolkit创建的一种文件格式，用来指定顶点和面。VTK由两种
+      格式：二进制和基于文本的ASCII。Three.js只支持基于ASCII的格式
+
+      Assimp
+      Open asset import library(也称为Assimp)是一种导入各种三维模型格式的标准方法，
+      使用此加载程序，由assimp2json转换的大量三维格式都可以导入模型。
+
+      VRML
+      VRML是Virtual Reality Modeling Language的缩写。这事一种基于文本的格式，允许
+      定义三维对象和世界。它已经被X3D文件格式取代。Three.js不支持记载X3D模型，但这些
+      模型可以很容易地转换成其他格式。
+
+      Babylon
+      Babylon是一个三维js游戏库，它以自己的内部格式存储模型。
+
+      PDB
+      这是一种非常特殊的格式，由Protein Data Bank（蛋白质数据银行）创建，用于定义
+      蛋白质的形状。
+
+      PLY
+      这种格式的全称是多边形（Polygon）文件格式，通常用来保存三维扫描仪的信息。
+      
+      MD2 glTF
+
+      8.1.4以Three.js的json格式保存和加载
+
+      你可以在两种情形下使用Three.js的JSON文件格式：用它来保存和加载单个THREE.Mesh，
+      或者用它来保存和加载整个场景。
+
+      1.保存和加载THREE.Mesh
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      let knot = new THREE.Mesh(
+        new THREE.TorusKnotGeometry(10, 1, 64, 8, 2, 3),
+        new THREE.MeshBasicMaterial({
+          wireframe: true,
+          wireframeLinewidth: 2,
+          color: 0xaaaaaa,
+          side: THREE.DoubleSide
+        })
+      )
+      let json = JSON.parse(localStorage.getItem('json'));
+
+      let loader = new THREE.ObjectLoader()
+      let loaderMesh = loader.parse(json)
+      scene.add(loaderMesh)
+      localStorage.setItem('json', JSON.stringify(knot.toJSON()))
+
+      render()
+    }
+
+    let step = 0.03;
+    function render() {
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+  </script>
+</body>
+</html>

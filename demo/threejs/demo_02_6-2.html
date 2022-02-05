@@ -15,6 +15,7 @@
 
   <script type="module">
     import * as THREE from './js/three.module.js';
+    import * as BufferGeometryUtils from './js/BufferGeometryUtils.js';
     /**
       8.1.2 将多个网格合并成一个网格
 
@@ -32,13 +33,13 @@
 
     let renderer = null;
 
-    let scene = null;
-
+    
     let camera = null;
 
+    let scene = null;
     var cubeMaterial = new THREE.MeshNormalMaterial({
-      transparent: true,
-      opacity: 0.5
+      // transparent: true,
+      // opacity: 0.5
     });
 
     function init() {
@@ -63,12 +64,20 @@
       scene.add(spotLight)
 
       const geometry = new THREE.BufferGeometry();
+
+      let arr = []
       for(let i = 0; i < 100; i++) {
         let cubeMesh = addCube();
         cubeMesh.updateMatrix()
-        console.log(cubeMesh)
-        geometry.merge(cubeMesh.geometry, cubeMesh.matrix)
+        arr.push(cubeMesh)
+        // var posAttArr = cubeMesh.geometry.getAttribute('position').array;
+        // geometry.setAttribute('position', new THREE.BufferAttribute(posAttArr, 3 ));
+        // console.log(posAttArr)
+        // geometry.merge(cubeMesh.geometry)
+        // scene.add(cubeMesh)
       }
+      BufferGeometryUtils.mergeBufferGeometries(arr)
+      // console.log(geometry)
       scene.add(new THREE.Mesh(geometry, cubeMaterial))
 
       render()

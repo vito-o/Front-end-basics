@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+  <!-- <script src="./js/three.js"></script> -->
+  <!-- <script src="./js/OBJLoader.js"></script> -->
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OBJLoader } from './js/module/OBJLoader.js'
+    /**
+      导入三维文件格式
+
+      1.OBJ和MTL格式
+      OBJ和MTL是相互配合的两种格式，经常一起使用。OBJ文件定义几何体，而MTL文件定义
+      所用的材质。OBJ和MTL都是基于文本的格式。
+
+
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let _object = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-40, 60, 10)
+      scene.add(spotLight)
+
+      let loader = new OBJLoader()
+      loader.load('./mx/pinecone.obj', function(obj) {
+        let material = new THREE.MeshLambertMaterial({color: 0x5c3a21})
+        
+        obj.traverse(function(child) {
+          if(child.isMesh) {
+            child.material = material;
+          } 
+        })
+        obj.scale.set(120,120,120)
+
+        _object = obj;
+
+        scene.add(obj)
+  
+        render()
+      })
+
+    }
+
+    let step = 0.03;
+    function render() {
+      _object.rotation.x += 0.01
+      _object.rotation.y += 0.01
+      _object.rotation.z += 0.01
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+  </script>
+</body>
+</html>

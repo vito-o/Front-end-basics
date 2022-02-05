@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OBJLoader } from './js/module/OBJLoader.js'
+    import { MTLLoader } from './js/module/MTLLoader.js'
+    /**
+      导入三维文件格式
+
+      1.OBJ和MTL格式
+      OBJ和MTL是相互配合的两种格式，经常一起使用。OBJ文件定义几何体，而MTL文件定义
+      所用的材质。OBJ和MTL都是基于文本的格式。
+
+
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let _object = null;
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(0, 0, 50)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      let ambientLight = new THREE.AmbientLight(0x0c0c0c);
+      scene.add(ambientLight)
+
+      var keyLight = new THREE.SpotLight(0xffffff);
+      keyLight.position.set(0, 80, 80);
+      keyLight.intensity = 2;
+      keyLight.lookAt(new THREE.Vector3(0, 15, 0));
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.height = 4096;
+      keyLight.shadow.mapSize.width = 4096;
+      scene.add(keyLight);
+
+      var backlight1 = new THREE.SpotLight(0xffffff);
+      backlight1.position.set(150, 40, -20);
+      backlight1.intensity = 0.5;
+      backlight1.lookAt(new THREE.Vector3(0, 15, 0));
+      scene.add(backlight1);
+
+      var backlight2 = new THREE.SpotLight(0xffffff);
+      backlight2.position.set(-150, 40, -20);
+      backlight2.intensity = 0.5;
+      backlight2.lookAt(new THREE.Vector3(0, 15, 0));
+      scene.add(backlight2);
+
+      let objLoader = new OBJLoader()
+      let mtlLoader = new MTLLoader()
+
+      mtlLoader.load('./mx/butterfly/butterfly.mtl', function(materials) {
+        materials.preload();
+        objLoader.setMaterials(materials);
+        objLoader.load('./mx/butterfly/butterfly.obj', function(obj) {
+            _object = obj;
+            
+            [0, 2, 4, 6].forEach(function (i) {
+              obj.children[i].rotation.z = 0.3 * Math.PI
+            });
+
+            [1, 3, 5, 7].forEach(function (i) {
+              obj.children[i].rotation.z = -0.3 * Math.PI
+            });
+
+            var wing2 = obj.children[5];
+            var wing1 = obj.children[4];
+
+            wing1.material.opacity = 0.9;
+            wing1.material.transparent = true;
+            wing1.material.depthTest = false;
+            wing1.material.side = THREE.DoubleSide;
+
+            wing2.material.opacity = 0.9;
+            wing2.material.depthTest = false;
+            wing2.material.transparent = true;
+            wing2.material.side = THREE.DoubleSide;
+
+            obj.scale.set(100,100,100)
+  
+            scene.add(obj)
+            render()
+        })
+      })
+
+
+
+    }
+
+    let step = 0.11;
+    let c = 0.01;
+    
+    function render() {
+      // _object.rotation.x += 0.01;
+      _object.rotation.y += 0.01;
+      // _object.rotation.z += 0.01;
+
+      [0, 2, 4, 6].forEach(function (i) {
+        _object.children[i].rotation.z = step * Math.PI
+      });
+
+      [1, 3, 5, 7].forEach(function (i) {
+        _object.children[i].rotation.z = -step * Math.PI
+      });
+
+      step += c;
+
+      if(step < 0.1) {
+        c = -c;
+      } else if(step > 0.7) {
+        c = -c;
+      } 
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+  </script>
+</body>
+</html>
