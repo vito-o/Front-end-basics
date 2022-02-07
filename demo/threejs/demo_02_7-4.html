@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./js/tween.umd.js"></script>
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OBJLoader } from './js/module/OBJLoader.js'
+    /**
+
+     
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    let group = null;
+
+    var posSrc = { pos: 1}  
+    var tween = new TWEEN.Tween(posSrc).to({pos: 0}, 2000); 
+    tween.easing(TWEEN.Easing.Bounce.InOut); 
+  
+    var tweenBack = new TWEEN.Tween(posSrc).to({pos: 1}, 2000); 
+    tweenBack.easing(TWEEN.Easing.Bounce.InOut); 
+    
+    tweenBack.chain(tween); 
+    tween.chain(tweenBack); 
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(40, 40, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      initLight(scene);
+
+      const loader = new OBJLoader();
+
+      loader.load('./mx/butterfly/butterfly.obj', function(obj) {
+
+        group = new THREE.Group()
+        obj.children.forEach((child,i) => {
+          let points = createPonits(child.geometry)
+          if([0, 2, 4, 6].includes(i)) {
+            points.rotation.z = 0.5 * Math.PI
+          }
+          if([1, 3, 5, 7].includes(i)) {
+            points.rotation.z = -0.5 * Math.PI
+          }
+          group.add(points)
+        })
+        scene.add(group)
+
+        tween.start();
+        console.log(group)
+        render()
+      })
+ 
+    }
+
+
+    function render() {
+      TWEEN.update();
+
+      group.scale.set(
+        posSrc.pos,
+        posSrc.pos,
+        posSrc.pos
+      )
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createPonits(geo) {
+      let material = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 2,
+        transparent: true,
+        blending:THREE.AdditiveBlending,
+        map: generateSprite()
+      })
+
+      let points = new THREE.Points(geo, material)
+      points.scale.set(100,100,100)
+      return points;
+    }
+
+    function generateSprite() {
+      let canvas = document.createElement('canvas')
+      canvas.width = 16;
+      canvas.height = 16;
+
+      let context = canvas.getContext('2d')
+      let gradient = context.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 0, 
+        canvas.width / 2, canvas.height / 2, canvas.width / 2
+      )
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      gradient.addColorStop(0.2, 'rgba(0, 255, 255, 1)');
+      gradient.addColorStop(0.4, 'rgba(0, 0, 64, 1)');
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 1)');
+
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height)
+
+      let texture = new THREE.Texture(canvas)
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function initLight(scene) {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+
+      scene.add(new THREE.AmbientLight(0x353535));
+    }
+
+  </script>
+</body>
+</html>
