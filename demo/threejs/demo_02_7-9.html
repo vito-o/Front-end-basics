@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { GLTFLoader } from './js/GLTFLoader.js'
+    import { OrbitControls } from './js/OrbitControls.js';
+
+    /**
+      9.3 变形动画和骨骼动画
+
+      当你使用外部软件（如Blender）创建动画时，通常会有两种主要的动画定义方式：
+      ·变形动画：；使用变形动画，你需要定义网格变形之后的状态，或者说是关键位置。
+      对于变形目标，所有的顶点位置都会被存储下来。你所需要做的是将所有的顶点送一个位置移动到另一个定义好的关键位置，
+      并重复该过程。图展示的是一组面部表情变形的动画
+
+      ·骨骼动画：另一种替代方式是骨骼动画。使用骨骼动画时你需要定义骨骼，也就是网格的骨头，并将顶点绑定到特定的骨头上。
+      然后，当你移动一块骨头时，任何与其相连的骨头都会做相应的移动，同时骨头上绑定的顶点也会随之移动。网格的变形也是
+      基于骨头的位置、移动和缩放实现的。
+
+       three.js对这两种模式都支持，但时相比较而言，使用变形动画能够得到更好的效果。骨骼动画的主要问题是如何从Blender等
+       三维程序中较好地到处数据，从而在Three.js中制作动画，但是变形动画就可以很容易获取良好的工作模型。
+
+       9.3.1 用变形目标创建动画
+
+       变形目标是实现动画的最直接方式。你可以为所有顶点定义一系列的关键位置（也称关键帧），然后让Three.js将这些顶点从一个位置
+       移动到另外一个位置。但这种方式有一个缺点，那就是对于大型网格和大型动画，模型文件会变得非常大。原有是在每个关键位置上，
+       所有的顶点位置都需要重复一遍。
+
+       我们将用两个例子来阐述如何使用变形目标。在第一个例子里我们会让THREE.js来处理关键帧（或者变形目标）之间的过渡。在第二个
+       例子中，我们手动处理这些变化
+
+       1.用用MorphAnimMesh创建动画
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    let group = null;
+    let model = null;
+    let mixer = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(20, 20, 20)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      initLight(scene);
+
+      const loader = new GLTFLoader();
+
+      loader.load('./mx/robot/RobotExpressive.glb', function(gltf) {
+        console.log(gltf)
+        model = gltf.scene;
+        scene.add( model );
+
+        createGUI( model, gltf.animations );
+
+        createControl()
+        render()
+      })
+ 
+    }
+
+    function render() {
+      oControls.update();
+
+      const dt = clock.getDelta();
+
+      if ( mixer ) mixer.update( dt );
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createGUI(model, animations) {
+      mixer = new THREE.AnimationMixer(model)
+      console.log(mixer)
+
+      const clip = animations[ 6 ];
+      const action = mixer.clipAction(clip)
+
+      action.play();
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+
+    function initLight(scene) {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+
+      scene.add(new THREE.AmbientLight(0x353535));
+    }
+
+  </script>
+</body>
+</html>
