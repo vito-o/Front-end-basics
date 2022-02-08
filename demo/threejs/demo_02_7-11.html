@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { GLTFLoader } from './js/GLTFLoader.js'
+    import { OrbitControls } from './js/OrbitControls.js';
+
+    /**
+      Threejs骨骼动画、变形动画
+
+      骨骼动画和变形动画是非常常见的动画形式，对于Threejs三维引擎来说自然要支持。一般开发过程中
+      都是加载3d美术绘制好的骨骼动画模型或者变形动画模型，不过为了大家更深入的理解这两种动画模型，
+      课程12.1和12.3节用纯Threejs代码实现相应的动画模型创建，虽然增加了学习难度，但是非常有助于
+      从底层理解这两种动画模型
+
+      Three.js骨骼动画（SkinnedMesh）
+
+      所谓骨骼动画，以人体为例简单地说，人体的骨骼运动，骨骼运动会带动肌肉和人体皮肤的空间移动和
+      表面变化，下面将会提到的蒙皮概念你可以类比人体的皮肤。
+
+      Threejs骨骼动画需要通过骨骼网格模型类SkinnedMesh来实现，一般来说骨骼动画模型都是3d美术创建
+      然后程序员通过threejs引擎加载解析，为了让大家更深入理解骨骼动画，下面就通过threejs程序编写
+      一个建议的骨骼动画。
+
+      相关类
+
+      直接使用Threejs编写一个骨骼动画还是比较复杂的，你首先应该了解骨头关节Bone、骨骼网格模型
+      SkinnedMesh、骨架对象Skeleton这三个骨骼相关的类，除此之外还需要了解几何体Geometry和
+      骨骼动画相关的顶点数据。
+
+      骨骼动画
+        骨头关节Bone
+          树结构-一个父关节可以有多个子关节
+          基类Object3D
+
+        骨骼网格模型SkinnedMesh
+          基类Mesh - 基类Object3D
+
+        Geometry
+          .skinWeights: Array -- 顶点权重数组
+          .skinIndices: Array -- 顶点索引
+
+        骨架对象Skeleton
+          骨头Bone构成骨架Skeleton
+          绑定skeleton和SkinnedMesh
+
+        Bone
+        通过Bone类可以实例化一个骨关节对象，然后通过多个骨关节对象可以构成一个骨骼层级系统，
+        Bone基类是Object3D，可以通过add方法给一个骨关节对象Bone添加一个子关节Bone。
+
+        let Bone1 = new THREE.Bone(); //关节1，用来作为根关节
+        let Bone2 = new THREE.Bone(); //关节2
+        let Bone3 = new THREE.Bone(); //关节3
+
+        //设置关节父子关系，多个骨头关节构成一个树结构
+        Bone1.add(Bone2);
+        Bone2.add(Bone3);
+
+        //设置关节之间的相对位置
+        //根关节Bone1默认位置是（0, 0, 0）
+        Bone2.position.y = 60;  //Bone2相对父对象Bone1位置
+        Bone3.position.y = 40;  //Bone3相对父对象Bone2位置
+
+        骨架Skeleton
+        Threejs通过Skeleton类可以把所有骨关节对象Bone包含进来
+
+        //所有Bone对象插入到Skeleton中，全部设置为bones属性的元素
+        let skeleton = new THREE.Skeleton([Bone1, Bone2, Bone3]); //创建骨骼系统
+        //查看bones属性中所有骨关节Bone
+        console.log(skeleton.bones)
+
+        //返回所有关节的世界坐标
+        skeleton.bones.forEach(elem => {
+          console.log(elem.getWorldPosition(new THREE.Vector3()))
+        })
+
+        Geometry(.skinWeights和.skinIndices属性)
+
+        前面课程讲解过几何体Geometry的多种顶点数据。几何体Geometry的属性.skinWeights和
+        .skinIndices主要作用是用来设置几何体的顶点位置是如何受骨关节运动影响的。比如几何体
+        Geometry的顶点位置数据是你皮肤上的一个个点位，如果你的骨关节运动了，你的皮肤外形会跟着
+        变化，就相当于Geometry的顶点坐标需要跟着骨关节变化，这时候需要注意，关节外面包裹的一层
+        皮肤，不同区域变形程度不同，那也就是说如果骨关节Bone变化了，几何体Geometry顶点要像皮肤
+        一样不同区域的顶点变化程度不同。这也正是.skinWeights和.skinIndices属性出现的原因，
+        .skinWeights的字面意思就是设置骨骼蒙皮的权重。
+
+        骨骼网格模型SkinnedMesh
+
+        SkinnedMesh类的字面意思就是骨骼网格模型，骨骼网格模型SkinnedMesh的基类是普通网格模型
+        Mesh，SkinnedMesh和Mesh一样都是网格模型，只是一个有骨骼动画的功能，一个没有骨骼动画功能
+
+        骨骼网格模型SkinnedMesh绑定骨骼系统。
+
+        //骨骼关联网格模型
+        SkinnedMesh.add(Bone1)  //根骨头关节添加到网格模型
+        SkinnedMesh.bind(skeleton)  //网格模型绑定到骨骼系统
+
+        程序创建一个骨骼动画
+
+        下面的代码通过SkinnedMesh构造函数创建一个骨骼动画，如果你想深入理解骨骼动画可以研究一下下面的
+        代码，下面代码还是比较复杂的，设计到的知识点比较多，如果不想深入研究，可以大致看一下有个印象，
+        实际开发的时候，只需要会加载解析骨骼动画就可以。
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 410);
+      camera.position.set(20, 220, 20)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      initLight(scene);
+
+      //创建骨骼网格模型SkinnedMesh
+
+      //创建一个圆柱几何体，高度120，抵挡点坐标分量范围[-60, 60]
+      let geometry = new THREE.CylinderGeometry(5, 10, 120, 50, 300)
+      geometry.translate(0, 60, 0)
+
+      const position = geometry.attributes.position
+      console.log('name', position)
+
+      //设置几何体对象Geometry的蒙皮索引skinIndices、权重skinWeights属性实现一个模拟腿部
+      //骨骼运动的效果
+
+      //遍历几何体顶点，为每个顶点设置蒙皮索引、权重属性
+      //根据y来分段，
+
+      // scene.add(
+      //   new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: 0x00ff00}))
+      // );
+      
+ 
+      createControl()
+      render()
+    }
+
+    function render() {
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight(scene) {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+
+      scene.add(new THREE.AmbientLight(0x353535));
+    }
+
+  </script>
+</body>
+</html>

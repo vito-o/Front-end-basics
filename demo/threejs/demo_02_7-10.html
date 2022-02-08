@@ -131,8 +131,6 @@
 
     let camera = null;
 
-    let group = null;
-    let model = null;
     let mixer = null;
 
     let oControls;
@@ -161,42 +159,50 @@
 
       initLight(scene);
 
-      const loader = new GLTFLoader();
+      let group = new THREE.Group()
+      let cube = new THREE.Mesh(
+        new THREE.BoxGeometry(6, 6, 6),
+        new THREE.MeshBasicMaterial( {color: 0x00ff00} )
+      )
+      cube.name = "Box"; //网格模型1命名
+      group.add(cube)
 
-      loader.load('./mx/robot/RobotExpressive.glb', function(gltf) {
-        console.log(gltf)
-        model = gltf.scene;
-        scene.add( model );
+      let sphere = new THREE.Mesh(
+        new THREE.SphereGeometry( 2, 32, 16 ),
+        new THREE.MeshBasicMaterial( { color: 0xffff00 } )
+      )
+      sphere.name = "Sphere"; //网格模型2命名
+      group.add(sphere)
 
-        createGUI( model, gltf.animations );
+      scene.add(group)
 
-        createControl()
-        render()
-      })
+      var times = [0, 10]; //关键帧时间数组，离散的时间点序列
+      var values = [0, 0, 0, 30, 0, 0]; //与时间点对应的值组成的数组
+      var posTrack = new THREE.KeyframeTrack('Box.position', times, values);
+      var colorKF = new THREE.KeyframeTrack('Box.material.color', [10, 20], [1, 0, 0, 0, 0, 1]);
+      var sphereTrack = new THREE.KeyframeTrack('Sphere.scale', [0, 20], [1, 1, 1, 3, 3, 3]);
+      var duration = 20;
+      var clip = new THREE.AnimationClip("default", duration, [posTrack, colorKF, sphereTrack]);
+
+      mixer = new THREE.AnimationMixer(group);
+      var AnimationAction = mixer.clipAction(clip);
+      AnimationAction.timeScale = 20;
+      AnimationAction.play();
  
+      createControl()
+      render()
     }
 
     function render() {
       oControls.update();
 
-      const dt = clock.getDelta();
-
-      if ( mixer ) mixer.update( dt );
+      mixer.update(clock.getDelta());
 
       renderer.render(scene, camera)
       
       requestAnimationFrame(render)
     }
 
-    function createGUI(model, animations) {
-      mixer = new THREE.AnimationMixer(model)
-      console.log(mixer)
-
-      const clip = animations[ 6 ];
-      const action = mixer.clipAction(clip)
-
-      action.play();
-    }
 
     function createControl() {
       oControls = new OrbitControls( camera, renderer.domElement );
