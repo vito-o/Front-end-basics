@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { GLTFLoader } from './js/GLTFLoader.js'
+    import { OrbitControls } from './js/OrbitControls.js';
+
+    /**
+      帧动画模块
+
+      1.编辑关键帧并解析播放
+
+      Threejs提供了一系列用户编辑和播放帧动画的API，例如关键帧KeyframeTrack、
+      剪辑AnimationClip、操作AnimationAction、混合器AnimationMixer
+
+      帧动画
+
+      帧动画应用
+      骨骼动画、变行目标动画、淡入淡出等
+
+      编辑
+        关键帧KeyframeTrack
+          位置、颜色等属性随着时间变化
+          离散时间点对应离散属性值
+        剪辑AnimationClip
+          多个关键帧构成一个剪辑clip对象
+      播放
+        操作AnimationAction
+          设置播放方式、开始播放、暂停播放
+        混合器AnimationMixer
+          一个对象及其子对象的动画播放器
+    
+
+      为了让大家更好的理解关键帧动画，本节课不加载外部模型的动画数据，使用关键帧
+      keyframeTrack和剪辑AnimationClip编写一个关键帧动画，然后调用AnimationAcction
+      混合器AnimationMixer播放编写好的关键帧动画。
+
+      创建两个用于动画的网格模型
+
+      先创建两个用于关键帧动画的网格模型
+
+      创建两个网格模型并设置一个父对象group
+
+      mesh1.name = 'box'
+      mesh2.name = 'sphere'
+      group.add(mesh1)
+      group.add(mesh2)
+
+      编辑关键帧
+
+      下面代码中的关键帧动画是通过关键帧keyframeTrack和剪辑AnimationClip两个API
+      来完成，事记开发中如果需要制作一个复杂三维模型的帧动画，比如一个人走路、跑步
+      等动作，一半情况是美术通过3dmax、blender等软件编辑好，不需要程序员用代码实现
+
+      编辑group子对象网格模型mesh1和mesh2的帧动画数据
+
+      //创建名为Box对象的关键帧数据
+      let times = [0, 10]; //关键帧时间数组，离散的事件点序列
+      let values = [0, 0, 0, 150, 0, 0]; //与时间点对应的值组成的数组
+      //创建位置关键帧对象：0时刻对应位置0, 0, 0 10时刻对应位置150, 0, 0
+      let posTrack = new THREE.KeyframeTrack('Box.position', times, values)
+      //创建颜色关键帧对象：10时刻对应颜色1，0，0   20时刻对应颜色0，0，1
+      let colorKF = new THREE.KeyframeTrack('Box.material.color', [10, 20], [1, 0, 0, 0, 0, 1])
+      //创建名为Sphere对象的关键帧数据 从0~20时间段，尺寸scale缩方3倍
+      let scaleTrack = new THREE.KeyframeTrack('Sphere.scale', [0, 20], [1, 1, 1, 3, 3, 3])
+
+      //duration决定了默认的播放时间，一般取所有帧动画的最大时间
+      //duration偏小，帧动画数据无法播放完，偏大，播放完帧动画会继续空播放
+      let duration = 20;
+      //多个帧动画作为元素创建一个剪辑clip对象，命名“default”，持续时间20
+      let clip = new THREE.AnimationClip('default', duration, [posTrack, colorKF, scaleTrack])
+
+      播放关键帧
+
+      下面代码是通过操作AnimationAction和混合器AnimationMixer两个API播放已有的帧
+      动画数据。
+
+      混合器THREE.AnimationMixer()的参数是案例代码中编写的两个网格模型的父对象group，
+      实际开发中参数Group也可以是你加载外部模型返回的模型对象。
+
+      播放编辑好的关键帧数据
+
+      //group作为混合器的参数，可以播放group中所有子对象的帧动画
+      let mixer = new THREE.AnimationMixer(group);
+      //剪辑clip作为参数，通过混合器clipAction方法返回一个操作对象AnimationAction
+      let AnimationAction = mixer.clipAction(clip)
+      //通过操作Action设置播放方式
+      AnimationAction.timeScale = 20; //默认1，可以调节播放速度
+      //AnimationAction.loop = THREE.LoopOnce //不循环播放
+      AnimationAction.play();开始播放
+
+      播放关键帧动画的时候，注意在渲染函数render()中执行maxer.update(渲染时间间隔)
+      告诉帧动画系统Threejs两次渲染的时间间隔，获得时间间隔可以通过Threejs提供的一个
+      时钟类Clock实现
+
+      //创建一个时钟对象clock
+      let clock = new THREE.Clock();
+      //渲染函数
+      function render() {
+        renderer.render(scene, camera); //执行渲染操作
+        requestAnimationFrame(render)
+
+        //clock.getDelta()方法获得两帧的时间间隔
+        //更新混合器相关时间
+        mixer.update(clock.getDelta())
+      }
+
+
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+
+    let group = null;
+    let model = null;
+    let mixer = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 210);
+      camera.position.set(20, 20, 20)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      initLight(scene);
+
+      const loader = new GLTFLoader();
+
+      loader.load('./mx/robot/RobotExpressive.glb', function(gltf) {
+        console.log(gltf)
+        model = gltf.scene;
+        scene.add( model );
+
+        createGUI( model, gltf.animations );
+
+        createControl()
+        render()
+      })
+ 
+    }
+
+    function render() {
+      oControls.update();
+
+      const dt = clock.getDelta();
+
+      if ( mixer ) mixer.update( dt );
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createGUI(model, animations) {
+      mixer = new THREE.AnimationMixer(model)
+      console.log(mixer)
+
+      const clip = animations[ 6 ];
+      const action = mixer.clipAction(clip)
+
+      action.play();
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+
+    function initLight(scene) {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+
+      scene.add(new THREE.AmbientLight(0x353535));
+    }
+
+  </script>
+</body>
+</html>
