@@ -114,6 +114,39 @@
         代码，下面代码还是比较复杂的，设计到的知识点比较多，如果不想深入研究，可以大致看一下有个印象，
         实际开发的时候，只需要会加载解析骨骼动画就可以。
 
+        
+        皮肤顶点权重属性 skinWeights
+
+        skinWeights表示的是几何体顶点权重数据，当使用骨骼动画网格模型SkinnedMesh的时候
+        每个顶点最多可以有4个骨关节Bone影响它。skinWeights属性是一个权重值数组，对应于
+        几何体中顶点的顺序。例如，第一个skinWeight将对应于几何体中的第一个顶点，由于每个
+        顶点可以背4个骨关节Bone修改，因此使用四维向量对象Vector4表示一个顶点的权重。
+
+        四维向量Vector4每个分量的值通常应在o和1之间。当设置为0时，骨关节Bone变换将不起作用；
+        设置为0.5时，将产生50%的影响；设置为100%时，会产生100%的影响。如果只有一个骨关节
+        Bone与顶点关联，那么你只需要考虑设置四维向量Vector4的第一个给分量，其余分量的可以
+        忽略并设置为0.
+
+        顶点索引属性 skinIndices
+        顶点索引属性 skinIndices就像skinWeights属性一样，skinIndices的值对应几何体的顶点，
+        每个顶点最多可以有4个与之关联的骨关节Bone。
+
+        骨骼动画顶点数据
+
+        骨骼动画的相关的一些顶点数据，主要是描述几何体表面的顶点数据是如何受骨骼系统关节运动
+        影响的。加载外部模型你可以访问骨骼动画网格模型的几何体对象查看骨骼动画相关顶点数据。
+        网格模型的几何体类型可能是Geometry，也可能是BufferGeometry，一般是缓冲类型的几何体
+        BufferGeometry比较常见。
+
+        Geometry的骨骼动画顶点数据，直接查看.skinWeights和.skinIndices属性
+        SkinnedMesh.geometry.skinWeights
+        SkinnedMesh.geometry.skinIndices
+
+        BufferGeometry的骨骼动画顶点数据，如果你熟悉BufferGeometry的结构，应该
+        指导该几何体通过attributes属性存储各种顶点数据。
+        SkinnedMesh.geometry.attributes.skinWeights
+        SkinnedMesh.geometry.attributes.skinIndices
+
      **/
 
     window.onload = init;
@@ -123,6 +156,7 @@
     let scene = null;
 
     let camera = null;
+    let skeleton = null;
 
     let oControls;
 
@@ -157,24 +191,102 @@
       geometry.translate(0, 60, 0)
 
       const position = geometry.attributes.position
-      console.log('name', position)
 
       //设置几何体对象Geometry的蒙皮索引skinIndices、权重skinWeights属性实现一个模拟腿部
       //骨骼运动的效果
 
       //遍历几何体顶点，为每个顶点设置蒙皮索引、权重属性
       //根据y来分段，
+      let vertex = new THREE.Vector3()
 
-      // scene.add(
-      //   new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: 0x00ff00}))
-      // );
+      let skinIndices = []
+      let skinWeights = []
+
+      for ( let i = 0; i < position.count; i ++ ) {
+        vertex.fromBufferAttribute(position, i)
+
+        if(vertex.y <= 60) {
+          //设置每个顶点蒙皮索引属性，受根关节Bone1影响
+          skinIndices.push(0, 0, 0, 0)
+          //设置每个顶点蒙皮权重属性
+          //影响该顶点关节Bone1对应权重是1-vertex.y/60
+          skinWeights.push(1, 0, 0, 0)
+        } else if (60 < vertex.y && vertex.y <= 60 + 40) {
+          //标识对应顶点受关节Bone2影响
+          skinIndices.push(1, 0, 0, 0)
+          //影响该顶点关节Bone2对应权重是1-(vertex.y-60)/40
+          skinWeights.push(1, 0, 0, 0)
+        } else if (60 + 40 < vertex.y && vertex.y <= 60 + 40 + 20) {
+          //表示对应顶点受关节Bone3影响
+          skinIndices.push(2, 0, 0, 0)
+          //影响该顶点关节Bone3对应权重是1-(vertex.y - 100) / 20
+          skinWeights.push(1, 0, 0, 0)
+        }
+      }
+
+      geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4))
+      geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4))
+
+      //骨骼系统
+      let Bone1 = new THREE.Bone()  //关节1，用来作为根关节
+      let Bone2 = new THREE.Bone()  //关节2
+      let Bone3 = new THREE.Bone()  //关节3
+
+      //设置关节父子关系，多个骨头关节构成一个树结构
+      Bone1.add(Bone2);
+      Bone2.add(Bone3);
+
+      //设置关节之间的相对位置
+      //根关节Bone1默认位置是（0, 0, 0）
+      Bone2.position.y = 60;  //Bone2相对于父对象Bone1位置
+      Bone3.position.y = 40;  //Bone3相对于父对象Bone2位置
+
+      //所有Bone对象插入到Skeleton中，全部设置为bones属性的元素
+      skeleton = new THREE.Skeleton([Bone1, Bone2, Bone3])  //创建骨骼系统
+      // console.log(skeleton.bones)
+      // //返回所有关节的世界坐标
+      // skeleton.bones.forEach(elem => {
+      //   console.log(elem.getWorldPosition(new THREE.Vector3()))
+      // })
+
+
+      //材质对象
+      let material = new THREE.MeshPhongMaterial({
+        color: 0x156289,
+        emissive: 0x072534,
+        side: THREE.DoubleSide,
+        flatShading: true
+      })
+
+      //创建骨骼网格模型
+      let mesh = new THREE.SkinnedMesh(geometry, material)
+      // mesh.position.set(50, 120, 50); //设置网格模型位置
+      // mesh.rotateX(Math.PI)  //旋转网格模型
+
+      //骨骼关联网格模型
+      mesh.add(Bone1); //根骨头关节添加到网格模型
+      mesh.bind(skeleton)  //将骨架绑定到一个蒙皮网格上
+
+      //网格模型添加到场景中
+      scene.add(mesh)
       
- 
+      
+      //骨骼辅助显示
+      let skeletonHelper = new THREE.SkeletonHelper(mesh)
+      scene.add(skeletonHelper)
+
+      //转动关节带动骨骼网格模型出现弯曲效果，好像腿弯曲一样
+      skeleton.bones[1].rotation.x = 0.5;
+      skeleton.bones[2].rotation.x = 0.5;
+
+
       createControl()
       render()
     }
 
     function render() {
+      animate()
+
       oControls.update();
 
       renderer.render(scene, camera)
@@ -182,6 +294,28 @@
       requestAnimationFrame(render)
     }
 
+    var n = 0;
+    var T = 50;
+    var step = 0.01;
+    function animate() {
+      n += 1;
+
+      if(n < T) {
+        skeleton.bones[0].rotation.x = skeleton.bones[0].rotation.x - step;
+        skeleton.bones[1].rotation.x = skeleton.bones[1].rotation.x + step;
+        skeleton.bones[2].rotation.x = skeleton.bones[2].rotation.x + 2 * step;
+      }
+
+      if(n < 2 * T && n > T) {
+        skeleton.bones[0].rotation.x = skeleton.bones[0].rotation.x + step;
+        skeleton.bones[1].rotation.x = skeleton.bones[1].rotation.x - step;
+        skeleton.bones[2].rotation.x = skeleton.bones[2].rotation.x - 2 * step;
+      }
+
+      if(n == 2 * T) {
+        n = 0;
+      }
+    }
 
     function createControl() {
       oControls = new OrbitControls( camera, renderer.domElement );

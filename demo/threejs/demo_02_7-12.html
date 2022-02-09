@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { GLTFLoader } from './js/GLTFLoader.js'
+    import { OrbitControls } from './js/OrbitControls.js';
+
+    /**
+      解析外部骨骼动画模型
+
+      开发的时候，3D美术如果导出一个包含骨骼动画数据的三维模型，你可以通过下面的代码
+      进行加载解析，查看骨骼动画的运动效果。
+
+      骨骼动画除了需要创建一个骨骼动画模型SkinnedMesh外，还需要通过帧动画存储相关的
+      关节动画数据。
+
+      let mixer = null; //声明一个混合器变量
+      loader.load('./marine_anims_core.json', function(obj) {
+        scene.add(obj) //添加到场景中
+
+        //从返回对象获得骨骼网格模型
+        let skinnedMesh = obj.children[0];
+        //骨骼网格模型作为参数创建一个混合器
+        mixer = new THREE.AnimationMixer(skinnedMesh);
+        //查看骨骼网格模型的帧动画数据
+        //console.log(skinnedMesh.geometry.animations)
+        //解析跑步状态对应剪辑对象clip中的关键帧数据
+        let AnimationAction = mixer.clipAction(skinnedMesh.geometry.animations[1])
+        //解析步行状态对应剪辑对象clip中的关键帧数据
+        //let AnimationAction = mixer.clipAction(skinnedMesh.geometry.animations[3])
+        AnimationAction.play()
+
+        //创建一个时钟对象Clock
+        let clock = new THREE.Clock();
+        //渲染函数
+        function render() {
+          renderer.render(scene, camera)
+          requestAnimationFrame(render)
+
+          if(mixer !== null) {
+            //clock.getDelta()方法获得两帧的时间间隔
+            //更新混合器相关的时间
+            mixer.update(clock.getDelta())
+          }
+        }
+      })
+      
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let skeleton = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 410);
+      camera.position.set(20, 220, 20)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      initLight(scene);
+
+      const loader = new THREE.ObjectLoader();
+      loader.load('./mx/hand/hand-2.json', function(obj) {
+        console.log(obj)
+      })
+
+
+      createControl()
+      render()
+    }
+
+    function render() {
+
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight(scene) {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+
+      scene.add(new THREE.AmbientLight(0x353535));
+    }
+
+  </script>
+</body>
+</html>
