@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { GLTFLoader } from './js/GLTFLoader.js'
+    import { OrbitControls } from './js/OrbitControls.js';
+
+    /**
+      Three.js变形动画geometry.morphTargets
+
+      关于变形动画，你可以理解为多组顶点数据，从一个状态变化到另一个状态，比如人的面部表情，
+      哭的表情用一系列的顶点表示，小的表情用一系列的顶点表示，从哭的表情过度到笑的表情对应
+      的两组顶点之间的过渡，几何体的顶点的位置坐标发生变化，从一个状态过渡到另一个状态自然
+      就产生了变形动画。
+
+      一般项目开发，变形动画和骨骼动画一样，由3D美术编辑哈奥变形动画的模型数据，然后程序员
+      通过Threejs相关的API解析渲染变形动画
+
+      创建变形动画的顶点数据
+
+      先获取两个变形目标box1和box2的顶点数据，然后通过几何体的变形目标属性.morphTargets设置
+      好变形动画。
+
+       网格模型.morphTargetInfluences属性
+
+       通过上面代码吧变形动画顶点数据设置好以后，如果像生成变形动画，首先要了解网格模型Mesh
+       的.morphTargetInfluences属性。
+
+       你可以在上面代码中分别获同时插入下面代码进行测试，查看长方体网格模型mesh的外形变化
+
+       //启用变形目标并设置变形目标影响权重，范围一般0~1，
+       //设置第一组顶点对几何体形状影响的变形系数
+       mesh.morphTargetInfluences[0] = 0.5;
+
+       //设置第二组顶点对几何体形状印象的变形系数
+       mesh.morphTargetInfluences[1] = 1;
+
+       生成变形动画
+       通过上面的测试，你可以发现改变morphTargetInfluences属性的值可以改变网格模型的形状，
+       那么回忆一下第11章讲解的帧动画，你只需要控制.morphTargetInfluences的属性值生成关键帧
+       数据，就可以实现关键帧动画，然后播放帧动画即可实现变形动画。
+
+       第一步先利用关键帧KeyframeTrack、剪辑AnimationClip两个类创建好帧动画。
+
+       第二步是使用混合器AnimationMixer播放设置好的关键帧动画
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let mixer;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 410);
+      camera.position.set(20, 220, 20)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      initLight(scene);
+
+      //创建一个几何体具有8个顶点
+      let geometry = new THREE.BoxGeometry(50, 50, 50); //立方体几何对象
+
+      //为geometry提供变形目标数据
+      let box1 = new THREE.BoxGeometry(100, 5, 100);    //为变形目标1提供数据
+      let box2 = new THREE.BoxGeometry(5, 200, 5);      //为变形目标2提供数据
+
+      geometry.morphAttributes.position = [
+        box1.attributes.position,
+        box2.attributes.position,
+      ]
+
+
+      let material = new THREE.MeshLambertMaterial({
+        morphTargets: true,
+        color: 0x0000ff
+      })
+
+      let mesh = new THREE.Mesh(geometry, material)
+      mesh.morphTargetInfluences[0] = 1;
+      mesh.morphTargetInfluences[1] = 1;
+      scene.add(mesh)
+
+      console.log(mesh)
+
+      //设置关键帧数据
+      //设置变形目标1对应权重随着时间的变化
+      let Track1 = new THREE.KeyframeTrack('.morphTargetInfluences[0]', [0, 10, 20], [0, 1, 0])
+      //设置变形目标2对应权重随着事件的变化
+      let Track2 = new THREE.KeyframeTrack('.morphTargetInfluences[1]', [20, 30, 40], [0, 1, 0])
+
+      //创建一个剪辑clip对象，命名'default'，持续事件40
+      let clip = new THREE.AnimationClip('default', 40, [Track1, Track2])
+
+      //播放编辑好的关键帧数据
+      mixer = new THREE.AnimationMixer(mesh); //创建混合器
+      let AnimationAction = mixer.clipAction(clip)  //返回动画操作对象
+      AnimationAction.timeScale = 5;  //默认1， 可以调节播放速度
+      AnimationAction.play(); //开始播放
+
+      createControl()
+      render()
+    }
+
+    function render() {
+      //更新混合器相关的时间
+      mixer.update(clock.getDelta())
+
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight(scene) {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+
+      scene.add(new THREE.AmbientLight(0x353535));
+    }
+
+  </script>
+</body>
+</html>
