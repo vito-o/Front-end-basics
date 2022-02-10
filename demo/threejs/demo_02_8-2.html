@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    import { TGALoader } from './js/TGALoader.js';
+   
+    /**
+      TGALoader
+      Targa是栅格图形文件格式，改格式上仍然被大量得3d软件程序使用。使用THREE.TGALoader
+      对象，可以在3d模型上使用该格式得纹理。使用该格式的图像文件，首先需要在html页面中
+      引入对应的js文件TGALoader.js，并按照如下方式加载。
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let oControls;
+    let polyhedronMesh, sphereMesh, cubeMesh;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 410);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      createControl()
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      addLargeGroundPlane()
+
+      initLight();
+
+      // let textureLoader = new THREE.TextureLoader();
+      let textureLoader = new TGALoader();
+
+      let polyhedron = new THREE.IcosahedronGeometry(8, 0);
+      polyhedronMesh = addGeometry(polyhedron, 'polyhedron', textureLoader.load('./img/tga/dried_grass.tga'))
+      polyhedronMesh.position.x = 20;
+
+      let sphere = new THREE.SphereGeometry(5, 20, 20)
+      sphereMesh = addGeometry(sphere, 'sphere', textureLoader.load('./img/tga/grass.tga'))
+      
+      let cube = new THREE.BoxGeometry(10, 10, 10)
+      cubeMesh = addGeometry(cube, 'cube', textureLoader.load('./img/tga/moss.tga'))
+      cubeMesh.position.x = -20;
+
+      render()
+    }
+
+
+    function render() {
+
+      polyhedronMesh.rotation.x += 0.01;
+      sphereMesh.rotation.y += 0.01;
+      cubeMesh.rotation.z += 0.01;
+
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function addGeometry(geom, name, texture) {
+      let mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        metalness: 0.2,
+        roughness: 0.07
+      });
+      let mesh = new THREE.Mesh(geom, mat)
+      mesh.castShadow = true;
+
+      scene.add(mesh)
+
+      return mesh;
+    }
+
+    function addLargeGroundPlane() {
+      let planeGeometry = new THREE.PlaneGeometry(10000, 10000)
+      let planeMaterial = new THREE.MeshPhongMaterial({color: 0xffffff})
+      let plane = new THREE.Mesh(planeGeometry, planeMaterial)
+      plane.receiveShadow = true;
+
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 0;
+      plane.position.y = -10;
+      plane.position.z = 0;
+
+      scene.add(plane)
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+      scene.add(new THREE.AmbientLight(0x444444))
+    }
+
+  </script>
+</body>
+</html>

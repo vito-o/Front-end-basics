@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+   
+    /**
+      第10章 加载和使用纹理
+
+      本章从一下几个方面来讨论这个主题：
+      ·在three.js中加载纹理并应用到网格上
+      ·使用凹凸贴图和法线贴图为网格添加深度和细节
+      ·使用光照贴图创建假阴影
+      ·使用环境贴图在材质上添加反光效果
+      ·使用高光贴图使得网格某些部分变得闪亮
+      ·微调和自定义网格的UV映射
+      ·将HTML5的画布和视频作为纹理的输入
+
+      10.1 将纹理应用于材质
+
+      在Three.js中可以使用纹理实现不同的效果。你可以使用他们来定义网格的颜色，也
+      可以使用他们来定义高光、凹凸和反射。但是我们首先要介绍的试最基本的用法：使用
+      纹理为网格的每个像素指定颜色
+
+      10.1.1 加载纹理并应用到网格
+
+      纹理最基础的用法是作为贴图被添加在材质上，当你使用这样的材质创建网格时，网格的
+      颜色则来源于纹理。
+
+      在这段代码中，我们使用THREE.ImageUtils.loadTexture方法从指定的位置加载图片文件，
+      图片的格式可以是PNG、GIF或JPEG。注意，纹理的加载是异步的。
+
+      可以使用任何你喜欢的图片来作为纹理使用，但是为了达到最好的效果，最好使用长宽大小为2
+      的次方的正方形图片，例如大小为256、512、1024的图片最合适。
+
+      由于纹理通常需要放大或缩小，所以纹理上的像素不会一对一地映射到面的像素上。为此，
+      WebGL和Three.js提供了各种不同的选项，你可以设置magFilter属性来指定纹理如何放大，
+      设置minFilter属性来指定纹理如何缩小。属性如下
+
+      THREE.NearestFilter（最邻近过滤）
+      这个过滤器回将纹理上最近的像素颜色引用与上面。在放大时会导致方块化；在缩小时会丢失很多细节
+
+      THREE.LinearFilter（线性过滤）
+      这个过滤器比较高级，最终的颜色时由周围四个像素值来决定的。这样虽然在缩小时仍会
+      丢失一些细节，但是在放大时会平滑很多，方块化也比较少出现
+
+      除了上述值，我们还可以使用mipmap。mipmap是吧纹理按照2的倍数进行缩小，知道图像
+      为1*1的大小，然后把这些图都存储起来。这些图片是在加载纹理时创建的，可以用于生成
+      比较光滑的过滤效果。所以如果你由一个正方形的纹理，只需要几步就可以达到更好的过滤效果。
+      mipmap的纹理过滤模式如下：
+
+      THREE.NearestMipMapNearestFilter
+      选择最邻近的mip层，并执行前表中的最邻近过滤。虽然放大时仍然会由方块化，但时缩小
+      时效果会好很多
+
+      THREE.NearestMipMapLinearFilter
+      选择最邻近的两个mip层，并分别在这两个mip层上运行最邻近过滤获取两个中间值，最后
+      将这两个中间值传递到线性过滤器中获取最终值
+
+      THREE.LinearMipMapNearestFilter
+      选择最邻近的mip层，并执行浅表中的线性过滤
+
+      THREE.LinearMipMapLinearFilter
+      选择最邻近的两个mip层，并分别在这两个mip层上运行线性过滤获取两个中间值，
+      最后将这两个中间值传递到线性过滤器中获取最终值
+
+      如果没有明确指定magFilter和minFilter属性的值，Three.js会
+      将THREE.LinearFilter作为magFilter属性得默认值，
+      将THREE.LinearMipMapLinearFilter作为minFilter属性的默认值。
+
+      我们加载了多个纹理并把他们应用到不同形状的图像上。如你所看到的，纹理可以很好
+      地贴合在图形上，这个效果是Three.js在创建几何体时通过UV贴图来实现的。基于UV
+      贴图，我们可以告诉渲染器将纹理的哪部分应用到指定的面上。最简单的例子是给方块
+      贴图，方块上的UV贴图是这样的：(0, 1), (0, 0), (1, 0), (1, 1)，其含义是将
+      整个纹理（uv值得范围是0到1）应用到这个面上。
+
+      除了使用textureLoader方法加载标准得PNG,GIF或JPEG图片，Three.js还提供了一些
+      自定义得加载期，以此来加载其他格式得纹理文件。如下：
+
+      TGALoader
+      Targa是栅格图形文件格式，改格式上仍然被大量得3d软件程序使用。使用THREE.TGALoader
+      对象，可以在3d模型上使用该格式得纹理。使用该格式的图像文件，首先需要在html页面中
+      引入对应的js文件TGALoader.js，并按照如下方式加载。
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let oControls;
+    let polyhedronMesh, sphereMesh, cubeMesh;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 410);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      createControl()
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      addLargeGroundPlane()
+
+      initLight();
+
+      let textureLoader = new THREE.TextureLoader();
+      let polyhedron = new THREE.IcosahedronGeometry(8, 0);
+      polyhedronMesh = addGeometry(polyhedron, 'polyhedron', textureLoader.load('./img/general/metal-rust.jpg'))
+      polyhedronMesh.position.x = 20;
+
+      let sphere = new THREE.SphereGeometry(5, 20, 20)
+      sphereMesh = addGeometry(sphere, 'sphere', textureLoader.load('./img/general/floor-wood.jpg'))
+      
+      let cube = new THREE.BoxGeometry(10, 10, 10)
+      cubeMesh = addGeometry(cube, 'cube', textureLoader.load('./img/general/brick-wall.jpg'))
+      cubeMesh.position.x = -20;
+
+      render()
+    }
+
+
+    function render() {
+
+      polyhedronMesh.rotation.x += 0.01;
+      sphereMesh.rotation.y += 0.01;
+      cubeMesh.rotation.z += 0.01;
+
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function addGeometry(geom, name, texture) {
+      let mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        metalness: 0.2,
+        roughness: 0.07
+      });
+      let mesh = new THREE.Mesh(geom, mat)
+      mesh.castShadow = true;
+
+      scene.add(mesh)
+
+      return mesh;
+    }
+
+    function addLargeGroundPlane() {
+      let planeGeometry = new THREE.PlaneGeometry(10000, 10000)
+      let planeMaterial = new THREE.MeshPhongMaterial({color: 0xffffff})
+      let plane = new THREE.Mesh(planeGeometry, planeMaterial)
+      plane.receiveShadow = true;
+
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 0;
+      plane.position.y = -10;
+      plane.position.z = 0;
+
+      scene.add(plane)
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+
+      scene.add(new THREE.AmbientLight(0x343434))
+      scene.add(new THREE.AmbientLight(0x444444))
+    }
+
+  </script>
+</body>
+</html>
