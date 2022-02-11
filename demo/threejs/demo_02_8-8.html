@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+   
+    /**
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let oControls;
+    let cube1, sphere1;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 20, 410);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      createControl()
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+
+      initLight();
+
+      let textureLoader = new THREE.TextureLoader();
+      
+      let cubeMaterial = new THREE.MeshStandardMaterial({
+        emissive: 0xffffff,
+        emissiveMap: textureLoader.load("./img/emissive/lava.png"),
+        normalMap: textureLoader.load("./img/emissive/lava-normals.png"),
+        metalnessMap: textureLoader.load("./img/emissive/lava-smoothness.png"),
+        metalness: 1,
+        roughness: 0.4,
+      })
+
+      let cube = new THREE.BoxGeometry(16, 16, 16)
+      cube1 = addLargeGroundPlane(cube, cubeMaterial)
+      cube1.rotation.y = 1/3*Math.PI
+      cube1.position.x = -12;
+
+      let sphere = new THREE.SphereGeometry(9, 50, 50);
+      sphere1 = addLargeGroundPlane(sphere, cubeMaterial.clone())
+      sphere1.rotation.y = 1/6*Math.PI
+      sphere1.position.x = 15;
+      
+
+      render()
+    }
+
+
+    function render() {
+
+      cube1.rotation.y += 0.01
+      sphere1.rotation.y -= 0.01
+
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function addLargeGroundPlane(geom, material) {
+      var mesh = new THREE.Mesh(geom, material);
+      mesh.castShadow = true;
+      
+      scene.add(mesh);
+      return mesh;
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      spotLight.intensity = 0.1;
+      scene.add(spotLight)
+      
+      // scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444))
+    }
+
+  </script>
+</body>
+</html>
