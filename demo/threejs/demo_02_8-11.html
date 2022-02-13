@@ -19,6 +19,30 @@
    
     /**
 
+      10.1.5 使用环境贴图创建反光效果
+
+      计算环境的反光效果对cpu耗费是非常大的，而且通常会使用光线追踪算法。在threejs中你依然
+      可以实现反光效果，只不过是做一个假的。你可以通过创建一个对象所处理环境的纹理来反光，并
+      将它应用到指定的对象上。
+
+      如图所示，你可以看到球和方块反射着周围的环境。如果移动鼠标，你还可以看到反光是跟着摄像机
+      的角度并于你所看到的城市环境相关联。要创建这样的示例的具体步骤如下：
+
+      1.创建cubeMap对象。首先需要创建的就是CubeMap对象。CubeMap对象是包含6个纹理的集合，这些
+      纹理可以应用到方块的每个面上。
+      2.创建一个带有cubeMap对象的方块。带有cubeMap对象的方块就是你在移动摄像机时所看到的环境
+      这样当你向四周看时，就像你正处于这个环境中想四周看一一样。实际上，你是处在一个方块中，
+      二这个方块内侧所渲染的纹理使得你感觉好像处在这个空间中。
+      3.将cubeMap作为纹理使用。我们用来模拟环境的cubeMap对象同意可以作为纹理应用在网格中。
+      three.js会让它看上去就像是环境的反光。
+
+      如果你已经有了制作材质的原材料，那么传几个cube Map对象就会非常简单。你所需要的就是6张
+      用来构建整个场景的图片，这6张图片是：朝前、朝后、朝上、朝下、朝右、朝左
+
+      你也可以将它转换成一组图片然后依次来创建cubeMap对象，6张图片right\left\top\bottom
+      front back
+
+
      **/
 
     window.onload = init;
@@ -57,8 +81,6 @@
 
       initLight();
 
-      let textureLoader = new THREE.TextureLoader();
-
       let urls = [
         './img/cubemap/colloseum/right.png',
         './img/cubemap/colloseum/left.png',
@@ -68,19 +90,22 @@
         './img/cubemap/colloseum/back.png',
       ];
 
+      let textureLoader = new THREE.TextureLoader();
       let cubeLoader = new THREE.CubeTextureLoader()
-      scene.background = cubeLoader.load(urls)
+      let cubeMap = cubeLoader.load(urls);
+      scene.background = cubeMap
+
 
       
-      let cubeMaterial = new THREE.MeshStandardMaterial({
-        envMap: scene.background,
+      let cubeMaterial = new THREE.MeshBasicMaterial({
+        envMap: cubeMap,
         color: 0xffffff,
         metalness: 1,
         roughness: 0,
       })
 
-      let cube = new THREE.BoxGeometry(16, 12, 12)
-      cube1 = addLargeGroundPlane(cube, cubeMaterial.clone())
+      let cube = new THREE.BoxGeometry(26, 22, 12)
+      cube1 = addLargeGroundPlane(cube, cubeMaterial)
       cube1.position.x = -15;
       cube1.rotation.y = -1/3*Math.PI;
 
@@ -93,15 +118,13 @@
       sphere1 = addLargeGroundPlane(sphere, sphereMaterial.clone())
       sphere1.position.x = 15
       
-      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget( 512, { 
-        generateMipmaps: true, 
-        minFilter: THREE.LinearMipmapLinearFilter 
-      });
-      cubeCamera = new THREE.CubeCamera(0.1, 10000, cubeRenderTarget )
+
+      const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256);
+      cubeCamera = new THREE.CubeCamera(0.1, 1024, cubeRenderTarget )
       scene.add(cubeCamera)
 
-      cubeCamera.position.copy(cube1.position)
-      cubeMaterial.envMap = cubeCamera.renderTarget;
+      console.log(cubeCamera)
+      cubeMaterial.envMap = cubeRenderTarget.texture;
 
       render()
     }
@@ -109,12 +132,13 @@
 
     function render() {
 
-      // cube1.visible = false;
+      cube1.visible = false;
+      cubeCamera.position.copy(cube1.position)
       cubeCamera.update(renderer, scene);
-      // cube1.visible = true;
+      cube1.visible = true;
 
       sphere1.rotation.y -= 0.01
-      cube1.rotation.y -= 0.01
+      cube1.rotation.y += 0.01
 
       oControls.update();
 
