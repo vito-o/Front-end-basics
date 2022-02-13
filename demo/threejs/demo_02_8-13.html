@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+
+    #canvas-output{
+      position: absolute;
+      left: 0;
+      bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+  <video 
+      id="video" 
+      style="visibility: hidden; position: absolute; left: 15px; top: 75px;"
+      src="./movies/Big_Buck_Bunny_small.ogv" 
+      controls="true" muted
+      autoplay="true">
+  </video>
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+   
+    /**
+
+      10.2.4 将视频输出作为纹理
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let oControls;
+    let cubeMesh;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      createControl()
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      initLight();
+
+      let groundPlane = addLargeGroundPlane()
+      groundPlane.position.y = -8;
+
+      let video = document.getElementById('video');
+      let texture = new THREE.VideoTexture(video);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.format = THREE.RGBFormat;
+
+      let cube = new THREE.BoxGeometry(10, 10, 10)
+      cubeMesh = addGeometry(cube, texture)
+
+      render()
+    }
+
+   
+
+    function render() {
+
+      
+
+      cubeMesh.rotation.y += 0.01
+
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+    function addGeometry(geom, texture) {
+      let mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        metalness: 0.2,
+        roughness: 0.07
+      })
+      let mesh = new THREE.Mesh(geom, mat)
+      mesh.castShadow = true;
+      scene.add(mesh)
+      return mesh;
+    }
+
+    function addLargeGroundPlane() {
+      // create the ground plane
+      var planeGeometry = new THREE.PlaneGeometry(10000, 10000);
+      var planeMaterial = new THREE.MeshPhongMaterial({
+          color: 0xffffff
+      });
+
+      var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      plane.receiveShadow = true;
+
+      // rotate and position the plane
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 0;
+      plane.position.y = 0;
+      plane.position.z = 0;
+
+      scene.add(plane);
+
+      return plane;
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>

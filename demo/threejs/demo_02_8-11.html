@@ -43,6 +43,34 @@
       front back
 
 
+      正如你看到的，我们将材质的envMap属性设置为我们所创建的CubeMap对象。结果看上去好像我们
+      站在一个宽阔的室外环境中，而这些网格会反射所处的环境。通过菜单上的滑块，你可以修改材质的
+      reflectivity属性。这个属性决定着材质能够反射多少场景。
+
+
+      为了对场景中的其他物体也进行反射，我们需要使用Three.js中的其他组件。首先我们需要使用的是
+      名为THREE.CubeCamera的摄像机
+
+      let cubeCamera = new THREE.cUBEcAMERA(0.1, 20000, 256);
+      scene.add(cubeCamera)
+
+      使用THREE.CubeCamera可以为场景中索要渲染的物体创建快照，并使用这些快照创建CubeMap对象。
+      但是需要确保摄像机被放置在THREE.Mesh网格上你所想显示反射的位置上。例如，我们像在球体的
+      中心显示反射，由于球体所处的位置是（0, 0, 0），所以我们没有显示的指定THREE.CubeCamera
+      的位置。我们只是将动态反射应用与球体上，这里我们需要创建两个不同的材质。
+
+      let dynamicEnvMaterial = new THREE.MeshBasicMaterial({
+        envMap: cubeCamera.renderTarget
+      })
+
+      let envMaterial = new THREE.MeshBasicMaterial({
+        envMap: textureCube
+      })
+
+      动态反光与我们前面的例子主要的区别在于，我们并没有将envmap属性设置为textureCube，而是
+      cubeCamera.renderTarget.
+
+
      **/
 
     window.onload = init;
