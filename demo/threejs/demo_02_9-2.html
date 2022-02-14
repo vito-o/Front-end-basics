@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { FilmPass } from './js/postprocessing/FilmPass.js'
+    import { ShaderPass } from './js/postprocessing/ShaderPass.js'
+    import { DotScreenPass } from './js/postprocessing/DotScreenPass.js'
+    import { TexturePass } from './js/postprocessing/TexturePass.js'
+    import { BloomPass } from './js/postprocessing/BloomPass.js'
+
+    import { RGBShiftShader } from './js/shaders/RGBShiftShader.js'
+    import { DotScreenShader } from './js/shaders/DotScreenShader.js'
+    import { CopyShader } from './js/shaders/CopyShader.js'
+
+    /**
+
+      11.2 后期处理通道
+
+      Three.js库提供了许多后期处理通道，这些通道可以直接添加到THREE.EffectComposer组合器
+      使用
+
+      THREE.BloomPass
+      该通道通过增强场景中明亮区域来模拟真实世界中的摄像机
+      THREE.DotScreenPass
+      该通道会将黑点图层应用到屏幕的原始图片上。
+      THREE.FilmPass
+      该通道通过扫描线和失真来模拟电视屏幕效果
+      THREE.GlitchPass
+      该通道会随机地在屏幕上显示电子脉冲
+      THREE.MaskPass
+      使用该通道可以再当前图片上添加掩码，后续的通道只会影响掩码区域
+      THREE.RenderPass
+      该通道会在当前场景和摄像机的基础上渲染一个新场景
+      THREE.ShaderPass
+      该通道接收自定义的着色器作为参数，以生成一个高级，自定义的后期处理通道
+      THREE.TexturePass
+      该通道将组合器的当前状态保存为纹理，然后将其作为参数传入到其他EffectComposer组合器中
+
+      11.2.1简单后期处理通道
+
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let oControls;
+    let earth, composer, effectFilmComposer, bloomComposer, dotScreenComposer;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      // renderer.shadowMap.enabled = true;
+      // renderer.shadowMapSoft = true;
+      // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      createControl()
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      let earthAndLight = addEarth()
+
+
+      var effectCopy = new ShaderPass(CopyShader);
+      //RenderPass则用于在THREE.EffectComposer对象上添加渲染通道，
+      //如果没有通道，我们的场景就不会被渲染。
+      let renderPass = new RenderPass(scene, camera);
+
+      composer = new EffectComposer(renderer);
+      composer.addPass(renderPass);
+      composer.addPass(effectCopy);
+
+      var renderedScene = new TexturePass(composer.renderTarget2); 
+
+      let effectFilm = new FilmPass(0.8, 0.325, 256, false);
+      effectFilm.renderToScreen = true;
+
+      effectFilmComposer = new EffectComposer(renderer)
+      effectFilmComposer.addPass(renderedScene)
+      effectFilmComposer.addPass(effectFilm)
+
+      // reuse the rendered scene from the composer
+
+      let bloomPass = new BloomPass();
+      bloomComposer = new EffectComposer(renderer)
+      bloomComposer.addPass(renderedScene)
+      bloomComposer.addPass(bloomPass);
+      bloomComposer.addPass(effectCopy);
+
+      var dotScreenPass = new DotScreenPass();
+      dotScreenComposer = new EffectComposer(renderer)
+      dotScreenComposer.addPass(renderedScene)
+      dotScreenComposer.addPass(dotScreenPass);
+      dotScreenComposer.addPass(effectCopy);
+
+
+      render()
+    }
+
+   
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    var halfWidth = width / 2;
+    var halfHeight = height / 2;
+    console.log(halfWidth, halfHeight)
+    function render() {
+      earth.rotation.y += 0.01
+
+      oControls.update();
+
+      renderer.autoClear = false;
+      renderer.clear();
+
+      renderer.setViewport(0, 0, halfWidth, halfHeight);
+      effectFilmComposer.render();
+
+      renderer.setViewport(halfWidth, 0, halfWidth, halfHeight);
+      dotScreenComposer.render();
+
+      renderer.setViewport(0, halfHeight, halfWidth, halfHeight);
+      bloomComposer.render();
+
+      renderer.setViewport(halfWidth, halfHeight, halfWidth, halfHeight);
+      composer.render()
+      
+      requestAnimationFrame(render)
+    }
+
+    function addEarth() {
+      let textureLoader = new THREE.TextureLoader();
+      let planetMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('./img/earth/Earth.png'),
+        normalMap: textureLoader.load('./img/earth/EarthNormal.png'),
+        specularMap: textureLoader.load('./img/earth/EarthSpec.png'),
+        normalScale: new THREE.Vector2(6, 6),
+        shininess: 0.5
+      })
+
+      earth = new THREE.Mesh(new THREE.SphereGeometry(15, 40, 40), planetMaterial)
+      scene.add(earth);
+
+      initLight();
+
+      return {earth}
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>

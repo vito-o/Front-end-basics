@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { FilmPass } from './js/postprocessing/FilmPass.js'
+    import { ShaderPass } from './js/postprocessing/ShaderPass.js'
+
+    import { RGBShiftShader } from './js/shaders/RGBShiftShader.js'
+    import { DotScreenShader } from './js/shaders/DotScreenShader.js'
+
+    /**
+
+      第11章 自定义着色器和后期处理
+
+      本章主要介绍渲染后期处理、如何自定义着色器
+      ·配置Three.js，用于后期处理
+      ·介绍Three.js提供的基本后期处理通道，如THREE.BloomPass和THREE.FilmPass。
+      ·使用掩码将效果应用到部分场景
+      ·使用THREE.TexturePass保存渲染结果
+      ·使用THREE.ShaderPass添加更基础的后期渲染处理，如褐色滤镜、镜像效果和颜色调整。
+      ·使用THREE.ShaderPass产生各种模糊效果和高级滤镜
+      ·通过开发简单的着色器来创建自定义后期处理
+
+      我们在第一章中创建了一个render循环，并在本书中一直使用该render循环来渲染场景和
+      制作动画。对于后期处理，我们需要对这个渲染循环进行修改，使得Three.js库能够对最终
+      的渲染结果进行后期处理
+
+      11.1配置Three.js以进行后期处理
+
+      为了能够使用Three.js进行后期处理，我们需要对当前的配置进行如下修改：
+      1.创建THREE.EffectComposer(效果组合器)对象，在该对象上我们可以添加后期处理通道。
+      2.配置THREE.EffectComposer对象，它可以渲染场景，并应用后期处理。
+      3.在render循环中，使用THREE.EffectComposer来渲染场景、应用通道和输出结果。
+
+      EffectComposer.js文件提供THREE.EffectComposer对象，以便添加后期处理步骤。
+      MaskPass.js, ShaderPass.js和CopyShader.js文件时THREE.EffectComposer内部
+      使用到的文件、RenderPass.js文件则用于在THREE.EffectComposer对象上添加渲染通道，
+      如果没有通道，我们的场景就不会被渲染。
+
+      这个示例中，我们添加了另外两个js文件，用来在场景中添加一种类似胶片的效果
+      FilmPass.js和FilmShader.js
+
+      首先我们需要做的是创建一个THRE.EffectComposer对象，你可以在对象的构造函数里传入
+      THREE.WebGLRenderer如下所示：
+
+      let webGLRenderer = new THREE.WebGLRenderer();
+      let composer = new THREE.EffectComposer(webGLRenderer)
+
+      接下来我们要在这个组合器中添加各种通道。
+      1.为后期处理配置THREE.EffectComposer
+
+      每个通道都会按照其加入到THREE.EffectComposer的顺序执行。第一个加入的通道是
+      THREE.RenderPass。下面这个通道会渲染场景，但是渲染结果不会输出到屏幕上：
+
+      let renderPass = new THREE.RenderPass(scene, camera)
+      composer.addPass(renderPass)
+
+      接下来我们要添加一个可以将结果输出到屏幕上的通道，当然了，并不是所有的通道都能实现
+      这个功能，在本例中我们使用THREE.FilePass通道来将结果输出到屏幕上。在添加THREE.FilePass
+      通道时，我们首先要创建该对象，然后将其添加到组合器中。
+
+      let renderPass = new THREE.RenderPass(scene, camera)
+      let effectFilm = new THREE.FilmPass(0.8, 0.325, 256, false);
+      effectFilm.renderToScreen = true;
+
+      let composer = new THREE.EffectComposer(webGLRenderer)
+      composer.addPass(renderPass)
+      composer.addPass(effectFilm)
+
+      如你看到的，我们创建了THREE.FilmPass对象，并将它的renderToScreen熟悉设置为true.
+      这个通道是在renderPass之后添加到THREE.EffectComposer组合器中的，所以当使用这个
+      组合器时，场景会被渲染并通过THREE.FilmPass将结果输出到屏幕上。
+
+      2.更新渲染循环
+
+      现在我们需要稍微对渲染循环进行修改，也就是在循环中使用组合器来替换THREE.WebGLRenderer：
+      let clock = new THREE.Clock()
+      function render() {
+        let delta = clock.getDelta();
+        composer.render(delta)
+      }
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let oControls;
+    let earth, composer;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMapSoft = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      createControl()
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      let earthAndLight = addEarth()
+
+      //RenderPass则用于在THREE.EffectComposer对象上添加渲染通道，
+      //如果没有通道，我们的场景就不会被渲染。
+      let renderPass = new RenderPass(scene, camera);
+      //用来在场景中添加一种类似胶片的效果
+      let effectFilm = new FilmPass(0.8, 0.325, 256, false);
+      effectFilm.renderToScreen = true;
+
+      //效果组合器
+      //在该对象上我们可以添加后期处理通道
+      composer = new EffectComposer(renderer)
+      composer.addPass(renderPass)
+      composer.addPass(effectFilm)
+
+      render()
+    }
+
+   
+
+    function render() {
+      earth.rotation.y += 0.01
+
+      oControls.update();
+
+      composer.render()
+      
+      requestAnimationFrame(render)
+    }
+
+    function addEarth() {
+      let textureLoader = new THREE.TextureLoader();
+      let planetMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('./img/earth/Earth.png'),
+        normalMap: textureLoader.load('./img/earth/EarthNormal.png'),
+        specularMap: textureLoader.load('./img/earth/EarthSpec.png'),
+        normalScale: new THREE.Vector2(6, 6),
+        shininess: 0.5
+      })
+
+      earth = new THREE.Mesh(new THREE.SphereGeometry(15, 40, 40), planetMaterial)
+      scene.add(earth);
+
+      initLight();
+
+      return {earth}
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>
