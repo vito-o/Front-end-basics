@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { ShaderPass } from './js/postprocessing/ShaderPass.js'
+    import { TexturePass } from './js/postprocessing/TexturePass.js'
+    import { MaskPass, ClearMaskPass } from './js/postprocessing/MaskPass.js'
+    
+    
+    import { CopyShader } from './js/shaders/CopyShader.js'
+    import { SepiaShader } from './js/shaders/SepiaShader.js'
+    import { ColorifyShader } from './js/shaders/ColorifyShader.js'
+
+    /**
+      11.2.2 使用掩码的高级效果组合器
+
+      在前面的示例中，我们时在整个屏幕上应用后期处理通道。当然，Three.jsj也可以在特定的区域
+      使用通道。
+      1.创建一个作为背景图片的场景。
+      2.创建一个场景，里面包含一个看起来像地球的球体
+      3.创建一个场景，里面包含一个看起来像火星的球体
+      4.创建EffectComposer对象，用于将这个三个场景渲染到一个图片中
+      5.在渲染为或许的球体上应用彩色效果
+      6.在渲染为地球的球体上引用褐色效果。
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let sceneEarth, sceneMars, sceneBG;
+    let earthAndLight, marsAndLight;
+    let composer;
+
+    let camera = null;
+    let oControls;
+  
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.autoClear = false;
+
+      let textureLoader = new THREE.TextureLoader();
+
+      sceneEarth = new THREE.Scene()
+      sceneMars = new THREE.Scene()
+      sceneBG = new THREE.Scene()
+      sceneBG.background = textureLoader.load('./img/bg/starry-deep-outer-space-galaxy.jpg')
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+
+      createControl()
+
+      earthAndLight = addEarth(sceneEarth)
+      sceneEarth.translateX(-16);
+      sceneEarth.scale.set(1.2, 1.2, 1.2);
+      
+      marsAndLight = addMars(sceneMars)
+      sceneMars.translateX(12)
+      sceneMars.translateY(6)
+      sceneMars.scale.set(0.2, 0.2, 0.2)
+
+      let clearMask = new ClearMaskPass();
+      let earthMask = new MaskPass(sceneEarth, camera);
+      let marsMask = new MaskPass(sceneMars, camera);
+
+      let bgRenderPass = new RenderPass(sceneBG, camera);
+      let earthRenderPass = new RenderPass(sceneEarth, camera);
+      earthRenderPass.clear = false;
+      let marsRenderPass = new RenderPass(sceneMars, camera);
+      marsRenderPass.clear = false;
+
+      var effectSepia = new ShaderPass(SepiaShader);
+      effectSepia.uniforms['amount'].value = 0.8;
+      var effectColorify = new ShaderPass(ColorifyShader);
+      effectColorify.uniforms['color'].value.setRGB(0.5, 0.5, 1)
+      var effectCopy = new ShaderPass(CopyShader);
+     
+
+      composer = new EffectComposer(renderer);
+      composer.renderTarget1.stencilBuffer = true;
+      composer.renderTarget2.stencilBuffer = true;
+      composer.addPass(bgRenderPass);
+      composer.addPass(earthRenderPass);
+      composer.addPass(marsRenderPass);
+
+      composer.addPass(marsMask);
+      composer.addPass(effectColorify);
+      composer.addPass(clearMask);
+
+      composer.addPass(earthMask);
+      composer.addPass(effectSepia);
+      composer.addPass(clearMask);
+
+      composer.addPass(effectCopy);
+     
+
+
+      render()
+    }
+   
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    var halfWidth = width / 2;
+    var halfHeight = height / 2;
+
+    function render() {
+      earthAndLight.earth.rotation.y += 0.001
+      marsAndLight.mars.rotation.y -= 0.001
+
+      oControls.update();
+
+      
+      renderer.clear();
+
+      composer.render()
+
+      
+      
+      requestAnimationFrame(render)
+    }
+
+    function addEarth(scene) {
+      let textureLoader = new THREE.TextureLoader();
+      let planetMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('./img/earth/Earth.png'),
+        normalMap: textureLoader.load('./img/earth/EarthNormal.png'),
+        specularMap: textureLoader.load('./img/earth/EarthSpec.png'),
+        normalScale: new THREE.Vector2(6, 6),
+        shininess: 0.5
+      })
+
+      let earth = new THREE.Mesh(new THREE.SphereGeometry(15, 40, 40), planetMaterial)
+      scene.add(earth);
+
+      initLight(scene);
+
+      return {earth}
+    }
+
+    function addMars(scene) {
+      let textureLoader = new THREE.TextureLoader();
+      let planeMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('./img/mars/mars_1k_color.jpg'),
+        normalMap: textureLoader.load('./img/mars/mars_1k_normal.jpg'),
+        normalScale: new THREE.Vector2(6, 6),
+        shininess: 0.5,
+      })
+
+      let mars = new THREE.Mesh(new THREE.SphereGeometry(15, 40, 40), planeMaterial)
+      scene.add(mars)
+
+      initLight(scene);
+
+      return {mars}
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight(scene) {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>

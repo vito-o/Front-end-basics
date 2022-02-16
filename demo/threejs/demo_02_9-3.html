@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    // import { FilmPass } from './js/postprocessing/FilmPass.js'
+    import { ShaderPass } from './js/postprocessing/ShaderPass.js'
+    // import { DotScreenPass } from './js/postprocessing/DotScreenPass.js'
+    import { TexturePass } from './js/postprocessing/TexturePass.js'
+    // import { BloomPass } from './js/postprocessing/BloomPass.js'
+    import { GlitchPass } from './js/postprocessing/GlitchPass.js'
+    import { HalftonePass } from './js/postprocessing/HalftonePass.js'
+    import { OutlinePass } from './js/postprocessing/OutlinePass.js'
+    import { UnrealBloomPass } from './js/postprocessing/UnrealBloomPass.js'
+
+    // import { RGBShiftShader } from './js/shaders/RGBShiftShader.js'
+    // import { DotScreenShader } from './js/shaders/DotScreenShader.js'
+    import { CopyShader } from './js/shaders/CopyShader.js'
+
+    /**
+      在这段代码里我们创建了THREE.EffectComposer对象，该对象输出默认场景，
+      这个组合器有两个通道：THREE.RenderPass(用来渲染场景) 和 THREE.ShaderPass（使用THREE.
+      CopyShader进行配置后，如果renderToScreen属性设置为'true',渲染结果会之直接输出到屏幕
+      上而不会有进一步的后期处理）。
+
+      我们可以使用THREE.RenderPass每次都将场景从零开始渲染，但是这样有点浪费，因为我们可以
+      重用第一个组合器的输出结果。要做到这点，我们可以创建一个THREE.TexturePass对象，并将其
+      传入到composer.renderTarget2中。这样就可以将renderScene变量作为其他组合器的输入，而
+      不需要从零开始渲染场景。
+
+      如果要使用THREE.TexturePass，你唯一需要做的就是将它作为组合器的第一个通道。接下来我们
+      就可以添加THREE.FilmPass，而且该通道接受如下四个参数：
+
+      在这个方法中，我们使用了uniforms属性，该属性可以直接和WebGL进行通信。在自定义着色器的
+      章节中将会进一步讲解uniforms属性。限制你只要知道可以通过它直接更改后期处理通道和着色器
+      配置，而且修改后的记过可以立即看到。
+
+      bloomPass
+      我们在这里多添加了一个通道-effectCopy。这个通道在普通输出中也曾用到过，它不会添加任何
+      特殊的效果，只是将最后一个通道的输出结果复制到屏幕上，之所以要添加这个通道，是因为
+      THREE.BloomPass通道不能直接将渲染结果输出到屏幕上
+
+      4.在同一个屏幕上显示多个渲染器的输出结果
+
+      首先需要注意的是我们将WebGLRenderer.autoClear属性设置为false，并显式调用clear()方法。
+      如果我们不这么做，那么每次调用组合器的render()方法时，之前的渲染场景将会被清除。通过这种
+      方法，我们只是在render循环开始的时候将所有的东西进行清除。
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+
+    let scene = null;
+
+    let camera = null;
+    let oControls;
+    let earth, composer, composer1, composer2, composer3;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      // renderer.shadowMap.enabled = true;
+      // renderer.shadowMapSoft = true;
+      // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera)
+
+      createControl()
+
+      var axes = new THREE.AxesHelper(200);
+      scene.add(axes);
+
+      let earthAndLight = addEarth()
+
+      let renderPass = new RenderPass(scene, camera);
+      var effectCopy = new ShaderPass(CopyShader);
+      let glitchPass = new GlitchPass();
+      let halftonePass = new HalftonePass();
+      let outlinePass = new OutlinePass(new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, camera, [earth]);
+      let unrealBloomPass = new UnrealBloomPass();
+      glitchPass.renderToScreen = true;
+
+      
+
+
+      composer = new EffectComposer(renderer);
+      composer.addPass(renderPass);
+      composer.addPass(glitchPass);
+      //composer.addPass(effectCopy);
+      
+      composer1 = new EffectComposer(renderer);
+      composer1.addPass(renderPass);
+      composer1.addPass(halftonePass);
+      
+      composer2 = new EffectComposer(renderer);
+      composer2.addPass(renderPass);
+      composer2.addPass(outlinePass);
+
+      composer3 = new EffectComposer(renderer);
+      composer3.addPass(renderPass);
+      composer3.addPass(unrealBloomPass);
+      composer3.addPass(effectCopy);
+
+
+      render()
+    }
+   
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    var halfWidth = width / 2;
+    var halfHeight = height / 2;
+
+    function render() {
+      earth.rotation.y += 0.01
+
+      oControls.update();
+
+      renderer.autoClear = false;
+      renderer.clear();
+
+      renderer.setViewport(0, halfHeight, halfWidth, halfHeight)
+      composer.render()
+
+      renderer.setViewport(0, 0, halfWidth, halfHeight)
+      composer1.render()
+
+      renderer.setViewport(halfWidth, halfHeight, halfWidth, halfHeight)
+      composer2.render()
+
+      renderer.setViewport(halfWidth, 0, halfWidth, halfHeight)
+      composer3.render()
+      
+      requestAnimationFrame(render)
+    }
+
+    function addEarth() {
+      let textureLoader = new THREE.TextureLoader();
+      let planetMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('./img/earth/Earth.png'),
+        normalMap: textureLoader.load('./img/earth/EarthNormal.png'),
+        specularMap: textureLoader.load('./img/earth/EarthSpec.png'),
+        normalScale: new THREE.Vector2(6, 6),
+        shininess: 0.5
+      })
+
+      earth = new THREE.Mesh(new THREE.SphereGeometry(15, 40, 40), planetMaterial)
+      scene.add(earth);
+
+      initLight();
+
+      return {earth}
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>
