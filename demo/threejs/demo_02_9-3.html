@@ -96,12 +96,11 @@
 
       let earthAndLight = addEarth()
 
-
+      //shaderPass(使用THREE.CopyShader进行配置后，如果renderToScreen设置为true，渲染
+      //结果会直接输出的屏幕上而不会有进一步的后期处理)
       var effectCopy = new ShaderPass(CopyShader);
-      //RenderPass则用于在THREE.EffectComposer对象上添加渲染通道，
-      //如果没有通道，我们的场景就不会被渲染。
-      let renderPass = new RenderPass(scene, camera);
-
+   
+      let renderPass = new RenderPass(scene, camera); //renderPass用来渲染场景
       composer = new EffectComposer(renderer);
       composer.addPass(renderPass);
       composer.addPass(effectCopy);
@@ -129,7 +128,6 @@
       dotScreenComposer.addPass(dotScreenPass);
       dotScreenComposer.addPass(effectCopy);
 
-
       render()
     }
 
@@ -138,7 +136,7 @@
     var height = window.innerHeight;
     var halfWidth = width / 2;
     var halfHeight = height / 2;
-    console.log(halfWidth, halfHeight)
+
     function render() {
       earth.rotation.y += 0.01
 
