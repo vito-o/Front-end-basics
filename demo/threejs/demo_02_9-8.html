@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { SSAOPass } from './js/postprocessing/SSAOPass.js'
+
+    /**
+      11.3 创建自定义后期处理着色器
+
+      在本节中,你将会学习如何创建出可以在后期处理中使用的自定义着色器.
+
+      我们将装甲两个不同的着色器
+
+      第一个着色器可以将当前的图片转换为灰度图
+      第二个着色器可以减少颜色的可用数目,从而将图片转换为8位图.
+
+      这里需要指出的是,创建顶点着色器和片段着色器是一个很大的话题.
+
+      11.3.1 自定义灰度图着色器
+
+      如果要创建Three.js(以及其他WebGL库)使用的自定义着色器,你需要实现两个组件:顶点着色器
+      (vertexShader)和片段着色器(fragmentShader).顶点着色器可以用于改变每个顶点的位置,
+      变短着色器可以用于定义每个像素的颜色.对于后期处理着色器,我们只需要实现片段着色器就可以了,
+      然后使用Three.js提供的默认顶点着色器.在看实现代码之前,我们知道GPU通常是可以支持多个
+      着色器管道的,这也就意味着GPU在执行顶带你着色器时会有多个着色器同时执行.对于片段着色器
+      的执行也是一样的.
+
+      下面我们看看着色器的完整代码,该着色器可以在图片上创建出灰度效果custom-shader.js
+
+      THREE.CustomGrayScaleShader = {
+        uniforms: {
+          "tDiffuse" : { type: 't', value : null },
+          "rPower" : { type: 't', value : 0.2126 },
+          "gPower" : { type: 't', value : 0.7152 },
+          "bPower" : { type: 't', value : 0.0722 },
+        },
+
+        vertexShader: [
+          "varying vec2 vUv;"
+          "void main() {"
+            "vUv = uv;"
+            "gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);"
+          }
+        ].join('\n'),
+
+        fragmentShader: [
+          uniform float rPower;
+          uniform float gPower;
+          uniform float bPower;
+          uniform sampler2D tDiffuse;
+
+          varying vec2 vUv;
+
+          void main() {
+            vec4 texel = texture2D(tDiffuse, vUv);
+            float gray = texel * r * rPower + texel.g * gPower + texel.b * bPower;
+            gl_FragColor = vec4(vec3(gray), texel.w);
+          }
+        ]
+      }
+
+      如你所看到的,这些代码并不是js代码.当你创建着色器时需要使用OpenGL着色语言(GLSL),它的语法
+      看上去有点像c语言.
+
+      我们首先来看顶点着色器
+      "varying vec2 vUv;"
+        "void main() {"
+          "vUv = uv;"
+          "gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);"
+        }
+        对于后期处理来说,这个着色器其实并没有做什么.从上面的代码看着不过时Three.js库中顶点
+        着色器的标准实现方式.代码中使用的projection Matrix表示的时摄像机的投影矩阵,
+        modelViewMatrix表示的是场景中物体的位置到真实世界位置的映射,这两个共同来决定将物体
+        渲染到屏幕的哪个位置.
+
+        对于后期处理,需要注意的是代码中的uv值,它表示的是Texel(纹理上的像素).该值会通过
+        varying vec2 vUv变量传递到片段着色器中.然后我们会通过vUv来获取片段着色器中需要的像素值.
+
+        uniform float rPower;
+        uniform float gPower;
+        uniform float bPower;
+        uniform sampler2D tDiffuse;
+
+        varying vec2 vUv;
+
+        在这里可以看到定义了uniforms属性的四个实例变量,这四个变量可以从js传递到着色器中.
+
+        在本示例中,我们会传递三个浮点数,类型标识位f(用来决定灰度图中所包含的颜色比例),还会传递一个
+        纹理(tDiffuse),类型位t.该纹理中包含的是THREE.EffectComposer组合器中前一个通道的处理结果.
+
+        Three.js会确保这个处理结果能够准确地传递给着色器.除此之外,我们也可以在js中设置其他uniforms
+        变量的值.如果要在js中使用这些uniforms变量,我们必须定义那些uniforms变量可以在着色器中使用,
+        定义方式是在着色器文件的开头完成.
+
+        uniforms: {
+          "tDiffuse" : { type: 't', value : null },
+          "rPower" : { type: 't', value : 0.2126 },
+          "gPower" : { type: 't', value : 0.7152 },
+          "bPower" : { type: 't', value : 0.0722 },
+        },
+        这样我们就可以接收从Three.js传递过来的配置参数,以及需要调整的图片. 下面来看一下将每个像素
+        转换位灰色的代码:
+
+        void main() {
+          vec4 texel = texture2D(tDiffuse, vUv);
+          float gray = texel * r * rPower + texel.g * gPower + texel.b * bPower;
+          gl_FragColor = vec4(vec3(gray), texel.w);
+        }
+        这段代码的作用是在传递过来的纹理上获取正确的像素.实现的方式是调用texture2D方法,在该方法
+        中传递当前的图片(tDiffuse)和要处理的像素的位置(vUv).处理的结果就是一个包含颜色和透明度(texel.w)
+        的texel.
+
+        接下来我们将会使用texel的属性r, g, b值来计算灰度值.这个灰度值会保存在gl_FragColor变量中,
+        并最准显示在屏幕上. 这样我们的着色器就定义完成了,而且该着色器和其他着色器的使用方式是一样
+        的.
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let camera = null;
+    let scene = null;
+    let composer = null;
+    let totalGroup = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.autoClear = false;
+
+      let textureLoader = new THREE.TextureLoader();
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera);
+
+      createControl()
+
+      // initLight();
+
+      let amount = 50;
+      let xRange = 20;
+      let yRange = 20;
+      let zRange = 20;
+
+      totalGroup = new THREE.Group();
+      for(let i = 0; i < amount; i++) {
+        let boxGeometry = new THREE.BoxGeometry(5, 5, 5)
+        let material = new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff})
+        let boxMesh = new THREE.Mesh(boxGeometry, material)
+
+        let rX = Math.random() * xRange - xRange / 2;
+        let rY = Math.random() * yRange - yRange / 2;
+        let rZ = Math.random() * zRange - zRange / 2;
+
+        let totalRotation = 2*Math.PI;
+        boxMesh.position.set(rX, rY, rZ)
+        boxMesh.rotation.set(
+          Math.random() * totalRotation,
+          Math.random() * totalRotation,
+          Math.random() * totalRotation,
+        );
+        totalGroup.add(boxMesh)
+      }
+      scene.add(totalGroup)
+
+      let renderPass = new RenderPass(scene, camera);
+      let aoPass = new SSAOPass(scene, camera);
+      aoPass.renderToScreen = true;
+      aoPass.ssaoMaterial.uniforms = {
+        ...aoPass.ssaoMaterial.uniforms,
+        radius: {value: 10},
+        aoClamp: {value: 0.18},
+        lumInfluence: {value: 0.1},
+      }
+      // aoPass.ssaoMaterial.onlyAO = true
+ 
+      composer = new EffectComposer(renderer)
+      composer.addPass(renderPass)
+      composer.addPass(aoPass)
+
+      render()
+    }
+   
+    function render() {
+
+      totalGroup.rotation.x += 0.0001;
+      totalGroup.rotation.y += 0.001
+
+      oControls.update();
+
+      composer.render();
+
+      // renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>

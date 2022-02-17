@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { SSAOPass } from './js/postprocessing/SSAOPass.js'
+
+    /**
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let camera = null;
+    let scene = null;
+    let composer = null;
+    let totalGroup = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.autoClear = false;
+
+      let textureLoader = new THREE.TextureLoader();
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera);
+
+      createControl()
+
+      // initLight();
+
+      let amount = 50;
+      let xRange = 20;
+      let yRange = 20;
+      let zRange = 20;
+
+      totalGroup = new THREE.Group();
+      for(let i = 0; i < amount; i++) {
+        let boxGeometry = new THREE.BoxGeometry(5, 5, 5)
+        let material = new THREE.MeshBasicMaterial({color: Math.random() * 0xffffff})
+        let boxMesh = new THREE.Mesh(boxGeometry, material)
+
+        let rX = Math.random() * xRange - xRange / 2;
+        let rY = Math.random() * yRange - yRange / 2;
+        let rZ = Math.random() * zRange - zRange / 2;
+
+        let totalRotation = 2*Math.PI;
+        boxMesh.position.set(rX, rY, rZ)
+        boxMesh.rotation.set(
+          Math.random() * totalRotation,
+          Math.random() * totalRotation,
+          Math.random() * totalRotation,
+        );
+        totalGroup.add(boxMesh)
+      }
+      scene.add(totalGroup)
+
+      let renderPass = new RenderPass(scene, camera);
+      let aoPass = new SSAOPass(scene, camera);
+      aoPass.renderToScreen = true;
+      aoPass.ssaoMaterial.uniforms = {
+        ...aoPass.ssaoMaterial.uniforms,
+        radius: {value: 10},
+        aoClamp: {value: 0.18},
+        lumInfluence: {value: 0.1},
+      }
+      // aoPass.ssaoMaterial.onlyAO = true
+ 
+      composer = new EffectComposer(renderer)
+      composer.addPass(renderPass)
+      composer.addPass(aoPass)
+
+      render()
+    }
+   
+    function render() {
+
+      totalGroup.rotation.x += 0.0001;
+      totalGroup.rotation.y += 0.001
+
+      oControls.update();
+
+      composer.render();
+
+      // renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>

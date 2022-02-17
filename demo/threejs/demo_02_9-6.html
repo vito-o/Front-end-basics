@@ -18,7 +18,9 @@
     import * as THREE from './js/three.module.js';
     import { OrbitControls } from './js/OrbitControls.js';
     
-    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { BokehPass } from './js/postprocessing/BokehPass.js'
 
     /**
       11.2.3 使用THREE.ShaderPass自定义效果
@@ -33,6 +35,7 @@
     let renderer = null;
     let camera = null;
     let scene = null;
+    let composer = null;
 
     let oControls;
 
@@ -93,6 +96,40 @@
       m1m.position.x = -35;
       m1m.rotation.y = 1;
 
+      let boxMaterial2 = new THREE.MeshStandardMaterial({color: 0xff6600})
+      let m2 = new THREE.BoxGeometry(10, 10, 10)
+      let m2m = addGeometryWithMaterial(scene, m2, boxMaterial2)
+      m2m.position.z = -40;
+      m2m.position.x = 35;
+      m2m.rotation.y = -1;
+
+      let totalWidth = 220;
+      let nBoxes = 10;
+      for(let i = 0; i < nBoxes; i++) {
+        let box = new THREE.BoxGeometry(10, 10, 10)
+        let mat = new THREE.MeshStandardMaterial({color: 0X66FF00})
+        let mesh = new THREE.Mesh(box, mat)
+        mesh.position.z = -120;
+        mesh.position.x = -(totalWidth / 2) + (totalWidth / nBoxes) * i;
+        mesh.rotation.y = i;
+        scene.add(mesh)
+      }
+
+      let params = {
+        focus: 10,
+        aspect: camera.aspect,
+        aperture: 0.0002,
+        maxblur: 1
+      }
+
+      let renderPass = new RenderPass(scene, camera);
+      let bokehPass = new BokehPass(scene, camera, params);
+      bokehPass.renderToScreen = true;
+
+      composer = new EffectComposer(renderer)
+      composer.addPass(renderPass)
+      composer.addPass(bokehPass)
+
       render()
     }
    
@@ -100,7 +137,9 @@
 
       oControls.update();
 
-      renderer.render(scene, camera)
+      composer.render();
+
+      // renderer.render(scene, camera)
       
       requestAnimationFrame(render)
     }
