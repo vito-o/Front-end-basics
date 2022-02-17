@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+
+
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    
+
+    /**
+      11.2.3 使用THREE.ShaderPass自定义效果
+
+      通过THREE.ShaderPass可以传递一个自定义的着色器，将大量额外效果添加到场景中。
+
+
+     **/
+
+    window.onload = init;
+
+    let renderer = null;
+    let camera = null;
+    let scene = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.autoClear = false;
+
+      let textureLoader = new THREE.TextureLoader();
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera);
+
+      createControl()
+
+      initLight();
+
+      let groundPlane = addLargeGroundPlane();
+      groundPlane.position.y = -8;
+     
+      let urls = [
+        './img/cubemap/flowers/right.png',
+        './img/cubemap/flowers/left.png',
+        './img/cubemap/flowers/top.png',
+        './img/cubemap/flowers/bottom.png',
+        './img/cubemap/flowers/front.png',
+        './img/cubemap/flowers/back.png',
+      ]
+      let cubeLoader = new THREE.CubeTextureLoader()
+      let sphereMaterial = new THREE.MeshStandardMaterial({
+        envMap: cubeLoader.load(urls),
+        color: 0xffffff,
+        metalness:1, 
+        roughness: 0.3,
+      })
+
+      sphereMaterial.normalMap = textureLoader.load('./img/engraved/Engraved_Metal_003_NORM.jpg')
+      sphereMaterial.aoMap = textureLoader.load('./img/engraved/Engraved_Metal_003_OCC.jpg')
+      sphereMaterial.shininessMap = textureLoader.load('./img/engraved/Engraved_Metal_003_ROUGH.jpg')
+
+      let sphere = new THREE.SphereGeometry(5, 50, 50);
+      let sphere1 = addGeometryWithMaterial(scene, sphere, sphereMaterial)
+      sphere1.position.x = 0;
+
+      let boxMaterial1 = new THREE.MeshStandardMaterial({color: 0x0066ff})
+      let m1 = new THREE.BoxGeometry(10, 10, 10)
+      let m1m = addGeometryWithMaterial(scene, m1, boxMaterial1);
+      m1m.position.z = -40;
+      m1m.position.x = -35;
+      m1m.rotation.y = 1;
+
+      render()
+    }
+   
+    function render() {
+
+      oControls.update();
+
+      renderer.render(scene, camera)
+      
+      requestAnimationFrame(render)
+    }
+
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+    function addLargeGroundPlane() {
+      let planeGeometry = new THREE.PlaneGeometry(10000, 10000);
+      let planeMaterial = new THREE.MeshPhongMaterial({color: 0xffffff})
+
+      let textureLoader = new THREE.TextureLoader();
+      planeMaterial.map = textureLoader.load('./img/general/floor-wood.jpg');
+      planeMaterial.map.wrapS = THREE.RepeatWraping;
+      planeMaterial.map.wrapT = THREE.RepeatWraping;
+      planeMaterial.map.repeat.set(80, 80)
+
+      let plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      plane.receiveShadow = true;
+
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 0;
+      plane.position.y = 0;
+      plane.position.z = 0;
+
+      scene.add(plane)
+
+      return plane;
+    }
+
+    function addGeometryWithMaterial(scene, geom, material) {
+      let mesh = new THREE.Mesh(geom, material)
+      mesh.castShadow = true;
+      scene.add(mesh)
+
+      return mesh;
+    }
+
+  </script>
+</body>
+</html>

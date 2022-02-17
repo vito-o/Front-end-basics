@@ -20,44 +20,42 @@
     
     import { EffectComposer } from './js/postprocessing/EffectComposer.js'
     import { RenderPass } from './js/postprocessing/RenderPass.js'
-    import { FilmPass } from './js/postprocessing/FilmPass.js'
+    // import { FilmPass } from './js/postprocessing/FilmPass.js'
     import { ShaderPass } from './js/postprocessing/ShaderPass.js'
-    import { DotScreenPass } from './js/postprocessing/DotScreenPass.js'
+    // import { DotScreenPass } from './js/postprocessing/DotScreenPass.js'
     import { TexturePass } from './js/postprocessing/TexturePass.js'
-    import { BloomPass } from './js/postprocessing/BloomPass.js'
+    // import { BloomPass } from './js/postprocessing/BloomPass.js'
+    import { GlitchPass } from './js/postprocessing/GlitchPass.js'
+    import { HalftonePass } from './js/postprocessing/HalftonePass.js'
+    import { OutlinePass } from './js/postprocessing/OutlinePass.js'
+    import { UnrealBloomPass } from './js/postprocessing/UnrealBloomPass.js'
 
-    import { RGBShiftShader } from './js/shaders/RGBShiftShader.js'
-    import { DotScreenShader } from './js/shaders/DotScreenShader.js'
+    // import { RGBShiftShader } from './js/shaders/RGBShiftShader.js'
+    // import { DotScreenShader } from './js/shaders/DotScreenShader.js'
     import { CopyShader } from './js/shaders/CopyShader.js'
 
     /**
-
-      11.2 后期处理通道
-
-      Three.js库提供了许多后期处理通道，这些通道可以直接添加到THREE.EffectComposer组合器
-      使用
-
-      THREE.BloomPass
-      该通道通过增强场景中明亮区域来模拟真实世界中的摄像机
-      THREE.DotScreenPass
-      该通道会将黑点图层应用到屏幕的原始图片上。
-      THREE.FilmPass
-      该通道通过扫描线和失真来模拟电视屏幕效果
-      THREE.GlitchPass
-      该通道会随机地在屏幕上显示电子脉冲
-      THREE.MaskPass
-      使用该通道可以再当前图片上添加掩码，后续的通道只会影响掩码区域
-      THREE.RenderPass
-      该通道会在当前场景和摄像机的基础上渲染一个新场景
-      THREE.ShaderPass
-      该通道接收自定义的着色器作为参数，以生成一个高级，自定义的后期处理通道
-      THREE.TexturePass
-      该通道将组合器的当前状态保存为纹理，然后将其作为参数传入到其他EffectComposer组合器中
-
-      11.2.1简单后期处理通道
-
-      
-
+      在这段代码里我们创建了THREE.EffectComposer对象，该对象输出默认场景，
+      这个组合器有两个通道：THREE.RenderPass(用来渲染场景) 和 THREE.ShaderPass（使用THREE.
+      CopyShader进行配置后，如果renderToScreen属性设置为'true',渲染结果会之直接输出到屏幕
+      上而不会有进一步的后期处理）。
+      我们可以使用THREE.RenderPass每次都将场景从零开始渲染，但是这样有点浪费，因为我们可以
+      重用第一个组合器的输出结果。要做到这点，我们可以创建一个THREE.TexturePass对象，并将其
+      传入到composer.renderTarget2中。这样就可以将renderScene变量作为其他组合器的输入，而
+      不需要从零开始渲染场景。
+      如果要使用THREE.TexturePass，你唯一需要做的就是将它作为组合器的第一个通道。接下来我们
+      就可以添加THREE.FilmPass，而且该通道接受如下四个参数：
+      在这个方法中，我们使用了uniforms属性，该属性可以直接和WebGL进行通信。在自定义着色器的
+      章节中将会进一步讲解uniforms属性。限制你只要知道可以通过它直接更改后期处理通道和着色器
+      配置，而且修改后的记过可以立即看到。
+      bloomPass
+      我们在这里多添加了一个通道-effectCopy。这个通道在普通输出中也曾用到过，它不会添加任何
+      特殊的效果，只是将最后一个通道的输出结果复制到屏幕上，之所以要添加这个通道，是因为
+      THREE.BloomPass通道不能直接将渲染结果输出到屏幕上
+      4.在同一个屏幕上显示多个渲染器的输出结果
+      首先需要注意的是我们将WebGLRenderer.autoClear属性设置为false，并显式调用clear()方法。
+      如果我们不这么做，那么每次调用组合器的render()方法时，之前的渲染场景将会被清除。通过这种
+      方法，我们只是在render循环开始的时候将所有的东西进行清除。
      **/
 
     window.onload = init;
@@ -68,7 +66,7 @@
 
     let camera = null;
     let oControls;
-    let earth, composer, effectFilmComposer, bloomComposer, dotScreenComposer;
+    let earth, composer, composer1, composer2, composer3;
 
     let clock = new THREE.Clock();
 
@@ -96,41 +94,38 @@
 
       let earthAndLight = addEarth()
 
-      //shaderPass(使用THREE.CopyShader进行配置后，如果renderToScreen设置为true，渲染
-      //结果会直接输出的屏幕上而不会有进一步的后期处理)
+      let renderPass = new RenderPass(scene, camera);
       var effectCopy = new ShaderPass(CopyShader);
-   
-      let renderPass = new RenderPass(scene, camera); //renderPass用来渲染场景
+      let glitchPass = new GlitchPass();
+      let halftonePass = new HalftonePass();
+      let outlinePass = new OutlinePass(new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, camera, [earth]);
+      let unrealBloomPass = new UnrealBloomPass();
+      glitchPass.renderToScreen = true;
+
+      
+
+
       composer = new EffectComposer(renderer);
       composer.addPass(renderPass);
-      composer.addPass(effectCopy);
+      composer.addPass(glitchPass);
+      //composer.addPass(effectCopy);
+      
+      composer1 = new EffectComposer(renderer);
+      composer1.addPass(renderPass);
+      composer1.addPass(halftonePass);
+      
+      composer2 = new EffectComposer(renderer);
+      composer2.addPass(renderPass);
+      composer2.addPass(outlinePass);
 
-      var renderedScene = new TexturePass(composer.renderTarget2); 
+      composer3 = new EffectComposer(renderer);
+      composer3.addPass(renderPass);
+      composer3.addPass(unrealBloomPass);
+      composer3.addPass(effectCopy);
 
-      let effectFilm = new FilmPass(0.8, 0.325, 256, false);
-      effectFilm.renderToScreen = true;
-
-      effectFilmComposer = new EffectComposer(renderer)
-      effectFilmComposer.addPass(renderedScene)
-      effectFilmComposer.addPass(effectFilm)
-
-      // reuse the rendered scene from the composer
-
-      let bloomPass = new BloomPass();
-      bloomComposer = new EffectComposer(renderer)
-      bloomComposer.addPass(renderedScene)
-      bloomComposer.addPass(bloomPass);
-      bloomComposer.addPass(effectCopy);
-
-      var dotScreenPass = new DotScreenPass();
-      dotScreenComposer = new EffectComposer(renderer)
-      dotScreenComposer.addPass(renderedScene)
-      dotScreenComposer.addPass(dotScreenPass);
-      dotScreenComposer.addPass(effectCopy);
 
       render()
     }
-
    
     var width = window.innerWidth;
     var height = window.innerHeight;
@@ -145,17 +140,17 @@
       renderer.autoClear = false;
       renderer.clear();
 
-      renderer.setViewport(0, 0, halfWidth, halfHeight);
-      effectFilmComposer.render();
-
-      renderer.setViewport(halfWidth, 0, halfWidth, halfHeight);
-      dotScreenComposer.render();
-
-      renderer.setViewport(0, halfHeight, halfWidth, halfHeight);
-      bloomComposer.render();
-
-      renderer.setViewport(halfWidth, halfHeight, halfWidth, halfHeight);
+      renderer.setViewport(0, halfHeight, halfWidth, halfHeight)
       composer.render()
+
+      renderer.setViewport(0, 0, halfWidth, halfHeight)
+      composer1.render()
+
+      renderer.setViewport(halfWidth, halfHeight, halfWidth, halfHeight)
+      composer2.render()
+
+      renderer.setViewport(halfWidth, 0, halfWidth, halfHeight)
+      composer3.render()
       
       requestAnimationFrame(render)
     }
