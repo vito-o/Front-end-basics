@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { ShaderPass } from './js/postprocessing/ShaderPass.js'
+    
+    import { CopyShader } from './js/shaders/CopyShader.js'
+
+    /**
+      第12章 在场景中添加物理效果和声音
+
+      介绍另一种用来扩展Three.js功能的库 -- Physijs。使用Physijs库可以在3D场景中添加物理效果。
+      所谓物理效果指对象会有重力效果，他们可以相互碰撞，施加力之后可以移动，还可以通过合页和滑块
+      在移动过程中对对象施加约束。这个库是基于另外一个著名的物理引擎ammo.js实现的。除了物理效果，
+      我们还会介绍如何使用Three.js在场景中添加空间声音。
+
+      在本章中我们将会介绍如下几个方面：
+
+      ·创建一个Physijs场景，在该场景中物体具有重力效果，而且还可以相互碰撞。
+      ·展示如何改变场景中物体的摩擦系数和复原性（弹性）。
+      ·介绍Physijs提供的各种图形，以及如何使用这些图形。
+      ·如何利用简单图形创建组合图形。
+      ·如何通过height field（高度场）模拟复杂图形。
+      ·通过添加点、合页、滑块、球销和自由度约束来限制对象的移动
+      ·在场景中添加声源，而且声音的大小和方向会由离摄像机的距离来决定。
+
+      12.1 创建基本的Three.js场景
+
+
+     **/
+
+    let CustomGrayScaleShader = {
+      uniforms: {
+        "tDiffuse": { type: 't', value: null },
+        "bitSize": { type: 'i', value: 4 },
+      },
+
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+
+      fragmentShader: `
+        uniform int bitSize;
+        uniform sampler2D tDiffuse;
+
+        varying vec2 vUv;
+
+        void main() {
+          vec4 texel = texture2D(tDiffuse, vUv);
+          float n = pow(float(bitSize), 2.0);
+          float newR = floor(texel.r * n) / n;
+          float newG = floor(texel.g * n) / n;
+          float newB = floor(texel.b * n) / n;
+
+          gl_FragColor = vec4(newR, newG, newB, texel.w);
+        }
+      `
+    }
+
+
+    window.onload = init;
+
+    let renderer = null;
+    let camera = null;
+    let scene = null;
+    let composer = null;
+    let sphere = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.autoClear = false;
+
+      let textureLoader = new THREE.TextureLoader();
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera);
+
+      createControl()
+
+      initLight();
+      
+      sphere = createMesh(new THREE.SphereGeometry(10, 40, 40));
+      scene.add(sphere);
+
+      let renderPass = new RenderPass(scene, camera);
+      let effectCopy = new ShaderPass(CopyShader)
+      effectCopy.renderToScreen = true;
+
+      let shaderPass = new ShaderPass(CustomGrayScaleShader)
+      
+ 
+      composer = new EffectComposer(renderer)
+      composer.addPass(renderPass)
+      composer.addPass(shaderPass)
+      composer.addPass(effectCopy)
+
+      render()
+    }
+   
+    function render() {
+      sphere.rotation.y += 0.001;
+
+      oControls.update();
+
+      composer.render();
+
+      requestAnimationFrame(render)
+    }
+
+    function createMesh(geom) {
+      let textureLoader = new THREE.TextureLoader();
+
+      let planetMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('./img/earth/Earth.png'),
+        normalMap: textureLoader.load('./img/earth/EarthNormal.png')
+      })
+
+      let mesh = new THREE.Mesh(geom, planetMaterial)
+
+      return mesh;
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0; padding:0;}
+  </style>
+</head>
+<body>
+  <canvas id="myCanvas" width="400" height="300"></canvas>
+  
+  <script type="module">
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    
+    import { EffectComposer } from './js/postprocessing/EffectComposer.js'
+    import { RenderPass } from './js/postprocessing/RenderPass.js'
+    import { ShaderPass } from './js/postprocessing/ShaderPass.js'
+    
+    import { CopyShader } from './js/shaders/CopyShader.js'
+
+    /**
+      11.3.2 自定义位着色器
+
+      通常来说颜色可以表示为24为数值，所以总共大约1600万种颜色。但是在早期的计算机中颜色一般
+      用8为或者16位的数值来表示。使用着色器，我们可以自动将24位的颜色输出位8位（或者任何你想
+      要的位数）。
+
+      uniforms : {
+        "tDiffuse" : { type: 't', value: null },
+        "bitSize": { type: 'i', value: 4 }
+      }
+
+      fragmentShader: `
+        uniform int bitSize;
+        uniform sampler2D tDiffuse;
+        varying vec2 vUv;
+
+        void main() {
+          vec4 texel = texture2D(tDiffuse, vUv);
+          float n = pow(float(bitSize), 2.0);
+          float newR = floor(texel.r * n) / n;
+          float newG = floor(texel.g * n) / n;
+          float newB = floor(texel.b * n) / n;
+
+          gl_FragColor = vec4(newR, newG, newB, texel.w);
+        }
+      `
+      如代码所示，我们定义了两个uniforms属性变量，这两个变量可以用来对着色器进行配置。
+      第一个uniforms属性变量用于传递当前屏幕的渲染结果
+      第二个uniforms属性变量是我们定义的整数类型（type:'i'）的变量，用于表示我们要渲染的颜色
+      深度。
+      
+      1.首先依照传入的像素位置值vUv，从纹理和tDiffuse中获取纹理texel
+      2.然后根据bitSize属性计算出可以得到的颜色数量，计算的方式是取2的bitSize次方：pow(float(bitSize), 2.0)
+      3.接下来计算纹理texel的新颜色值，计算方式是将原颜色的值乘以n，然后取整数floor(texel.r * n)
+      在除以n。
+      4.将上述的计算结果赋值给gl_FragColor(红、率、蓝的值以及透明度)，然后显示在屏幕上。
+
+
+      11.4 总结
+
+      在本章中我们介绍了各种不同的后期处理方法。如你所见，创建THREE.EffectComposer并将各种通道
+      串接起来是很简单。对于本章的内容需要记住以下几点：
+      ·不是所有通道的处理结果都会显示在屏幕上。如果想要将通道处理结果输出到屏幕上，你可以使用
+      THREE.ShaderPass和THREE.CopyShader。
+      ·效果组合器中通道的顺序是很重要的，因为后一个通道是在前一个通道处理结果的基础上进行处理的。
+      ·如果想要宠用THREE.EffectComposer特定实例的处理结果，你可以使用THREE.TexturePass
+      ·如果在THREE.EffectComposer中有多个THREE.RenderPass，需要确保clear属性被设置位false。
+      否则，你只会看到最后一个THREE.RenderPass的处理结果。
+      ·如果你只想在特定某个物体上应用某种效果，可以使用THREE.MaskPass来实现。当掩码使用完毕，
+      执行THREE.ClearMaskPass来清除该掩码。
+      ·Three.js除了提供很多标准通道之外，还有大量的标准着色器，你可以通过THREE.ShaderPass来使用
+      他们。
+      ·使用Three.js库中的标准方法来传教自定义着色器很简单的，只需要创建一个片段着色器即可。
+
+     **/
+
+    let CustomGrayScaleShader = {
+      uniforms: {
+        "tDiffuse": { type: 't', value: null },
+        "bitSize": { type: 'i', value: 4 },
+      },
+
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+
+      fragmentShader: `
+        uniform int bitSize;
+        uniform sampler2D tDiffuse;
+
+        varying vec2 vUv;
+
+        void main() {
+          vec4 texel = texture2D(tDiffuse, vUv);
+          float n = pow(float(bitSize), 2.0);
+          float newR = floor(texel.r * n) / n;
+          float newG = floor(texel.g * n) / n;
+          float newB = floor(texel.b * n) / n;
+
+          gl_FragColor = vec4(newR, newG, newB, texel.w);
+        }
+      `
+    }
+
+
+    window.onload = init;
+
+    let renderer = null;
+    let camera = null;
+    let scene = null;
+    let composer = null;
+    let sphere = null;
+
+    let oControls;
+
+    let clock = new THREE.Clock();
+
+    function init() {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        canvas: document.getElementById('myCanvas')
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.autoClear = false;
+
+      let textureLoader = new THREE.TextureLoader();
+
+      scene = new THREE.Scene()
+
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 1000);
+      camera.position.set(0, 20, 40)
+      camera.lookAt(new THREE.Vector3(0, 0, 0))
+      scene.add(camera);
+
+      createControl()
+
+      initLight();
+      
+      sphere = createMesh(new THREE.SphereGeometry(10, 40, 40));
+      scene.add(sphere);
+
+      let renderPass = new RenderPass(scene, camera);
+      let effectCopy = new ShaderPass(CopyShader)
+      effectCopy.renderToScreen = true;
+
+      let shaderPass = new ShaderPass(CustomGrayScaleShader)
+      
+ 
+      composer = new EffectComposer(renderer)
+      composer.addPass(renderPass)
+      composer.addPass(shaderPass)
+      composer.addPass(effectCopy)
+
+      render()
+    }
+   
+    function render() {
+      sphere.rotation.y += 0.001;
+
+      oControls.update();
+
+      composer.render();
+
+      requestAnimationFrame(render)
+    }
+
+    function createMesh(geom) {
+      let textureLoader = new THREE.TextureLoader();
+
+      let planetMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('./img/earth/Earth.png'),
+        normalMap: textureLoader.load('./img/earth/EarthNormal.png')
+      })
+
+      let mesh = new THREE.Mesh(geom, planetMaterial)
+
+      return mesh;
+    }
+
+    function createControl() {
+      oControls = new OrbitControls( camera, renderer.domElement );
+    }
+
+    function initLight() {
+      let spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(-10, 30, 40)
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      spotLight.shadow.camera.fov = 15;
+      spotLight.castShadow = true;
+      spotLight.decay = 2;
+      spotLight.penumbra = 0.05;
+      scene.add(spotLight)
+      
+      scene.add(new THREE.AmbientLight(0x343434))
+      // scene.add(new THREE.AmbientLight(0x444444));
+    }
+
+  </script>
+</body>
+</html>
