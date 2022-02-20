@@ -42,6 +42,9 @@
             camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
             camera.position.set(5, 2, 8);
 
+            var axes = new THREE.AxesHelper(5);
+            scene.add(axes);
+
             initControl();
 
             initLight();
@@ -92,6 +95,10 @@
             
             scene.add(new THREE.AmbientLight(0xffffff))
             // scene.add(new THREE.AmbientLight(0x444444));
+
+            const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+            directionalLight.position.set(0, 30, 30)
+            scene.add( directionalLight );
         }
 
         function initControl() {
