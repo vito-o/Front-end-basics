@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{margin: 0; padding:0;}
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="400" height="300"></canvas>
+
+    <script type="module">
+        import * as THREE from '../js/three.module.js';
+        import { OrbitControls } from '../js/OrbitControls.js';
+        const clock = new THREE.Clock();
+
+        window.onload = init;
+
+        import { FBXLoader } from '../js/FBXLoader.js'
+
+        class City {
+            constructor() {
+                this.fbxLoader = new FBXLoader();
+                this.group = new THREE.Group();
+
+                // 需要做城市效果的mesh 
+                const cityArray = ['CITY_UNTRIANGULATED'];
+                const floorArray = ['LANDMASS'];
+
+                this.loadFbx('../mx/shanghai.FBX').then(scene => {
+                    this.group.add(scene)
+
+                    //遍历场景找对应的对象
+                    scene.traverse(child => {
+                        if(cityArray.includes(child.name)) {
+                            //建筑
+                            this.setCityMaterial(child)
+                        }
+
+                        if(floorArray.includes(child.name)) {
+                            this.setFloor(child)
+                        }
+                    })
+                })
+            }
+
+            loadFbx(url) {
+                return new Promise(resolve => {
+                    this.fbxLoader.load(url, obj => resolve(obj))
+                })
+            }
+
+            //设置地板
+            setFloor(object) {
+                forMaterial(object.material, material => {
+                    material.color.setStyle('#040912')
+                })
+            }
+        }
+
+
+        let renderer, scene, camera, oControls, mixer;
+
+        function init() {
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+                canvas: document.getElementById('myCanvas')
+            });
+            renderer.setPixelRatio(window.devicePixelRatio, 2);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(new THREE.Color('#32373e'), 1)
+            
+            //const pmremGenerator = new THREE.PMREMGenerator( renderer );
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.set(1200, 700, 120);
+            scene.add(camera)
+
+            var axes = new THREE.AxesHelper(5);
+            scene.add(axes);
+
+            initControl();
+
+            initLight();
+
+            let city = new City()
+            scene.add(city.group)
+            
+            render()
+        }
+
+        function render() {
+            let delta = clock.getDelta()
+
+            oControls.update();
+
+            renderer.render(scene, camera)
+
+            requestAnimationFrame(render)
+        }
+
+        function initLight() {
+            scene.add(new THREE.AmbientLight(0xadadad))
+
+            const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5);
+            directionalLight.position.set(100, 100, 0)
+            scene.add(directionalLight);
+        }
+
+        function initControl() {
+            oControls = new OrbitControls(camera, renderer.domElement)
+            oControls.target.set(0, 0.5, 0);
+            oControls.update();
+            oControls.enablePan = false;
+            oControls.enableDamping = true; 
+        }
+
+        function forMaterial(materials, callback) {
+            if (!callback || !materials) return false;
+            if (Array.isArray(materials)) {
+                materials.forEach((mat) => {
+                    callback(mat);
+                });
+            } else {
+                callback(materials);
+            }
+        }
+    </script>
+
+</body>
+</html>
