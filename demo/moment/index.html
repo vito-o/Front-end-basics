@@ -9,6 +9,16 @@
 <body>
   <script src="./moment.js"></script>
   <script>
+    let now = new Date() 
+    console.log(
+      moment(now).format("YYYY/MM/DD HH:mm:ss")
+    )
+    console.log(
+      moment(now).add(5, 'days').format("YYYY/MM/DD HH:mm:ss")
+    )
+
+
+
     console.log('2021/11/3 13:24')
     let cd = getCountDown('2021/11/3 13:24', 720);
     console.log(cd)
