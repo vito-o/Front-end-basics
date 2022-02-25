@@ -21,6 +21,7 @@
         window.onload = init;
 
         let renderer, scene, camera, oControls, mixer;
+        let innerBottom, outerBottom, cylinderComplexOuter;
 
         function init() {
             renderer = new THREE.WebGLRenderer({
@@ -103,6 +104,7 @@
             //加载贴图
             let textureLoader = new THREE.TextureLoader();
 
+            //下底座(内圆)
             textureLoader.load('../img/person/circular/small.png', texture => {
               let geometry = new THREE.CircleGeometry(2.8, 256);
               let material = new THREE.MeshLambertMaterial({
@@ -112,23 +114,89 @@
                 side: THREE.DoubleSide
               })
 
-              let bottom = new THREE.Mesh(geometry, material);
-              bottom.position.set(0, -2.72, 0);
-              bottom.rotation.x = -Math.PI * 0.5;
-              scene.add(bottom)
+              innerBottom = new THREE.Mesh(geometry, material);
+              innerBottom.position.set(0, -2.72, 0);
+              innerBottom.rotation.x = -Math.PI * 0.5;
+              scene.add(innerBottom)
+            });
+
+            //下底座(外圆)
+            textureLoader.load('../img/person/circular/big.png', texture => {
+              let geometry = new THREE.CircleGeometry(4.4, 256);
+              let material = new THREE.MeshLambertMaterial({
+                map: texture,
+                depthTest: false,
+                transparent: true,
+                side: THREE.DoubleSide
+              })
+
+              outerBottom = new THREE.Mesh(geometry, material);
+              outerBottom.position.set(0, -2.62, 0);
+              outerBottom.rotation.x = -Math.PI * 0.5;
+              scene.add(outerBottom)
             })
 
+            //内层发光圆柱
+            textureLoader.load('../img/person/cylinder/simple.png', texture => {
+              texture.wrapS = THREE.RepeatWrapping;
+              texture.repeat.set(3, 1);
+
+              let geomInner = new THREE.CylinderGeometry(1.78, 1.78, 5, 256, 32, true);
+              let geomOuter = new THREE.CylinderGeometry(2.9, 2.9, 5.3, 256, 32, true);
+              let material = new THREE.MeshLambertMaterial({
+                map: texture,
+                depthTest: false,
+                transparent: true,
+                side: THREE.FrontSide
+              })
+              let cylinderInnerMesh = new THREE.Mesh(geomInner, material)
+              cylinderInnerMesh.position.set(0, -0.2, 0);
+              scene.add(cylinderInnerMesh)
+
+              let cylinderOuterMesh = new THREE.Mesh(geomOuter, material)
+              cylinderOuterMesh.position.set(0, 0.025, 0);
+              scene.add(cylinderOuterMesh)
+            })
+
+            // 场景外发光圆柱
+            textureLoader.load('../img/person/cylinder/complex.png', texture => {
+              texture.wrapS = THREE.RepeatWrapping;
+              texture.repeat.set(3, 1)
+              let geometry = new THREE.CylinderGeometry(2.9, 2.9, 5.3, 256, 32, true);
+              let material = new THREE.MeshLambertMaterial({
+                map: texture,
+                depthTest: false,
+                transparent: true,
+                side: THREE.FrontSide
+              })
+              cylinderComplexOuter = new THREE.Mesh(geometry, material);
+              cylinderComplexOuter.position.set(0, 0.025, 0);
+              scene.add(cylinderComplexOuter)
+            })
 
             render()
         }
 
+        let delta = 0;
+        function baseAnimate() {
+          let step = 0.2;
+
+          if(cylinderComplexOuter)
+            cylinderComplexOuter.rotation.y += step * delta;
+          if(innerBottom)
+            innerBottom.rotation.z += step * delta;
+          if(outerBottom)
+            outerBottom.rotation.z -= step * delta;
+        }
+
         function render() {
-            let delta = clock.getDelta()
+            delta = clock.getDelta()
+
+            baseAnimate()
 
             oControls.update();
 
             renderer.render(scene, camera)
-
 
             requestAnimationFrame(render)
         }
