@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{margin: 0; padding:0;}
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="400" height="300"></canvas>
+
+    <script type="module">
+        import * as THREE from '../js/three.module.js';
+        import { OrbitControls } from '../js/OrbitControls.js';
+        import { GLTFLoader } from '../js/GLTFLoader.js'
+        const clock = new THREE.Clock();
+
+        window.onload = init;
+
+        let renderer, scene, camera, oControls, mixer;
+
+        function init() {
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                canvas: document.getElementById('myCanvas')
+            });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            
+            //const pmremGenerator = new THREE.PMREMGenerator( renderer );
+
+            scene = new THREE.Scene();
+            //scene.environment = pmremGenerator.fromScene( new RoomEnvironment(), 0.04 ).texture;
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
+            camera.position.set(0, -1, 10);
+            camera.lookAt(scene.position)
+
+            var axes = new THREE.AxesHelper(5);
+            scene.add(axes);
+
+            initControl();
+
+            initLight();
+
+            let materialOrgan = new THREE.MeshPhongMaterial({
+              color: 0x74a3f2,
+              side: THREE.FrontSide
+            })
+
+            let customMaterial = new THREE.ShaderMaterial({
+              uniforms: {
+                s: { type: 'f', value: -1.0 },
+                b: { type: 'f', value: 1.0 },
+                p: { type: 'f', value: 2.0 },
+                glowColor: { type: 'c', value: new THREE.Color(0xB7C4FF) }
+              },
+              vertexShader: `
+                varying vec3 vNormal; 
+                varying vec3 vPositionNormal; 
+                void main() { 
+                    vNormal = normalize( normalMatrix * normal ); 
+                    vPositionNormal = normalize(( modelViewMatrix * vec4(position, 1.0) ).xyz); 
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); 
+                }
+              `,
+              fragmentShader: `
+                uniform vec3 glowColor; 
+                uniform float b; 
+                uniform float p; 
+                uniform float s; 
+                varying vec3 vNormal; 
+                varying vec3 vPositionNormal; 
+                void main() { 
+                    float a = pow( b + s * abs(dot(vNormal, vPositionNormal)), p ); 
+                    gl_FragColor = vec4( glowColor, a ); 
+                }
+              `,
+              blending: THREE.AdditiveBlending,
+              opacity: 0.1,
+              transparent: true,
+              side: THREE.FrontSide
+            })
+            
+            let loader = new GLTFLoader();
+            loader.load('../mx/person.glb', gltf => {
+              let model = gltf.scene;
+
+              let childs = gltf.scene.children;
+
+              childs[6].name = 'body'
+              childs[6].material = customMaterial
+
+              model.position.set(0, -2.66, 0);
+              model.scale.set(3.6, 3.6, 3.6);
+              scene.add(model)
+            });
+
+            //加载贴图
+            let textureLoader = new THREE.TextureLoader();
+
+            textureLoader.load('../img/person/circular/small.png', texture => {
+              let geometry = new THREE.CircleGeometry(2.8, 256);
+              let material = new THREE.MeshLambertMaterial({
+                map: texture,
+                depthTest: false,
+                transparent: true,
+                side: THREE.DoubleSide
+              })
+
+              let bottom = new THREE.Mesh(geometry, material);
+              bottom.position.set(0, -2.72, 0);
+              bottom.rotation.x = -Math.PI * 0.5;
+              scene.add(bottom)
+            })
+
+
+            render()
+        }
+
+        function render() {
+            let delta = clock.getDelta()
+
+            oControls.update();
+
+            renderer.render(scene, camera)
+
+
+            requestAnimationFrame(render)
+        }
+
+        function initLight() {
+            
+          scene.add(new THREE.AmbientLight(0xffffff))
+
+          let point = new THREE.PointLight(0xffffff);
+          point.position.set(10, 1, 0);
+          scene.add(point)
+        }
+
+        function initControl() {
+            oControls = new OrbitControls(camera, renderer.domElement)
+            oControls.target.set(0, 0.5, 0);
+            oControls.update();
+            oControls.enablePan = false;
+            oControls.enableDamping = true; 
+        }
+    </script>
+
+</body>
+</html>

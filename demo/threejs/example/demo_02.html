@@ -271,8 +271,6 @@
                             gl_FragColor = vec4(distColor, dstOpacity * uStartTime);
                         `;
                         shader.fragmentShader = shader.fragmentShader.replace("void main() {", fragment)
-                        console.log(shader.fragmentShader)
-                        debugger
                         shader.fragmentShader = shader.fragmentShader.replace("gl_FragColor = vec4( outgoingLight, diffuseColor.a );", fragmentColor);
 
 
