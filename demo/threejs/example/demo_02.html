@@ -15,16 +15,33 @@
     <script type="module">
         import * as THREE from '../js/three.module.js';
         import { OrbitControls } from '../js/OrbitControls.js';
+        import Radar from './radar.js'
+
         const clock = new THREE.Clock();
 
         window.onload = init;
 
         import { FBXLoader } from '../js/FBXLoader.js'
 
+        const radarData = [{
+            position: {
+                x: 666,
+                y: 22,
+                z: 0
+            },
+            radius: 150,
+            color: '#ff0062',
+            opacity: 0.5,
+            speed: 2
+        }];
+
         class City {
             constructor() {
                 this.fbxLoader = new FBXLoader();
                 this.group = new THREE.Group();
+                this.effectGroup = new THREE.Group();
+
+                this.group.add(this.effectGroup)
 
                 this.time = {
                     value: 0
@@ -32,7 +49,7 @@
                 this.StartTime = {
                     value: 0
                 };
-                this.isStart = true; // 是否启动
+               
 
                 // 需要做城市效果的mesh 
                 const cityArray = ['CITY_UNTRIANGULATED'];
@@ -52,7 +69,9 @@
                             this.setFloor(child)
                         }
                     })
-                })
+                });
+
+                this.init();
             }
 
             loadFbx(url) {
@@ -66,6 +85,18 @@
                 forMaterial(object.material, material => {
                     material.color.setStyle('#040912')
                 })
+            }
+
+            init() {
+                setTimeout(() => {
+                    this.isStart = true; // 是否启动
+
+                    radarData.forEach(data => {
+                        let mesh = Radar(data);
+                        mesh.material.uniforms.time = this.time;
+                        this.effectGroup.add(mesh)
+                    })
+                }, 1000)
             }
 
             animate = (dt) => {

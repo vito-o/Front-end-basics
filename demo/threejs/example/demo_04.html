@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{margin: 0; padding:0;}
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="400" height="300"></canvas>
+    <script src="../js/tween.umd.js"></script>
+    <script type="module">
+        /*
+        Three.js的3D粒子动画
+
+
+
+         */
+
+
+        import * as THREE from '../js/three.module.js';
+        import { OrbitControls } from '../js/OrbitControls.js';
+        import { FBXLoader } from '../js/FBXLoader.js';
+
+        const clock = new THREE.Clock();
+
+        window.onload = init;
+
+        let renderer, scene, camera, oControls, mixer;
+
+        function init() {
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('myCanvas')
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(100, 0, 400);
+
+            initControl();
+
+           const vertices = []
+
+           for(let i = 0; i < 30000; i++) {
+               const x = THREE.MathUtils.randFloatSpread(2000);
+               const y = THREE.MathUtils.randFloatSpread(2000);
+               const z = THREE.MathUtils.randFloatSpread(2000);
+               vertices.push(x, y, z)
+           }
+
+           const geometry = new THREE.BufferGeometry();
+           geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+
+           const star = new THREE.TextureLoader().load('../img/star.png')
+           const material = new THREE.PointsMaterial({size: 10, map: star});
+
+           const points = new THREE.Points(geometry, material)
+           scene.add(points)
+
+           let loader = new FBXLoader();
+           loader.load('../mx/fu.fbx', object => {
+
+            const startPositions = geometry.getAttribute('position');
+            const destPosition = object.children[0].geometry.getAttribute('position');
+            console.log(destPosition)
+            for(let i = 0; i < startPositions.count; i++) {
+                const tween = new TWEEN.Tween(startPositions.array)
+                const cur = i % destPosition.count;
+                tween.to({
+                    [i * 3]: destPosition.array[cur * 3],
+                    [i * 3 + 1]: destPosition.array[cur * 3 + 1],
+                    [i * 3 + 2]: destPosition.array[cur * 3 + 2],
+                }, 3000 * Math.random())
+                tween.easing(TWEEN.Easing.Exponential.In)
+                tween.delay(3000);
+
+                tween.start()
+
+                tween.onUpdate(() => {
+                    startPositions.needsUpdate = true;
+                })
+            }
+
+           })
+
+           
+
+
+           render()
+        }
+
+        function render() {
+            TWEEN.update()
+            // let delta = clock.getDelta()
+            scene.rotation.y += 0.001;
+
+            oControls.update();
+
+            renderer.render(scene, camera)
+
+
+            requestAnimationFrame(render)
+        }
+
+        function initLight() {
+            // let spotLight = new THREE.SpotLight(0xffffff);
+            // spotLight.position.set(-10, 30, 40)
+            // spotLight.shadow.mapSize.width = 2048;
+            // spotLight.shadow.mapSize.height = 2048;
+            // spotLight.shadow.camera.fov = 15;
+            // spotLight.castShadow = true;
+            // spotLight.decay = 2;
+            // spotLight.penumbra = 0.05;
+            // scene.add(spotLight)
+            
+            scene.add(new THREE.AmbientLight(0xffffff))
+            // scene.add(new THREE.AmbientLight(0x444444));
+
+            const directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+            directionalLight.position.set(0, 30, 30)
+            scene.add( directionalLight );
+        }
+
+        function initControl() {
+            oControls = new OrbitControls(camera, renderer.domElement)
+            oControls.target.set(0, 0.5, 0);
+            oControls.update();
+            oControls.enablePan = false;
+            oControls.enableDamping = true; 
+        }
+    </script>
+
+</body>
+</html>
