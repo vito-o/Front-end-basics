@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>捕捉绘制</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 捕捉绘制
+     * 
+     * 捕捉绘制是指绘制时鼠标进入到一个已经绘制好的点的一定容差范围内，鼠标会被吸附到那个已经绘制
+     * 好的点的位置。
+     * Leaflet本身不支持点线面的捕捉绘制，需要引入leaflet-geoman插件
+     * 
+     * 
+     **/ 
+    let selectId, selectLayerName;
+    var url="https://iserver.supermap.io/iserver/services/map-china400/rest/maps/China";
+
+    let map = L.map('map', {
+      center: [33, 114],
+      zoom: 4
+    })
+
+    L.supermap.tiledMapLayer(url).addTo(map)
+
+    let options = {
+      position: 'topleft',
+      drawMarker: true,
+      drawPolygon: true,
+      drawPolyline: true,
+      editPolygon: true,
+      deleteLayer: true
+    }
+    map.pm.addControls(options)
+    
+  </script>
+</body>
+</html>

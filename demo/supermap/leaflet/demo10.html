@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面积量算</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 面积量算
+     * 
+     * 
+     **/ 
+    let selectId, selectLayerName;
+    var url="https://iserver.supermap.io/iserver/services/map-world/rest/maps/World";
+
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [34, 108],
+      zoom: 3
+    })
+
+    L.supermap.tiledMapLayer(url).addTo(map)
+    let resultLayer = L.featureGroup().addTo(map)
+    measureDistance()
+
+    function measureDistance() {
+      var polygon = L.polygon([[24, 100], [40, 100], [40, 120], [24, 120], [24, 100]], {color: "red"});
+
+
+      resultLayer.addLayer(polygon)
+
+      let measureParam = new SuperMap.MeasureParameters(polygon)
+      L.supermap
+        .measureService(url)
+        .measureArea(measureParam, function(serviceResult) {
+          console.log(serviceResult)
+        })
+    }
+
+  </script>
+</body>
+</html>

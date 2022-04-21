@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperMap iServer 发布的地图</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    var url ="https://iserver.supermap.io/iserver/services/map-world/rest/maps/World";
+    //初始化地图信息
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [0, 0],
+      maxZoom: 18,
+      zoom: 1
+    })
+
+    //添加图层
+    L.supermap.tiledMapLayer(url, {noWrap: true}).addTo(map);
+
+  </script>
+</body>
+</html>

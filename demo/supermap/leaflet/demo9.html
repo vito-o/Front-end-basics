@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面积和距离量算</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 面积和距离量算
+     * 
+     * 距离量算实现步骤
+     * 1.构建服务参数类
+     * 量算服务参数类提供服务请求所需的信息，该类提供量算的查询参数封装，提供了参数有geometry和util
+     * 用来定义量算的几何对象和单位。
+     * 
+     * 2.构建服务类并发送请求
+     * 量算服务类负责向服务端发送请求，并将查询结果返回。使用服务类需要指定服务URL等服务参数，向
+     * 服务端发送请求信息，然后通过监听服务请求完成事件，从事件服务数据类中获取最终的结果Result对象，
+     * 按照用户需求进行处理。
+     * 
+     **/ 
+    let selectId, selectLayerName;
+    var url="https://iserver.supermap.io/iserver/services/map-world/rest/maps/World";
+
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [34, 108],
+      zoom: 3
+    })
+
+    L.supermap.tiledMapLayer(url).addTo(map)
+    let resultLayer = L.featureGroup().addTo(map)
+    measureDistance()
+
+    function measureDistance() {
+      var polyLine = L.polyline([[25, 102], [40, 116]], {color: "red"});
+      let marker1 = L.marker([25, 102])
+      let marker2 = L.marker([40, 116])
+
+      resultLayer.addLayer(polyLine)
+      resultLayer.addLayer(marker1)
+      resultLayer.addLayer(marker2)
+
+      let measureParam = new SuperMap.MeasureParameters(polyLine)
+      L.supermap
+        .measureService(url)
+        .measureDistance(measureParam, function(serviceResult) {
+          console.log(serviceResult)
+          let content = '距离：' + serviceResult.result.distance + '米'
+          marker1.bindPopup(content).openPopup(marker1.getLatLng())
+        })
+    }
+
+  </script>
+</body>
+</html>

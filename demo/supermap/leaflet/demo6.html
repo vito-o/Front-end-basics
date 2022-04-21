@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>使用矢量瓦片</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 矢量瓦片是将矢量数据通过不同的描述文件来组织和定义，在客户端实时解析数据并完成绘制。
+     * SuperMap iServer提供了矢量瓦片图层，
+     * 
+     **/ 
+    let selectId, selectLayerName;
+    var url="https://iserver.supermap.io/iserver/services/map-china400/rest/maps/China";
+
+    let map = L.map('map', {
+      center: [39.89, 116.43],
+      maxZoom: 15,
+      zoom: 1
+    })
+
+    let vectorLayer = L.supermap.tiledVectorLayer(url, {
+      cacheEnabled: true,
+      returnAttributes: true,
+      attribution: "Tile Data©SuperMap iServer with©SuperMap iClient"
+    }).addTo(map);
+
+    vectorLayer.on('click', function(evt) {
+      clearHighlight()
+      //点击矢量瓦片图层获取id 和 layerName
+      selectId = evt.layer.properties.id
+      selectLayerName = evt.layer.layerName
+
+      let selectStyle = {
+        fillColor: '#800026',
+        fillOpacity: 0.5,
+        stroke: true, fill: true, color: 'red', opacity: 1, weight: 2
+      }
+
+      vectorLayer.setFeatureStyle(selectId, selectLayerName, selectStyle)
+    })
+
+    function clearHighlight() {
+      if(selectId && selectLayerName) {
+        vectorLayer.resetFeatureStyle(selectId, selectLayerName)
+      }
+      selectId = null;
+      selectLayerName = null;
+    }
+
+    
+  </script>
+</body>
+</html>

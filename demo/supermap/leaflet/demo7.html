@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>绘制符号与图形</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 
+     **/ 
+    let selectId, selectLayerName;
+    var url="https://iserver.supermap.io/iserver/services/map-china400/rest/maps/China";
+
+    let map = L.map('map', {
+      center: [33, 114],
+      zoom: 4
+    })
+
+    L.supermap.tiledMapLayer(url).addTo(map)
+
+    let editableLayers = new L.FeatureGroup()
+    map.addLayer(editableLayers)
+
+    var options = {
+        position: 'topleft',
+        draw: {
+            polyline: {},
+            polygon: {},
+            circle: {},
+            rectangle: {},
+            marker: {},
+            remove: {}
+        },
+        edit: {
+            featureGroup: editableLayers,
+            remove: true
+        }
+    };
+
+    let drawControl = new L.Control.Draw(options)
+    map.addControl(drawControl)
+    handleMapEvent(drawControl._container, map);
+    map.on(L.Draw.Event.CREATED, function(e) {
+      let type = e.layerType,
+          layer = e.layer;
+      if(type === 'marker') {
+        layer.bindPopup('A popup!');
+      }
+      editableLayers.addLayer(layer)
+    })
+
+    function handleMapEvent(div, map) {
+      if(!div || !map) {
+        return;
+      }
+
+      div.addEventListener('mouseover', function() {
+        map.scrollWheelZoom.disable()
+        map.doubleClickZoom.disable()
+      })
+      div.addEventListener('mouseout', function() {
+        map.scrollWheelZoom.enable()
+        map.doubleClickZoom.enable()
+      })
+    }
+    
+  </script>
+</body>
+</html>

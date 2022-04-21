@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图层切换控件</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * SuperMap iClient for Leafet通过投影类L.Proj.CRS可以方便的定义地图投影，支持设置范围、
+     * 原点、比例尺数组以及分辨率数组。
+     * 
+     **/ 
+    var url ="https://iserver.supermap.io";
+    var China = L.supermap.tiledMapLayer(url + '/iserver/services/map-china400/rest/maps/China',{noWrap:true});
+    var ChinaDark = L.supermap.tiledMapLayer(url + '/iserver/services/map-china400/rest/maps/ChinaDark', {noWrap:true});
+
+    //初始化地图信息
+    let map = L.map('map', {
+      center: [0, 0],
+      maxZoom: 18,
+      zoom: 2,
+      zoomControl: false,
+      // 设置图层数组
+      layers: [China]
+    })
+
+    var baseMaps = { 
+      "China": China, 
+      "ChinaDark": ChinaDark 
+    };
+    L.control.layers(baseMaps).addTo(map);
+  </script>
+</body>
+</html>
