@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>矩形范围查询</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 地物查询
+     * 
+     * SuperMap iClient for Leafet支持的地物查询功能主要包括：
+     * 1.指定ID查询
+     * 2.指定SQL查询
+     * 3.矩形范围查询
+     * 4.任意几何范围查询
+     * 5.距离查询
+     * 6.缓冲区查询
+     * 7.查询栅格信息
+     * 8.查询字段信息
+     * 
+     * 矩形范围查询
+     * 
+     * 矩形范围查询，即在指定数据集集合中查找符合矩形范围内的矢量要素，并在客户端中展示出来
+     * 
+     **/ 
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-world/rest/maps/World";
+    let url = host + "/iserver/services/data-world/rest/data";
+    let resultLayer;
+
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [20, -10],
+      maxZoom: 18,
+      zoom: 2
+    })
+
+    L.supermap.tiledMapLayer(baseUrl).addTo(map)
+
+
+    
+
+
+    query()
+
+    function query() {
+      // 指定矩形范围查询处理
+      var polygon = L.polygon([[-20, 20], [0, 20], [0, 40], [-20, 40], [-20, 20]], {color: 'red'});
+      polygon.addTo(map)
+      let boundsParam = new SuperMap.GetFeaturesByBoundsParameters({
+          datasetNames: ["World:Capitals"],
+          bounds: polygon.getBounds()
+      });
+
+      // 创建指定ID查询实例
+      L.supermap
+        .featureService(url)
+        .getFeaturesByBounds(boundsParam, function(serviceResult) {
+          resultLayer = L.geoJSON(serviceResult.result.features, {
+            onEachFeature: function(feature, layer) {
+              layer.bindPopup('ID:' + feature.properties.SMID)
+            }
+          })
+          resultLayer.addTo(map)
+      })
+    }
+
+  </script>
+</body>
+</html>

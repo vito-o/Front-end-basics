@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>动态分段</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+  <script type="text/javascript" src="./res/js/resources.js"></script>
+</head>
+
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 空间分析
+     * 
+     * 空间分析（Spatial Analysis）是基于地图对象的位置和形态特征的空间数据分析技术，其目的
+     * 在于提取和传输空间信息。
+     * 
+     * 缓冲区分析
+     * 泰森多边形
+     * 叠加分析
+     * 表面分析
+     * 动态分段
+     * 点定里程
+     * 里程定点
+     * 里程定线
+     * 插值分析
+     * 栅格代数运算
+     * 地形计算
+     * 核密度分析
+     * 
+     * 动态分段技术是在创痛GIS数据模型得基础上，利用线性参考技术，实现属性数据在地图上动态地显示、分析及输出等，
+     * 是GIS空间分析中得一种重要手段。他不是在线要素沿线上某种属性发生变化得地方进行“物理分段”，而实在传统得GIS
+     * 数据模型得基础上利用线性参考系统得思想及算法，将属性得沿线变化存储未独立得属性表字段；在分析、显示、查询
+     * 和输出时直接依照事件属性表中得距离值对线性要素进行动态逻辑分段，使用相对位置描述发生在线上得事件，比传统gis
+     * 要素更容易定位。
+     * 
+     * 
+     * 
+     **/
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-changchun/rest/maps/长春市区图";
+    let dataUrl = host + "/iserver/services/spatialanalyst-changchun/restjsr/spatialanalyst";
+    let generateSpatialDataService, generateSpatialDataParameters, resultLayer
+
+    let map = L.map('map', {
+        crs: L.CRS.NonEarthCRS({
+          bounds: L.bounds([48.4, -7668.25], [8958.85, -55.58]),
+          origin: L.point(48.4, -55.58)
+        }),
+        center: [-3861.911472192499, 4700],
+        maxZoom: 18,
+        zoom: 2
+    });
+
+    L.supermap.tiledMapLayer(baseUrl, {noWrap: true}).addTo(map).once("load", function () {
+      generateSpatialDataAnalystProcess();
+    });
+
+
+    function generateSpatialDataAnalystProcess() {
+
+      generateSpatialDataService = L.supermap.spatialAnalystService(dataUrl);
+
+      //配置动态分段Parameters
+      generateSpatialDataParameters = new SuperMap.GenerateSpatialDataParameters({
+          routeTable: "RouteDT_road@Changchun",
+          routeIDField: "RouteID",
+          eventTable: "LinearEventTabDT@Changchun",
+          eventRouteIDField: "RouteID",
+          measureField: "",
+          measureStartField: "LineMeasureFrom",
+          measureEndField: "LineMeasureTo",
+          measureOffsetField: "",
+          errorInfoField: "",
+          dataReturnOption: new SuperMap.DataReturnOption({
+              expectCount: 1000,
+              dataset: "GenerateSpatialData_Result@Changchun",
+              deleteExistResultDataset: true,
+              dataReturnMode: SuperMap.DataReturnMode.DATASET_ONLY
+          })
+      });
+
+      generateSpatialDataService.generateSpatialData(generateSpatialDataParameters, function () {
+        //用专题图展示分析结果
+        showAnalysisResult_ThemeGridUnique();
+      });
+      
+    }
+
+    function showAnalysisResult_ThemeGridUnique() {
+      //创建专题图服务实例
+      themeService = L.supermap.themeService(dataUrl);
+
+      //配置专题样式
+      var style1, style2, style3;
+      style1 = new SuperMap.ServerStyle({
+          fillForeColor: new SuperMap.ServerColor(242, 48, 48),
+          lineColor: new SuperMap.ServerColor(242, 48, 48),
+          lineWidth: 1
+      });
+      style2 = new SuperMap.ServerStyle({
+          fillForeColor: new SuperMap.ServerColor(255, 159, 25),
+          lineColor: new SuperMap.ServerColor(255, 159, 25),
+          lineWidth: 1
+      });
+      style3 = new SuperMap.ServerStyle({
+          fillForeColor: new SuperMap.ServerColor(91, 195, 69),
+          lineColor: new SuperMap.ServerColor(91, 195, 69),
+          lineWidth: 1
+      });
+
+      //配置专题项
+      var themeUniqueIteme1, themeUniqueIteme2, themeUniqueIteme3;
+      themeUniqueIteme1 = new SuperMap.ThemeUniqueItem({
+          unique: "拥挤",
+          style: style1
+      });
+      themeUniqueIteme2 = new SuperMap.ThemeUniqueItem({
+          unique: "缓行",
+          style: style2
+      });
+      themeUniqueIteme3 = new SuperMap.ThemeUniqueItem({
+          unique: "畅通",
+          style: style3
+      });
+      var themeUnique = new SuperMap.ThemeUnique({
+          uniqueExpression: "TrafficStatus",
+          defaultStyle: new SuperMap.ServerStyle({
+              fillForeColor: new SuperMap.ServerColor(48, 89, 14),
+              lineColor: new SuperMap.ServerColor(48, 89, 14)
+          }),
+          items: [themeUniqueIteme1, themeUniqueIteme2, themeUniqueIteme3]
+      });
+
+      themeParameters = new SuperMap.ThemeParameters({
+          themes: [themeUnique],
+          datasetNames: ["GenerateSpatialData_Result"],
+          dataSourceNames: ["Changchun"]
+      });
+
+      themeService.getThemeInfo(themeParameters, function (serviceResult1) {
+          var result = serviceResult1.result;
+          if (result && result.newResourceID) {
+              themeLayer = L.supermap.tiledMapLayer(baseUrl, {
+                  noWrap: true,
+                  cacheEnabled: false,
+                  transparent: true,
+                  layersID: result.newResourceID
+                  //opacity: 0.8
+              }).addTo(map);
+          }
+      });
+    }
+
+  </script>
+</body>
+
+</html>

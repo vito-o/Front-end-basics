@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专题图</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 服务端专题图
+     * 
+     * 服务端专题图是由服务起进行专题图制作，即客户端向服务器发送专题图参数，如数据集名称、风格等
+     * 服务起根据参数制作专题图，返回给客户端，由客户端进行展示
+     * 
+     **/ 
+    let host = 'https://iserver.supermap.io'
+    let url = host + "/iserver/services/map-world/rest/maps/World";
+    let themeService, themeDotDensity, themeParameters, themeLayer
+
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [0, 0],
+      maxZoom: 18,
+      zoom: 2
+    })
+
+    L.supermap.tiledMapLayer(url, {noWrap: true, transparent: true}).addTo(map)
+
+    createTheme()
+
+    function createTheme() {
+      themeService = L.supermap.themeService(url)
+      themeDotDensity = new SuperMap.ThemeDotDensity({
+        dotExpression: "Pop_1994",
+        value: 5000000,
+        style: new SuperMap.ServerStyle({
+            markerSize: 3,
+            markerSymbolID: 12
+        })
+      })
+      themeParameters = new SuperMap.ThemeParameters({
+        themes: [themeDotDensity],
+        datasetNames: ["Countries"],
+        dataSourceNames: ["World"]
+      });
+      themeService.getThemeInfo(themeParameters, function(serviceResult) {
+        let result = serviceResult.result;
+        if(result && result.newResourceID) {
+          themeLayer = L.supermap.tiledMapLayer(url, {
+            noWrap: true,
+            cacheEnabled: false,
+            transparent: true,
+            layersID: result.newResourceID
+          }).addTo(map)
+        }
+      })
+    }
+
+  </script>
+</body>
+</html>

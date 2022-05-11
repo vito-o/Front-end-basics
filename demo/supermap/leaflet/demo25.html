@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>叠加分析</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+  <script type="text/javascript" src="./res/js/resources.js"></script>
+</head>
+
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 空间分析
+     * 
+     * 空间分析（Spatial Analysis）是基于地图对象的位置和形态特征的空间数据分析技术，其目的
+     * 在于提取和传输空间信息。
+     * 
+     * 缓冲区分析
+     * 泰森多边形
+     * 叠加分析
+     * 表面分析
+     * 动态分段
+     * 点定里程
+     * 里程定点
+     * 里程定线
+     * 插值分析
+     * 栅格代数运算
+     * 地形计算
+     * 核密度分析
+     * 
+     * 叠加分析
+     * 
+     * 叠加分析是GIS中的一项非常重要的空间分析功能，是指在统一空间参考系统下，通过对两个数据集进行的
+     * 一系列几何运算，产生新数据集的过程，其目的是通过对空间数据的加工或分析，提取用户需要的新的空间
+     * 几何信息。同时，通过叠加分析，还将对数据的各种属性信息进行处理。
+     * 
+     **/
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-jingjin/rest/maps/京津地区人口分布图_专题图";
+    let dataUrl = host + "/iserver/services/spatialanalyst-sample/restjsr/spatialanalyst";
+    let thiessenAnalystService, dsThiessenAnalystParameters, resultLayer
+
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [40.05, 116.85],
+      maxZoom: 18,
+      zoom: 6
+    })
+
+    L.supermap.tiledMapLayer(baseUrl, {transparent: true, cacheEnabled: false, noWrap: true}).addTo(map);
+
+    overlayAnalystProcess();
+
+    function overlayAnalystProcess() {
+      overlayAnalystService = L.supermap.spatialAnalystService(dataUrl);
+      datasetOverlayAnalystParameters = new SuperMap.DatasetOverlayAnalystParameters({
+          sourceDataset: "BaseMap_R@Jingjin",
+          operateDataset: "Neighbor_R@Jingjin",
+          tolerance: 0,
+          operation: SuperMap.OverlayOperationType.UNION
+      });
+      overlayAnalystService.overlayAnalysis(datasetOverlayAnalystParameters, function (serviceResult) {
+          var result = serviceResult.result;
+          resultLayer = L.geoJSON(result.recordset.features).addTo(map);
+      });
+    }
+
+  </script>
+</body>
+
+</html>

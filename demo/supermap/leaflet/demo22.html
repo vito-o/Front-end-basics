@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专题图</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+  <script type="text/javascript" src="./res/js/resources.js"></script>
+</head>
+
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 客户端专题图
+     * 
+     * 客户端专题图是根据数据的形状和属性数据，在客户端进行相应计算，通过要素同层或任意图层赋予不同的
+     * 绘制风格并在客户端进行专题图的展示
+     * 
+     * 单值专题图
+     * 分段专题图
+     * 符号等级专题图
+     * 标签专题图
+     * 图标专题图
+     * 
+     * 
+     **/
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-jingjin/rest/maps/京津地区地图";
+    let dataUrl = host + "/iserver/services/data-jingjin/rest/data";
+    let themeLayer, infoView
+
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [40, 117],
+      maxZoom: 18,
+      zoom: 7
+    })
+
+    L.supermap.tiledMapLayer(baseUrl).addTo(map)
+
+    createTheme()
+
+    function createTheme() {
+      // 定义 Unique 单值专题图层
+      themeLayer = L.supermap.rangeThemeLayer("ThemeLayer", {
+        // 开启 hover 高亮效果
+        isHoverAble: true,
+        opacity: 0.8,
+        alwaysMapCRS: true
+      }).addTo(map);
+
+      // 图层基础样式
+      themeLayer.style = new SuperMap.ThemeStyle({
+        shadowBlur: 16,
+        shadowColor: "#000000",
+        fillColor: "#FFFFFF"
+      });
+
+      // hover 高亮样式
+      themeLayer.highlightStyle = new SuperMap.ThemeStyle({
+        stroke: true,
+        strokeWidth: 4,
+        strokeColor: 'blue',
+        fillColor: "#00EEEE",
+        fillOpacity: 0.8
+      });
+
+      // 用于单值专题图的属性字段名称
+      themeLayer.themeField = "POP_DENSITY99";
+      // 风格数组，设定值对应的样式
+      themeLayer.styleGroups = [{
+          start: 0,
+          end: 0.02,
+          style: {
+              color: '#FDE2CA'
+          }
+      }, {
+          start: 0.02,
+          end: 0.04,
+          style: {
+              color: '#FACE9C'
+          }
+      }, {
+          start: 0.04,
+          end: 0.06,
+          style: {
+              color: '#F09C42'
+          }
+      }, {
+          start: 0.06,
+          end: 0.1,
+          style: {
+              color: '#D0770B'
+          }
+      }, {
+          start: 0.1,
+          end: 0.2,
+          style: {
+              color: '#945305'
+          }
+      }];
+
+      //专题图层 mousemove 事件
+      //themeLayer.on("mousemove", highLightLayer);
+        
+      addThemeLayer();
+    }
+
+    function addThemeLayer() {
+      var getFeatureBySQLParams = new SuperMap.GetFeaturesBySQLParameters({
+        queryParameter: new SuperMap.FilterParameter({
+            name: "Jingjin",
+            attributeFilter: "SMID > -1"
+        }),
+        toIndex: 500,
+        datasetNames: ["Jingjin:BaseMap_R"]
+      });
+
+      L.supermap
+        .featureService(dataUrl)
+        .getFeaturesBySQL(getFeatureBySQLParams, processComplete, SuperMap.DataFormat.ISERVER);
+    }
+
+    //数据预处理并添加到专题图图层
+    function processComplete(serviceResult) {
+      var result = serviceResult.result;
+      if (result && result.features) {
+        themeLayer.addFeatures(result.features);
+      }
+    }
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "albpm-zb",
+  "version": "1.0.4",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "predev": "rollup --config rollup.config.js",
+    "dev": "node ./index.js",
+    "postdev": "npm version patch -m 'description'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

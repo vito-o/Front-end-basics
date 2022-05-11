@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>空间分析</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+  <script type="text/javascript" src="./res/js/resources.js"></script>
+</head>
+
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 空间分析
+     * 
+     * 空间分析（Spatial Analysis）是基于地图对象的位置和形态特征的空间数据分析技术，其目的
+     * 在于提取和传输空间信息。
+     * 
+     * 缓冲区分析
+     * 泰森多边形
+     * 叠加分析
+     * 表面分析
+     * 动态分段
+     * 点定里程
+     * 里程定点
+     * 里程定线
+     * 插值分析
+     * 栅格代数运算
+     * 地形计算
+     * 核密度分析
+     * 
+     * 泰森多边形
+     * 
+     * 泰森所表现是荷兰气候学家提出的一种根据离散分布的气象站的降雨量来计算平居降雨量的方法，即将所有
+     * 相邻气象站连成三角行，做这些三角形各边的垂直平分线，于是每个气象站周围的若干垂直平分线遍成了一个多边形
+     * 用这个多边形内所包含的一个唯一气象站的降雨量强度来标识这个多边形区域内的降雨量强度，并称这个多边形
+     * 未泰森多边形。泰森多边形又称为Voronoi图，是由一组连接俩临点直线的垂直平分线组成的连续多边形组成的。
+     * 
+     **/
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-changchun/rest/maps/长春市区图";
+    let dataUrl = host + "/iserver/services/spatialanalyst-changchun/restjsr/spatialanalyst";
+    let thiessenAnalystService, dsThiessenAnalystParameters, resultLayer
+
+    let map = L.map('map', {
+      crs: L.CRS.NonEarthCRS({
+          bounds: L.bounds([48.4, -7668.25], [8958.85, -55.58]),
+          origin: L.point(48.4, -55.58)
+      }),
+      center: [-3375, 5105],
+      maxZoom: 18,
+      zoom: 1
+    })
+
+    L.supermap.tiledMapLayer(baseUrl, {noWrap: true}).addTo(map);
+
+    thiessenAnalystProcess();
+
+    function thiessenAnalystProcess() {
+      thiessenAnalystService = L.supermap.spatialAnalystService(dataUrl);
+      dsThiessenAnalystParameters = new SuperMap.DatasetThiessenAnalystParameters({
+          dataset: "Factory@Changchun"
+      });
+      thiessenAnalystService.thiessenAnalysis(dsThiessenAnalystParameters, function (serviceResult) {
+          resultLayer = L.geoJSON(serviceResult.result.regions, {weight: 2}).addTo(map);
+      });
+
+    }
+
+  </script>
+</body>
+
+</html>

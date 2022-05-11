@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地物编辑</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+</head>
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 地物查询
+     * 
+     * SuperMap iClient for Leafet支持的地物查询功能主要包括：
+     * 1.指定ID查询
+     * 2.指定SQL查询
+     * 3.矩形范围查询
+     * 4.任意几何范围查询
+     * 5.距离查询
+     * 6.缓冲区查询
+     * 7.查询栅格信息
+     * 8.查询字段信息
+     * 
+     * 地物编辑
+     * 
+     * 地物编辑，包括对点、线、区等几何图形进行编辑设置，如线形、颜色、线宽等。
+     * 如果没有自定义设置几何图形的样式，交互控件会用默认样式进行绘制
+     * 
+     * 
+     **/ 
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-world/rest/maps/World";
+    let url = host + "/iserver/services/data-world/rest/data";
+    let resultLayer, marker, featureGroup, featureService;
+
+    let map = L.map('map', {
+      crs: L.CRS.EPSG4326,
+      center: [0, 0],
+      maxZoom: 18,
+      zoom: 2
+    })
+
+    L.supermap.tiledMapLayer(baseUrl).addTo(map)
+
+    featureGroup = L.featureGroup().addTo(map)
+    featureService = L.supermap.featureService(url)
+
+    initFeature()
+    initEditView()
+    
+    function initFeature() {
+      var polygon = L.polygon([[20, 118], [20, 120], [50, 120], [50, -120], [20, 118]]);
+      let getFeatureParams = new SuperMap.GetFeaturesByGeometryParameters({
+        toIndex: -1,
+        datasetNames: ["World:Capitals"],
+        geometry: polygon
+      })
+
+      featureService.getFeaturesByGeometry(getFeatureParams, function(serviceResult){
+        resultLayer = L.geoJSON(serviceResult.result.features).addTo(map)
+        resultLayer.on('mousemove', function(e) {
+          e.layer.bindPopup("首都：" + e.layer.feature.properties.CAPITAL).openPopup()
+        })
+        resultLayer.on('mouseout', function(e) {
+          e.layer.closePopup()
+        })
+      })
+    }
+
+    function initEditView() {
+      let infoView = L.control({position: 'topright'})
+      infoView.onAdd = function() {
+        let me = this;
+        me._div = L.DomUtil.create('div', 'panel panel-primary');
+        me._div.innerHTML = "<div class='panel-heading'>" +
+                "<h5 class='panel-title text-center'>" + '编辑' + "</h5></div><div class='panel-body content'>" +
+                "<input type='button' class='btn btn-default' value='" + '添加地点' + "' onclick='addMarker()'/>&nbsp;" +
+                "<input type='button' class='btn btn-default' value='" + '撤销地点' + "' onclick='revocationMarker()'/>&nbsp;" +
+                "<input type='button' class='btn btn-default' value='" + '提交' + "' onclick='commit()'/>&nbsp;" +
+                "<input type='button' class='btn btn-default' value='" + '清除' + "' onclick='clearLayer()'/></div>";
+        handleMapEvent(me._div, me._map)
+        return me._div;
+      }
+      infoView.addTo(map)
+    }
+
+    function handleMapEvent(div, map) {
+      if (!div || !map) {
+        return;
+      }
+      div.addEventListener('mouseover', function () {
+          map.dragging.disable();
+          map.scrollWheelZoom.disable();
+          map.doubleClickZoom.disable();
+      });
+      div.addEventListener('mouseout', function () {
+          map.dragging.enable();
+          map.scrollWheelZoom.enable();
+          map.doubleClickZoom.enable();
+      });
+    }
+
+    function addMarker() {
+      var xmax = 120, xmin = 100, ymax = 50, ymin = 20, point = [];
+
+      if (!featureGroup.hasLayer(marker)){
+        point = [
+            Math.floor(Math.random() * (ymax - ymin + 1) + ymin),
+            Math.floor(Math.random() * (xmax - xmin + 1) + xmin)
+        ];
+        marker = L.circleMarker(point, {color: "red"});
+        featureGroup.addLayer(marker);
+        featureGroup.addTo(map);
+        map.flyTo(point, 5);
+      } else {
+        featureGroup.clearLayers();
+        point = [
+            Math.floor(Math.random() * (ymax - ymin + 1) + ymin),
+            Math.floor(Math.random() * (xmax - xmin + 1) + xmin)
+        ];
+        marker = L.circleMarker(point, {color: "red"});
+        featureGroup.addLayer(marker);
+        featureGroup.addTo(map);
+        map.flyTo(point, 5);
+      }
+    }
+
+    function revocationMarker() {
+      if (featureGroup.hasLayer(marker)) {
+          featureGroup.clearLayers();
+          marker = null;
+      }
+    }
+
+  </script>
+</body>
+</html>

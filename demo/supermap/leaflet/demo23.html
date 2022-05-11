@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>空间分析</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+  <script type="text/javascript" src="./res/js/resources.js"></script>
+</head>
+
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 空间分析
+     * 
+     * 空间分析（Spatial Analysis）是基于地图对象的位置和形态特征的空间数据分析技术，其目的
+     * 在于提取和传输空间信息。
+     * 
+     * 缓冲区分析
+     * 泰森多边形
+     * 叠加分析
+     * 表面分析
+     * 动态分段
+     * 点定里程
+     * 里程定点
+     * 里程定线
+     * 插值分析
+     * 栅格代数运算
+     * 地形计算
+     * 核密度分析
+     * 
+     * 缓冲区分析(buffer)是根据指定的距离在点、线和多边形实体周围自动建立一定宽度的区域范围的分析方法。
+     * 例如，在环境治理时，常在污染的河流周围划出一定宽度的范围标识收到污染的区域；又如在飞机场，常根据
+     * 附件居民的健康需要在周围划分处一定范围的区域作为非居住区等
+     * 
+     * 下面以长春数据为例，对“团结路”进行半径未10米的源头缓冲分析
+     * 
+     **/
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-changchun/rest/maps/长春市区图";
+    let dataUrl = host + "/iserver/services/spatialanalyst-changchun/restjsr/spatialanalyst";
+    let roadLine, dsBufferAnalystService, dsBufferAnalystParameters, resultLayer
+
+    let map = L.map('map', {
+      crs: L.CRS.NonEarthCRS({
+          bounds: L.bounds([48.4, -7668.25], [8958.85, -55.58]),
+          origin: L.point(48.4, -55.58)
+      }),
+      center: [-3375, 5105],
+      maxZoom: 18,
+      zoom: 7
+    })
+
+    L.supermap.tiledMapLayer(baseUrl).addTo(map).once("load", function () {
+      bufferAnalystProcess();
+    });
+
+    function bufferAnalystProcess() {
+      roadLine = L.polyline([
+        [-3337.3849141502124, 4933.319287022352],
+        [-3349.3316322355736, 4960.9674060199022],
+        [-3358.8890067038628, 5006.0235999418364],
+        [-3378.0037556404409, 5075.3145648369318],
+        [-3376.9669111768926, 5305.19551436013]
+      ]).addTo(map);
+      dsBufferAnalystService = L.supermap.spatialAnalystService(dataUrl);
+      dsBufferAnalystParameters = new SuperMap.DatasetBufferAnalystParameters({
+        dataset: "RoadLine2@Changchun",
+        filterQueryParameter: new SuperMap.FilterParameter({
+            attributeFilter: "NAME='团结路'"
+        }),
+        bufferSetting: new SuperMap.BufferSetting({
+          endType: SuperMap.BufferEndType.ROUND,
+          leftDistance: {value: 10},
+          rightDistance: {value: 10},
+          semicircleLineSegment: 10
+        })
+      });
+      dsBufferAnalystService.bufferAnalysis(dsBufferAnalystParameters, function (serviceResult) {
+        var result = serviceResult.result;
+        resultLayer = L.geoJSON(result.recordset.features, {color: "red"}).addTo(map);
+      })
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提取等值线/面</title>
+  <link rel="stylesheet" href="./res/css/leaflet.css" />
+  <link rel="stylesheet" href="./res/css/iclient-leaflet.css" />
+  <link rel="stylesheet" href="./res/css/leaflet.draw.css" />
+  <link rel="stylesheet" href="./res/css/leaflet-geoman.css" />
+  <script type="text/javascript" src="./res/js/leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/iclient-leaflet.js"></script>
+  <script type="text/javascript" src="./res/js/Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./res/js/leaflet-geoman.min.js"></script>
+  <script type="text/javascript" src="./res/js/resources.js"></script>
+</head>
+
+<body>
+  <div id="map" style="position:absolute;left:0px;right:0px;width:800px;height:500px;"></div>
+
+  <script>
+    /**
+     * 空间分析
+     * 
+     * 空间分析（Spatial Analysis）是基于地图对象的位置和形态特征的空间数据分析技术，其目的
+     * 在于提取和传输空间信息。
+     * 
+     * 缓冲区分析
+     * 泰森多边形
+     * 叠加分析
+     * 表面分析
+     * 动态分段
+     * 点定里程
+     * 里程定点
+     * 里程定线
+     * 插值分析
+     * 栅格代数运算
+     * 地形计算
+     * 核密度分析
+     * 
+     * 提取等值线/面
+     * 
+     * 提取等值线和提取等值面。等值线是将相邻的、具有相同值得点连起来得线，常用得等值线又等高线、等深线、等压线
+     * 等降水量线等。等值线得分布反映了栅格表面上得变化，等值线分布越幂集得地方，标识栅格表面得变化比较剧烈。等值线
+     * 分布比较稀疏得地方，表示上个表面值得变化较小。通过提取等值线，可以找到高程、温度、降水量等值相同得位置，同时
+     * 等值线得分布状况也可以反映出变化得陡峭和平缓区。等值面是由相邻得等值线封闭组成得面，等值面得变化可以很直观得
+     * 表示出相邻等值线之间得变化，注入高程、降水、温度或大气压力等。通过提取等值面可以获得高程、降水、温度等值相同
+     * 得地方。
+     * 
+     **/
+    let host = 'https://iserver.supermap.io'
+    let baseUrl = host + "/iserver/services/map-temperature/rest/maps/全国温度变化图";
+    let dataUrl = host + "/iserver/services/spatialanalyst-sample/restjsr/spatialanalyst";
+    let region, resultLayer, surfaceAnalystService, surfaceAnalystParameters
+
+    let map = L.map('map', {
+        crs: L.CRS.NonEarthCRS({
+          bounds: L.bounds([-2640403.63, 1873792.1], [3247669.39, 5921501.4]),
+          origin: L.point(-2640403.63, 5921501.4)
+        }),
+        center: [3580330, 531762],
+        maxZoom: 18,
+        zoom: 2
+    });
+
+    L.supermap.tiledMapLayer(baseUrl, {noWrap: true}).addTo(map).once("load", function () {
+        surfaceAnalystProcess();
+    });
+
+
+    function surfaceAnalystProcess() {
+      region = L.polygon([
+          [4010338, 0],
+          [4010338, 1063524],
+          [3150322, 1063524],
+          [3150322, 0]
+      ]);
+
+      surfaceAnalystParameters = new SuperMap.DatasetSurfaceAnalystParameters({
+        extractParameter: new SuperMap.SurfaceAnalystParametersSetting({
+          datumValue: 0,
+          interval: 1,
+          resampleTolerance: 0,
+          smoothMethod: SuperMap.SmoothMethod.BSPLINE,
+          smoothness: 1,
+          clipRegion: region
+        }),
+        dataset: "SamplesP@Interpolation",
+        resolution: 9000,
+        zValueFieldName: "AVG_TMP"
+      })
+
+      surfaceAnalystService = L.supermap.spatialAnalystService(dataUrl);
+      surfaceAnalystService.surfaceAnalysis(surfaceAnalystParameters, function (serviceResult) {
+        var result = serviceResult.result;
+        if (result && result.recordset && result.recordset.features) {
+          resultLayer = L.geoJSON(result.recordset.features, {weight: 3}).addTo(map);
+        } else {
+          alert(serviceResult.error.errorMsg);
+        }
+      })
+      
+    }
+
+  </script>
+</body>
+
+</html>
