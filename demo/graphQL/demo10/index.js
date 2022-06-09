@@ -2,6 +2,8 @@ const { ApolloServer, gql } = require('apollo-server-express')
 const { ApolloServerPluginDrainHttpServer } = require('apollo-server-core')
 const express = require('express')
 const http = require('http') 
+const { User } = require('./models/')
+const { Console } = require('console')
 
 async function startApolloServer(typeDefs, resolvers) {
   const app = express()
@@ -29,69 +31,33 @@ async function startApolloServer(typeDefs, resolvers) {
 
 }
 
-const libraries = [
-  {
-    branch: 'downtown'
-  },
-  {
-    branch: 'riverside'
-  },
-];
-
-const books = [
-  {
-    title: 'The Awakening',
-    author: 'Kate Chopin',
-    branch: 'riverside'
-  },
-  {
-    title: 'City of Glass',
-    author: 'Paul Auster',
-    branch: 'downtown'
-  },
-];
-
-
 const typeDefs = gql`
-  type Library {
-    branch: String!
-    books: [Book!]
-  }
-
-  type Book {
-    title: String!
-    author: Author!
-  }
-
-  type Author {
+  type User {
+    _id: String!
     name: String!
+    age: Int
   }
 
   type Query {
-    libraries: [Library]
+    users: [User!]
+    user(id:String!): User
   }
 `
 
 const resolvers = {
   Query: {
-    libraries() {
-      return libraries
+    // async users() {
+    //   const users = await User.find()
+    //   return users
+    // },
+    async user(parent, { id }) {
+      User.findById(id, function(err, product){
+        console.log(product)
+      })
+      // return user;
     }
   },
-  Library: {
-    books(parent, args, context) {
-      console.log(context, 'context')
-      return books.filter(book => book.branch == parent.branch)
-    }
-  },
-  Book: {
-    author(parent) {
-      return {
-        name: parent.author
-      }
-    }
-  }
+  
 }
-
 
 startApolloServer(typeDefs, resolvers)
