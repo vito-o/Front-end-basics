@@ -1,0 +1,13 @@
+@font-face {
+  font-family: 'fzzyjt';
+  src: url(./FZZYJW.TTF) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+.hello{
+  font-family: 'fzzyjt';
+  color: red;
+  background: url('./icon.png') no-repeat center;
+}

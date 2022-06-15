@@ -11,6 +11,7 @@ module.exports = {
   entry: {
     main: './src/main.js'
   },
+  devtool: false,
   cache: {
     type: 'memory'
   },
