@@ -1,5 +1,8 @@
-const { getOptions } = require('loader-utils')
+module.exports = function loader(source) {
 
-module.exports =  function loader(source) {
-    console.log(123123)
+    const options = this.getOptions();
+    
+    source = source.replace(/\[name\]/g, options.name)
+
+    return `module.exports = ${JSON.stringify(source)}`;
 }

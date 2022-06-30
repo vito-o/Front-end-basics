@@ -15,7 +15,7 @@
   \**********************/
 /***/ (() => {
 
-eval("class run {\r\n  constructor(aa) {\r\n    console.log(this, aa)\r\n  }\r\n}\r\n\r\nconsole.log('123~~')\r\n\r\nnew run(123);\r\n\r\nconsole.log('123~~')\r\n\r\n// console.log(add(4, 8))\nconsole.log(0.019510700352119326)\n\n//# sourceURL=webpack://webpack-demo-01/./src/index.js?");
+eval("console.log('hello ...')\n\n//# sourceURL=webpack://t/./src/index.js?");
 
 /***/ })
 

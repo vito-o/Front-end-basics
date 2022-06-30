@@ -1,6 +1,6 @@
 const path = require('path')
 const webpack = require('webpack')
-const memoryfs = require('memory-fs')
+const { createFsFromVolume, Volume } = require('memfs');
 
 module.exports = (fixture, options = {}) => {
     const compiler = webpack({
@@ -16,20 +16,20 @@ module.exports = (fixture, options = {}) => {
                     test: /\.txt$/,
                     use: {
                         loader: path.resolve(__dirname, '../src/loader.js'),
-                        options: {
-                            name: 'Alice'
-                        }
+                        options
                     }
                 }
             ]
         }
     });
 
-    compiler.outputFileSystem = new memoryfs();
+    compiler.outputFileSystem = createFsFromVolume(new Volume());
+    compiler.outputFileSystem.join = path.join.bind(path);
 
     return new Promise((resolve, reject) => {
         compiler.run((err, stats) => {
             if(err) reject(err)
+            if (stats.hasErrors()) reject(stats.toJson().errors);
 
             resolve(stats);
         })
