@@ -1,5 +1,5 @@
 const path = require('path');
-const Demo = require('./plugin/demo-4.js')
+const Demo = require('./plugin/demo-5.js')
 
 module.exports = {
   mode: 'development',
@@ -11,7 +11,9 @@ module.exports = {
     path:path.resolve(__dirname, "dist"),
   },
   plugins: [
-    new Demo({ options: true })
+    new Demo({
+      outputFile: 'my-assets.md'
+    })
   ]
 
 }
