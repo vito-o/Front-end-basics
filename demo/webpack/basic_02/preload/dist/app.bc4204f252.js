@@ -1,0 +1,1 @@
+(self.webpackChunkcode_split=self.webpackChunkcode_split||[]).push([[143],{672:(e,n,l)=>{console.log("hellow "),document.getElementById("btn").onclick=function(){l.e(600).then(l.bind(l,52)).then((({sum:e})=>{console.log(e(11,12,13,14,9,5,6,7))}))}}},e=>{e(e.s=672)}]);

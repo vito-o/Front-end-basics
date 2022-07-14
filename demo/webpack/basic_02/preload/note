@@ -1,0 +1,22 @@
+Preload / Prefetch
+
+Preload : 告诉浏览器立即加载资源
+Prefetch : 告诉浏览器在空闲时才开始加载资源
+
+他们共同点：
+· 都只会加载资源，并不执行
+· 都有缓存
+
+他们区别：
+·Preload加载优先级高， Prefetch加载优先级低。
+·Preload只能加载当前页面需要使用的资源
+·Prefetch 可以加载当前页面资源，也可以加载下一个页面需要使用的资源
+
+总结
+·当前页面优先级高的资源用Preload加载
+·下一个页面需要使用的资源用Prefetch加载。
+
+他们的问题：兼容性较差
+···Preload相对于Prefetch兼容性好一点
+
+<link href="static/js/math.chunk.js" rel="preload" as="script"/>

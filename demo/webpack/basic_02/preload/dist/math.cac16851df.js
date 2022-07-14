@@ -1,0 +1,1 @@
+"use strict"; (self.webpackChunkcode_split = self.webpackChunkcode_split || []).push([[600], { 52: (e, u, c) => { function n(...e) { return e.reduce((function (e, u) { return e + u }), 0) } c.r(u), c.d(u, { sum: () => n }) } }]);
