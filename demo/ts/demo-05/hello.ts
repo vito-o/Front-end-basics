@@ -87,9 +87,121 @@ function changeDirection(direction: Direction) {
 
 changeDirection(Direction.Down) */
 
-enum Direction { 
+/* enum Direction { 
   Up = 'UP', 
   Down = 'DOWN', 
   Left = 'LEFT',  
   Right = 'RIGHT'
+} */
+
+// let p = { x: 1, y: 2 }
+// function formatPoint(point: {x: number; y: number }) {}
+// formatPoint(p)
+
+// function formatPoint(point: typeof p) {}
+
+
+/* class Person {
+  age: number
+  gender: string
 }
+
+let p = new Person();
+p.age; */
+
+/* class Animal {
+  move() {
+    console.log('move')
+  }
+}
+
+class Dog extends Animal {
+  bark() {
+    console.log('汪！')
+  }
+}
+
+const dog = new Dog();
+dog.bark()
+dog.move() */
+
+interface Singable {
+  sing(): void
+}
+
+/* class Person implements Singable {
+  sing(): void {
+    console.log('你是。。。')
+  }
+}
+
+let p = new Person()
+p.sing() */
+/* 
+class Animal {
+  protected move() {
+    console.log('move alone')
+  }
+}
+
+class Dog extends Animal {
+  bark() {
+    console.log('xxx')
+    this.move()
+  }
+}
+
+class SmallDog extends Animal {
+  selfMove() {
+    this.move()
+  }
+}
+
+let dog = new Dog();
+dog.bark() */
+// dog.move()
+
+/* 
+class Animal {
+  private move() {
+    console.log('move alone')
+  }
+}
+
+class Dog extends Animal {
+  bark() {
+    // this.move()
+  }
+} */
+
+/* class Person {
+  readonly age: number = 18;
+  constructor(age: number) {
+    this.age = age;
+  }
+} */
+
+// let arr = ['a', 'b', 'c']
+
+// arr.forEach(item => {})
+// arr.forEach((item, index) => {})
+// arr.forEach((item, index, array) => {})
+
+// class Point {
+//   x: number = 0; 
+//   y: number = 0;
+//   constructor() {}
+// }
+// class Point2D {
+//   x: number = 0; 
+//   y: number = 0;
+//   constructor() {}
+// }
+// let p: Point = new Point2D();
+// p.x = 1;
+// p.y = 2;
+// console.log(p)
+
+class Point { x: number; y: number; }
+class Point3D { x: number; y: number; z: number }
+const p: Point = new Point3D();
