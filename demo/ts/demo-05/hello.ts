@@ -420,7 +420,7 @@ type PartialProps = Partial<Props>;
 
 let p: PartialProps = {} */
 
-interface Props  {
+/* interface Props  {
   id: string
   children: number []
 }
@@ -432,4 +432,65 @@ let p1: ReadonlyProps = {
 }
 
 // p1.id = 111
-// assign 分配
+// assign 分配 */
+
+
+/* interface Props {
+  id: string
+  title: string
+  children: number[]
+}
+type PickProps = Pick<Props, 'id' | 'title'>
+
+let obj: PickProps = {
+  id: '123',
+  title: 'ha'
+} */
+
+/* type RecordObj = Record<'a' | 'b' | 'c', string[]>
+
+let obj: RecordObj = {
+  a: ['1'],
+  b: ['1'],
+  c: ['1'],
+} */
+
+/* const arr = [1, 3, 2]
+arr.forEach
+
+interface MyArray<T> {
+  [index: number]: T
+}
+let arr1: MyArray<number> = [1, 2, 3]
+ */
+
+/* type PropKeys = 'x' | 'y' | 'z'
+type Type2 = { [K in PropKeys] : number }
+
+let o : PropKeys = 'x'
+let o1: Type2 = {
+  'x': 123,
+  'y': 123,
+  'z': 123,
+} */
+/* 
+type Props = { 
+  a: number 
+  b: string
+  c: boolean
+}
+
+type Type3 = { [K in keyof Props]: number }
+  
+type TypeA = Props['a'] */
+
+type Props = {
+  a: number
+  b: string
+  c: boolean
+}
+
+type TypeA = Props['a'|'b']
+let num1: TypeA = 'a'
+type TypeB = Props[keyof Props]
+let num2: TypeB = 'a'

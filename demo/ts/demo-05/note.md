@@ -533,3 +533,161 @@ interface Props {
 type PartialProps = Partial<Props>
 
 解释:构造出来的新类型PartialProps结构和Props相同,但所有属性都变为可选的.
+
+
+interface Props  {
+  id: string
+  children: number []
+}
+
+type ReadonlyProps = Readonly<Props>
+let p1: ReadonlyProps = {
+  id: '123',
+  children: [111, 11]
+}
+
+// p1.id = 111
+// assign 分配
+
+
+泛型工具类型 - Pick<Type, keys> 从Type中选择一组属性来构造新类型
+interface Props {
+  id: string
+  title: string
+  children: number[]
+}
+
+type PickProps = Pick<Props, 'id' | 'title'>
+
+解释：
+  1.Pick工具类型有两个类型变量：1 表示选择谁的属性  2 表示选择几个属性
+  2.其中第二个类型变量，如果只选择一个则只传入改属性名即可
+  3.第二个类型变量传入的属性只能是第一个类型变量中存在的属性
+  4.构造传来的新类型PickProps，只有id和title两个属性类型
+
+泛型工具类型 - Record<Key, Type>构造一个对象类型，属性键为Keys, 属性类型为Type
+type RecordObj = Record<'a' | 'b' | 'c', string[]>
+let obj: RecordObj = {
+  a: ['1'],
+  b: ['2'],
+  c: ['3'],
+}
+
+解释：
+  1.Record工具类型有两个类型变量：1表示对象有哪些属性 2表示对象属性的类型
+  2.构建的新对象类型RecordObj表示：这个对象有三个属性分别为a/b/c,属性值的类型都是string[]
+
+4.5 索引签名类型
+
+绝大多数情况下，我们都可以在使用对象前就确定对象的结构，并为对象添加准确的类型。
+使用场景：当无法确定对象中有那些属性（或者对象中可以初夏任意多个属性），此时，就用到
+索引签名类型了。
+
+interface AnyObject {
+  [key: string]: number 
+}
+
+let obj: AnyObject = {
+  a: 1,
+  b: 2
+}
+
+解释：
+  1.使用[key:string]来约束该接口中允许出现的属性名称。表示只要是string类型的属性名称，都可以出现在对象中。
+  2.这样，对象obj中就可以出现任意多个属性（比如，a、b）
+  3.key只是一个占位符，可以换成任意合法的变量名称
+  4.隐藏的前置知识：JS中对象({} )的键是string类型
+  
+
+映射类型
+
+映射类型：基于旧类型创建新类型（对象类型），减少重复、提升开发效率
+比如，类型PropKeys有x/y/z，另一个类型Type1中也有x/y/z，并且type1中x/y/z的类型相同：
+type PropKeys = 'x' | 'y' | 'z'
+type Type1 = { x: number; y: number; z: number }
+
+这样书写没错，但x/y/z重复书写了两次。像这种情况，就可以使用映射类型来进行简化。
+type PropKeys = 'x' | 'y' | 'z'
+type Type2 = { [Key in PropKeys]: number }
+
+解释：
+  1.映射类型是基于索引羡慕类型的，所以，该语法类似于索引前面类型，也使用了[]
+  2.Key in PropKeys表示Key可以是PropKeys联合类型中的任意一个，类似于forin(let k in obj)
+  3.使用映射类型创建的新对象类型Type2和类型Type1结构完全相同
+  4.注意：映射类型只能在类型别名中使用，不能再接口中使用
+
+type Props = { 
+  a: number 
+  b: string
+  c: boolean
+}
+
+type Type3 = { [key in keyof Props]: number }
+
+解释：
+  1.首先，先执行keyof Props获取到对象类型Props中所有键的联合类型即，'a'|'b'|'c'
+  2.然后，Key in ...就表示Key可以是Props中所有的键名称中的任意一个。
+
+映射类型
+
+实际上，前面讲到的泛型工具类型（比如，Partial<T>）都是基于映射类型实现的。
+比如，Partial<T>的实现：
+type Partial<T> = {
+  [P in keyof T]? T[P]
+}
+type Props = { 
+  a: number
+  b: string
+  c: boolean
+}
+type PartialProps = Partial<Props>
+解释：
+  1.keyof T即keyof Props表示获取Props的所有键，也就是：'a'|'b'|'c'
+  2.在[]后面添加？(问号),表示将这些属性变为可选的，以此来实现Partial的功能
+  3.冒号某某的T[P]表示获取T中的每个键对应的类型。比如，如果是'ab'则类型是number
+  如果是'b'则类型是string
+  4.最终，新类型PartialProps和旧类型Props结构完全相同，只有让所有类型变为可选。
+
+索引查询（访问）类型  T[P]
+作用：用来查询属性的类型。
+type Props = {
+  a: number
+  b: string
+  c: boolean
+}
+
+type TypeA = Props['a']
+解释：Props['a']表示查询类型Props中属性'a'对应的类型number。所以，TypeA的类型
+为number.
+注意：[]中的属性必须存在于被查询类型中，否则就会报错
+
+索引查询类型的其他使用方式：同时查询多个索引的类型
+type Props = {
+  a: number
+  b: string
+  c: boolean
+}
+type TypeA = Props['a'|'b']
+解释：使用字符串字面量的联合类型，获取属性a和b对应的类型，结果为string|number
+type TypeA = Props[keyof Props]
+解释：使用keyof操作符获取Props中所有键对应的类型，结果为：string|number|boolean
+
+
+5.2 类型声明文件的使用说明
+
+·创建自己的类型声明文件：
+1 项目内共享类型
+2 为已有js文件提供类型声明
+
+1.项目内共享类型：如果多个.ts文件中都用到了同一个类型，此时可以创建.d.ts文件提供该类型，实现类型共享。
+
+declare关键字： 用于类型声明，为其他地方（比如，.js文件）已存在的变量声明类型，而不是
+创建一个新的变量
+
+1.对于type、interface等这些明确就是TS类型的（只能在ts中使用的），可以省略declare关键字
+2.对于let、function等具有双重含义（在js、ts中都能用），应该使用declare关键字，明确指定此处用于类型声明。
+
+为已有js文件提供类型声明
+说明：TS项目中也可以使用.js文件
+说明：在导入.js文件时，TS会自动加载与.js同名的.d.ts文件，以提供类型声明。
+declare关键字：用于类型声明，为其他地方（比如，.js文件）已存在的变量声明类型，而不是创建一个新的变量
