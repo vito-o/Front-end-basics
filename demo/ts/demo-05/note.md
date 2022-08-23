@@ -691,3 +691,13 @@ declare关键字： 用于类型声明，为其他地方（比如，.js文件）
 说明：TS项目中也可以使用.js文件
 说明：在导入.js文件时，TS会自动加载与.js同名的.d.ts文件，以提供类型声明。
 declare关键字：用于类型声明，为其他地方（比如，.js文件）已存在的变量声明类型，而不是创建一个新的变量
+
+
+tsc hello.ts --target es6
+
+注意：
+  1.tsc后带有输入文件时（比如，tsc hello.ts），将忽略tsconfig.json文件
+
+  2.tsc后不带输入文件时（比如，tsc），才会启用tsconfig.json
+
+  推荐使用：tsconfig.json配置文件。
