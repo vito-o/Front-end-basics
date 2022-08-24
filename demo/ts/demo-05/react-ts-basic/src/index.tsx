@@ -1,13 +1,26 @@
+import React from 'react';
 import ReactDOM from 'react-dom';
 
 
 type Props = { name: string; age?: number }
 
-const Hello  = ({name, age}: Props) => (
-  <div>
-    <span>你好！，我叫{name}， 我{age}岁</span>
-  </div>
-)
+const Hello  = ({name, age}: Props) => {
+  const onClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    console.log('hehehe~', e.currentTarget)
+  }
+  
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('onchange', e.currentTarget.value)
+  }
+
+  return (
+    <div>
+      <span>你好！，我叫{name}， 我{age}岁</span>
+      <button onClick={onClick}>hehe</button>
+      <input type="text" onChange={onChange}/>
+    </div>
+  )
+}
 
 const App = () => (
   <div>
