@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .box{
+      position: relative;
+      width: 500px;
+      height: 100px;
+      margin: 50px auto;
+      border-radius: 10px;
+      border: 1px solid pink;
+    }
+    .box::before{
+      content: '';
+      position: absolute;
+      left: -5px;
+      right: -5px;
+      top: -5px;
+      bottom: -5px;
+      border: 1px solid orangered;
+      /* clip:rect(40px,20px,110px,0px); */
+      border-radius: 10px;
+      animation:clipMe 3.2s linear infinite
+    }
+
+    @keyframes clipMe{
+      0%,100%{
+        clip:rect(  0px,510px,2px, 0)
+      }
+      25%{
+        clip:rect(  0px,  2px,110px,0px)
+      }
+      50%{
+        clip:rect(110px,510px,110px,0)
+      }
+      75%{
+        clip:rect(  0px,510px,110px,510px)
+      }
+      /* 
+      
+       */
+    }  
+  </style>
+</head>
+<body>
+  <div class="box"></div>
+</body>
+</html>
