@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+<script>
+// 1.实例化ajax对象
+let xhr = new XMLHttpRequest();
+console.log(xhr.readyState) //0
+// 2.设置请求方法和地址
+xhr.open("post", 'http://www.liulongbin.top:3009/api/login')
+console.log(xhr.readyState) //1
+// 3.设置请求头，
+xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+console.log(xhr.readyState) //1
+// 4.发送请求：参数格式'key=value'
+xhr.send("username=admin&password=123456")
+console.log(xhr.readyState) //1
+// 5.注册回调函数
+xhr.onreadystatechange = function() {
+    console.log(xhr.readyState) //2 3 4
+    //onreadystatechange会触发多次，一般需要判断xhr.reaadState == 4才获取响应数据
+    if(xhr.readyState == 4) {
+        console.log(xhr.responseText)
+    }    
+}
+</script>
+</body>
+</html>
