@@ -1,0 +1,104 @@
+1.http
+
+1.get和post的请求的区别
+
+·应用场景：
+  （get请求是一个幂等的请求）一般get请求用于对服务请求资源不会产生影响的场景，
+    如请求网页资源
+  （post不是一个幂等的请求）对服务器资源产生影响，如注册
+  幂等是指一个请求方法执行多次和仅执行一次的效果完全相同
+·是否缓存：浏览器一般对get请求缓存，对post请求很少缓存
+·传参方式不同：get通过查询字符串传参，post通过请求体传参
+·安全性：
+  get请求可以将请求的参数放入url中想服务器发请求，这样的做法相对于post请求来说
+  是不太安全，因为请求的url会被保留再历史记录中。
+·请求长度：浏览器对于url长度的限制，所以会影响get请求发送数据时的长度。这个限制
+  时浏览器规定的，并不是RFC规定的。
+·参数类型：get参数只允许ASCII字符，post的参数支持更多的数据类型（如文件，图片）
+
+2.post和put请求的区别
+
+put请求时向服务器段发送数据，从而修改数据的内容，但是不会增加数据的种类等，也就是
+说无论进行多少次PUT操作，其结果并没有不同（理解为更新数据）
+
+post请求时向服务器端2发送数据，该请求会改变数据的种类等资源，它会创建新的内容
+（可以理解为创建数据）
+
+为什么post请求会发送两次请求？
+1.第一次请求为options预检请求，状态码为204
+  ·作用：
+    1.查询服务器是否支持修改的请求头，如果服务器支持，则再第二次中发送真正的请求
+    2.检测服务器是否为同源请求，是否支持跨域
+2.第二次为真正的post请求
+
+3.常见的HTTP请求头和响应头
+
+HTTP Request Header
+
+·accept：浏览器能够处理的内容类型
+    accept: text/css,*/*;q=0.1
+·accept-charset：浏览器能够显示的字符集
+·accept-encoding：浏览器能够处理的压缩编码
+    accept-encoding: gzip, deflate, br
+·accept-language：浏览器当前设置的语言
+    accept-language: zh-CN,zh;q=0.9,en;q=0.8
+·connection：浏览器与服务器之间连接的类型
+    Connection: keep-alive
+·cookie：当前页面设置的任何cookie
+·host：发出请求的页面所在的域
+·referer：发出请求的页面的url
+    referer: https://juejin.cn/
+·user-agent：浏览器的用户代理字符串
+    user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36
+
+HTTP Responses Header
+
+·date:表示消息发送的时间，时间的描述格式由rfc822定义
+    date: Sun, 09 Oct 2022 15:10:24 GMT
+·server：服务器名称
+    server: nginx
+    server: JSP3/2.0.14
+·connection：浏览器与服务器之间连接的类型
+    Connection: keep-alive
+·cache-control：控制http缓存
+    cache-control: no-store, no-cache, must-revalidate
+    cache-control: max-age=2592000
+·content-type：表示后面的文档属于什么MIME类型
+    content-type: application/json; charset=utf-8
+    content-type: application/x-javascript
+
+
+Content-Type
+
+常见的content-type属性值有以下四种：
+1.application/x-www-form-urlencoded：浏览器的原生form
+表单，如果不设置enctype属性，那么最终就会以application/
+x-www-form-urlencoded方式提交数据。该种方式提交的数据放在
+body里面，数据按照key1=val1&key2=val2的方式进行编码，
+key和val都进行URL转码
+
+2.multipart/form-data：该种方式也是创建的post提交方式
+通常表单上传文件时使用该种方式
+
+3.application/json：服务器消息主题时序列化后的json字符串
+
+4.text/xml：该种方式主要用来提交XML格式的数据
+
+4.HTTP状态码304是多好还是少好
+
+为什么会有304
+
+服务器为了提高网站访问速度，对之前访问的部分页面指定缓存机制，当客户端再次对
+这些页面进行请求，服务器会根据缓存内容判断页面与之前是否相同，若相同便直接返回
+304，此时客户端调用缓存内容，不必进行二次下载
+
+状态码304不应该认为是一种错误，而是对客户端有缓存情况下服务端的一种响应
+
+产生较多304状态码的原因：
+·页面更新周期长或者不更新
+·纯静态页面或强制生成静态html
+
+304状态码出现过多会造成一下问题：
+·网站快照停止
+·收录减少
+·权重下降
