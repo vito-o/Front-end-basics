@@ -1,0 +1,16 @@
+
+export default {
+  /**
+   * Generate a random uuid
+   * @returns 
+   */
+  getUuid(){
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return r.toString(16)
+    }).replace(/-/g, '')
+  },
+  test() {
+    
+  }
+}
