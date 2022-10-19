@@ -11,9 +11,9 @@ module.exports = {
     umdNamedDefine: true,
     clean: true,
   },
-  // mode: 'production',
-  mode: 'development',
-  devtool: 'eval-cheap-module-source-map',
+  mode: 'production',
+  // mode: 'development',
+  // devtool: 'eval-cheap-module-source-map',
   resolve: {
     extensions: [".vue", ".js", ".json"]
   },
