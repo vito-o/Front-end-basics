@@ -1,0 +1,6 @@
+2022-05-05 21:24:01,681 INFO 5528 [Timer] E:\Workspace\WEB\Front-end-basics\demo\egg\learn02\node_modules\egg-multipart\app\schedule\clean_tmpdir.js next time will execute after 25558321ms at 2022-05-06 04:30:00.002
+2022-05-05 21:24:01,681 INFO 5528 [Timer] E:\Workspace\WEB\Front-end-basics\demo\egg\learn02\node_modules\egg-logrotator\app\schedule\clean_log.js next time will execute after 9358319ms at 2022-05-06 00:00:00.000
+2022-05-05 21:24:01,681 INFO 5528 [Timer] E:\Workspace\WEB\Front-end-basics\demo\egg\learn02\node_modules\egg-logrotator\app\schedule\rotate_by_file.js next time will execute after 9359319ms at 2022-05-06 00:00:01.000
+2022-05-05 21:24:01,516 INFO 16888 [egg-schedule]: register schedule E:\Workspace\WEB\Front-end-basics\demo\egg\learn02\node_modules\egg-multipart\app\schedule\clean_tmpdir.js
+2022-05-05 21:24:01,516 INFO 16888 [egg-schedule]: register schedule E:\Workspace\WEB\Front-end-basics\demo\egg\learn02\node_modules\egg-logrotator\app\schedule\clean_log.js
+2022-05-05 21:24:01,517 INFO 16888 [egg-schedule]: register schedule E:\Workspace\WEB\Front-end-basics\demo\egg\learn02\node_modules\egg-logrotator\app\schedule\rotate_by_file.js

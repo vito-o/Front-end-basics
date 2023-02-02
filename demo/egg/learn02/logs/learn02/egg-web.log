@@ -1,0 +1,16 @@
+2022-05-05 21:24:01,494 INFO 16888 [egg:logger] init all loggers with options: {"dir":"E:\\Workspace\\WEB\\Front-end-basics\\demo\\egg\\learn02\\logs\\learn02","encoding":"utf8","env":"local","level":"INFO","consoleLevel":"INFO","disableConsoleAfterReady":false,"outputJSON":false,"buffer":true,"appLogName":"learn02-web.log","coreLogName":"egg-web.log","agentLogName":"egg-agent.log","errorLogName":"common-error.log","coreLogger":{"consoleLevel":"WARN"},"allowDebugAtProd":false,"enablePerformanceTimer":false,"type":"application"}
+2022-05-05 21:24:01,517 INFO 16888 [egg-multipart] stream mode enable
+2022-05-05 21:24:01,636 INFO 16888 [egg-static] starting static serve /public/ -> E:\Workspace\WEB\Front-end-basics\demo\egg\learn02\app\public
+2022-05-05 21:24:01,640 INFO 16888 [egg-security] use csrf middleware
+2022-05-05 21:24:01,641 INFO 16888 [egg-security] use methodnoallow middleware
+2022-05-05 21:24:01,642 INFO 16888 [egg-security] use noopen middleware
+2022-05-05 21:24:01,644 INFO 16888 [egg-security] use nosniff middleware
+2022-05-05 21:24:01,645 INFO 16888 [egg-security] use xssProtection middleware
+2022-05-05 21:24:01,645 INFO 16888 [egg-security] use xframe middleware
+2022-05-05 21:24:01,646 INFO 16888 [egg-security] use dta middleware
+2022-05-05 21:24:01,646 INFO 16888 [egg-security] compose 7 middlewares into one security middleware
+2022-05-05 21:24:01,652 INFO 16888 [egg:core] dump config after load, 3ms
+2022-05-05 21:24:01,661 INFO 16888 [egg-watcher:application] watcher start success
+2022-05-05 21:24:01,666 INFO 16888 [egg:core] dump config after ready, 4ms
+2022-05-05 21:24:57,365 WARN 16888 [TCPBase] socket is closed by other side while there were still unhandled data in the socket buffer
+2022-05-05 21:24:57,367 WARN 16888 [ClusterClient:Watcher] follower closed, and try to init it again

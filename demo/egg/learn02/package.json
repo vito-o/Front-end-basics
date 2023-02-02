@@ -1,0 +1,15 @@
+{
+  "name": "learn02",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "egg-bin dev"
+  },
+  "dependencies": {
+    "egg": "^2.35.0"
+  },
+  "devDependencies": {
+    "egg-bin": "^4.19.0"
+  }
+}
