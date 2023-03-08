@@ -1,0 +1,9 @@
+.footer{
+  width: 200px;
+  height: 200px;
+  background: orange;
+}
+
+.footer-content{ 
+  color: #000;
+}

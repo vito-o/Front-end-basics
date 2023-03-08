@@ -1,0 +1,7 @@
+div{
+  border: 1px solid orange;
+}
+
+:root{
+  --globalColor: lightblue;
+}

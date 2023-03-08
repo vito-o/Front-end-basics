@@ -1,0 +1,6 @@
+:root{
+  --globalColor: lightblue;
+}
+div{
+  border: 1px solid var(--globalColor);
+}
