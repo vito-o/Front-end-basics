@@ -3,7 +3,7 @@ module.exports = function(content, map, meta) {
 
 
     setTimeout(() => {
-        console.log('hhh')
+        // console.log('hhh')
         callback(null, content, map, meta)
     }, 1000)
 }

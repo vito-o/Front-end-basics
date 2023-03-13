@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 // const postcssPresetEnv = require('postcss-preset-env');
-import { ViteAliases } from 'vite-aliases'
+// import { ViteAliases } from 'vite-aliases'
+// const { viteAliasesPlugin } = require('./plugins/vite_aliases')
+// const { createHtmlPlugin } = require('./plugins/createHtmlPlugin')
+import vitePluginMock from './plugins/vitePluginMock'
 
 export default defineConfig({
   optimizeDeps: {
@@ -33,12 +36,21 @@ export default defineConfig({
         assetFileNames: "[hash].[name].[ext]"
       }
     },
-    assetsInlineLimit: 4096,
-    outDir: 'vite-dist',  //打包输出目录名称
-    assetsDir: 'static',  //静态资源目录名称
+    // assetsInlineLimit: 4096,
+    // outDir: 'vite-dist',  //打包输出目录名称
+    // assetsDir: 'static',  //静态资源目录名称
   },
   plugins: [
-    ViteAliases()
-  ]
+    // ViteAliases(),
+    // viteAliasesPlugin(),
+    // createHtmlPlugin(),
+    vitePluginMock()
+  ],
+  // resolve: {
+  //   alias: {
+  //     "@": './src',
+  //     "@js": "./src/js"
+  //   }
+  // }
   
 })

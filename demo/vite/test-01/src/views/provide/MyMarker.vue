@@ -13,7 +13,7 @@ export default {
     const userGeolocation = inject('geolocation')
     const updateLocation = inject('updateLocation')
     console.log(userLocation)
-    userLocation.value = 'hhh'
+    userLocation.value = 'hhh11'
     // console.log(userLocation)
     // console.log(userGeolocation)
     return {
