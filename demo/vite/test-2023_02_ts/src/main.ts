@@ -6,4 +6,9 @@ let a = '123'
 
 console.log(a, 'a')
 
-console.log(import.meta.env.VITE_BASE_TITLE, 'import.meta.env.VITE_BASE_TITLE')
+// console.log(import.meta.env.VITE_BASE_TITLE, 'import.meta.env.VITE_BASE_TITLE')
+
+
+import { foreach } from 'lodash'
+
+foreach([], () => {})
