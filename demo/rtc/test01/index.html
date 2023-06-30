@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{margin: 0;padding: 0; box-sizing: border-box;}
+  </style>
+</head>
+<body>
+  <div :id="`dplayer`" class="dplayer video-box" style="width: 100vh;height: 100vh;">
+  
+  </div>
+  <script src="https://cdn.bootcdn.net/ajax/libs/dplayer/1.27.1/DPlayer.min.js"></script>
+  <script>
+    var option = {
+        element: document.getElementById('dplayer'),                       // Optional, player element
+        video: {
+          url: 'http://222.87.110.119:83/openUrl/jlkQxbi/live.m3u8',  
+          // type: 'hls',                                                         // Required, video info
+            // url: '若能绽放光芒.mp4',                                         // Required, video url
+            // pic: '若能绽放光芒.png'                                          // Optional, music picture
+          // type: "customHls",
+          // customType: {
+          //     customHls: function (video, player) {
+          //         const hls = new Hls();
+          //         hls.loadSource(video.src);
+          //         hls.attachMedia(video);
+          //     },
+          // }
+        },
+    }
+    var dp = new DPlayer(option);
+    // dp.init();
+  </script>
+</body>
+</html>

@@ -26,9 +26,11 @@ import { useState, useCallback, useRef, useContext } from 'react'
 // import UseRefTest from './components/TestInput';
 // import ForwardRefTest from './components/ForwardRefTest'
 
-import Demo1Parent from './components/useImperativeTest/demo1/parent'
-import UseContextTest from './components/useContextTest/useContextTest'
-import ThemeContext from './components/useContextTest/themeContext'
+// import Demo1Parent from './components/useImperativeTest/demo1/parent'
+// import UseContextTest from './components/useContextTest/useContextTest'
+// import ThemeContext from './components/useContextTest/themeContext'
+
+import TabView from './components/useTransitionTest/TabView'
 
 export default function App() {
 
@@ -46,15 +48,15 @@ export default function App() {
   }, []) */
   // const theme = useContext(themeContext)
 
-  const [themeContext, setThemeContext] = useState('dark')
+  /* const [themeContext, setThemeContext] = useState('dark')
 
   const changeTheme = () => {
     if(themeContext == 'light') setThemeContext('dark')
     else setThemeContext('light')
-  }
+  } */
 
   return (
-    <ThemeContext.Provider value={{themeContext}}>
+    // <ThemeContext.Provider value={{themeContext}}>
     <div>
       {/* <Counter defaultValue={countValue}/>
       <hr />
@@ -81,12 +83,14 @@ export default function App() {
       <ForwardRefTest ref={inputRef}/>
       <button onClick={handlerClick}>focus</button> */}
 
-      <Demo1Parent />
+      {/* <Demo1Parent />
 
       <hr/>
       <UseContextTest/>
-      <button onClick={changeTheme}>change theme</button>
+      <button onClick={changeTheme}>change theme</button> */}
+
+      <TabView />
     </div>
-    </ThemeContext.Provider>
+    // </ThemeContext.Provider>
   )
 }
