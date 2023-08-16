@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    const map = new Map();
+    const weakMap = new WeakMap();
+
+    (function() {
+      const foo = {foo: 1}
+      const bar = {bar: 1}
+
+      map.set(foo, 1)
+      weakMap.set(bar, 2)
+    })()
+    ;
+
+    setTimeout(() => {
+      console.log(map, map.keys())
+      console.log(weakMap)
+      console.log(weakMap.keys())
+    }, 1000)
+
+  </script>
+</body>
+</html>
