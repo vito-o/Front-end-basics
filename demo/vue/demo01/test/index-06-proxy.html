@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    /* const fn = name => {
+      console.log('i am ', name)
+    }
+
+    const p2 = new Proxy(fn, {
+      apply(target, thisArg, argArray) {
+        target.call(thisArg, ...argArray)
+      }
+    })
+
+    p2('hcy') */
+
+    const obj = { foo: 1 }
+    console.log(
+      Reflect.get(obj, 'foo', { foo: 2 })
+    )
+
+  </script>
+</body>
+</html>

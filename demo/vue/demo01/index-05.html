@@ -163,11 +163,24 @@
 
       let oldValue, newValue;
 
+      // 用来存储用户注册的往期回调
+      let cleanup;
+      function onInvalidate(fn) {
+        cleanup = fn
+      }
+
+
       const job = () => {
         // 在scheduler中重新执行副作用函数，得到的是新值
         newValue = effectFn()
+
+        //在调用回调函数cb之前，先调用过期回调
+        if(cleanup) {
+          cleanup()
+        }
+
         // 将新旧值当作回调函数的参数
-        cb(newValue, oldValue)
+        cb(newValue, oldValue, onInvalidate)
         // 更新旧值
         oldValue = newValue
       }
@@ -206,7 +219,7 @@
       return value
     }
 
-    watch(
+    /* watch(
       () => obj.foo, 
       (newValue, oldValue) => {
         console.log(newValue, oldValue, '~~')
@@ -214,11 +227,36 @@
       {
         immediate: true
       }
-    )
+    ) */
+    let finalData = 0;
+    
+    function add(num) {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(finalData++)
+        }, 1000)
+      })
+    }
 
-    // obj.foo++;
-    // obj.foo++;
+    let index = 0
+    watch(obj, async (newValue, oldValue, onInvalidate) => {
+      let expired = false
+      index++
+      onInvalidate(() => {
+        expired = true
+      })
 
+      let res = await add(finalData);
+
+      if(!expired) {
+        // finalData = res;
+        console.log(res)
+      }
+    })
+
+    obj.foo++;
+    obj.foo++;
+    console.log(index,'index')
   </script>
 </body>
 </html>
