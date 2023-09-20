@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>keepalive</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/@vue/reactivity@3.0.5/dist/reactivity.global.js"></script>
+  <script>
+    const { effect, ref, reactive, shallowReactive } = VueReactivity
+
+    const KeepAlive = {
+      _isKeepAlive: true,
+
+      props: {
+        include: RegExp,
+        exclude: RegExp
+      },
+
+      setup(props, { slots }) {
+        const cache = new Map()
+        const instance = currentInstance
+        const { move, createElement } = instance.keepAliveCtx
+
+        const storageContainer = createElement('div')
+        instance._deActivate = (vnode) => {
+          move(vnode, storageContainer)
+        }
+        instance._activate = (vnode, container, anchor) => {
+          move(vnode, container, anchor)
+        }
+
+        return () => {
+          let rawVNode = slots.default()
+          if (typeof rawVNode.type !== 'object') {
+            return rawVNode
+          }
+
+          const name = rawVNode.type.name
+          if (
+            name &&
+            (
+              (props.include && !props.include.test(name)) ||
+              (props.exclude && props.exclude.test(name))
+            ) 
+          ) {
+            return rawVNode
+          }
+
+          const cacheVNode = cache.get(rawVNode.type)
+          if (cacheVNode) {
+            rawVNode.component = cacheVNode.component
+            rawVNode.keptAlive = true;
+          } else {
+            cache.set(rawVNode.type, rawVNode)
+          }
+
+          rawVNode.shouldKeepAlive = true
+          rawVNode.keepAliveInstance = instance
+          return rawVNode;
+        }
+      }
+    }
+
+   
+
+  </script>
+</body>
+</html>

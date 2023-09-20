@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>teleport</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/@vue/reactivity@3.0.5/dist/reactivity.global.js"></script>
+  <script>
+    const { effect, ref, reactive, shallowReactive } = VueReactivity
+
+    const Teleport = {
+      __isTeleport: true,
+      process(n1, n2, container, anchor, internals) {
+        const { patch, patchChildren } = internals
+
+        if (!n1) {
+          const target = typeof n2.props.to === 'string' 
+            ? document.querySelector(n2.props.to)
+            : n2.props.to
+
+          n2.children.forEach(c => patch(null, c, target, anchor))
+        } else {
+          patchChildren(n1, n2, container)
+
+          if (n2.props.to !== n1.props.to) {
+            const newTarget = typeof n2.props.to === 'string'
+              ? document.querySelector(n2.props.to)
+              : n2.props.to
+            n2.children.forEach(c => patch(null, c, newTarget, anchor))
+          }
+        }
+      }
+    }
+
+
+    // 用来移动被 Teleport 的内容
+    function move(vnode, container, anchor) {
+      insert(
+        vnode.component
+          ? vnode.component.subTree.el // 移动一个组件
+          : vnode.el, // 移动普通元素
+        container,
+        anchor
+      )
+    }
+
+
+    function render() {
+      return {
+        type : Teleport,
+        children: [
+          { type: 'h1', children: 'Title'},
+          { type: 'p', children: 'content'},
+        ]
+      }
+    }
+  </script>
+</body>
+</html>
