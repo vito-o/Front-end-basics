@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query, Headers } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -11,7 +11,8 @@ export class AppController {
   }
 
   @Get('count')
-  count() {
+  count(@Headers() head) {
+    console.log(head)
     console.log('rount  running...')
     return {
       name: 'zhangsan',

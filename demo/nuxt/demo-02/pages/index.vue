@@ -12,6 +12,8 @@
     <p>The Dynamic Style Width</p>
 
     <div :class="$style.red">This should be red</div>
+
+    <button @click="about">about</button>
   </div>
 </template>
 
@@ -21,8 +23,14 @@ const color = ref('red')
 onMounted(() => {
   setTimeout(() => {
     color.value = 'orange'
+
+    document.cookie = 'username=zhangsan'
   }, 2000)
 })
+
+const about = () => {
+  useRouter().push('/about')
+}
 </script>
 
 <style lang="scss" scoped>

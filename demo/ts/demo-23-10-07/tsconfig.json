@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "lib": ["ES6"],
+    "target": "ES6",
+    // "experimentalDecorators": true
+  }
+}
