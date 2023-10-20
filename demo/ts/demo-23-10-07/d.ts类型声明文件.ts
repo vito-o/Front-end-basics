@@ -368,7 +368,13 @@ export const character: Character = {
  * 上面示例中，es2017.string对应的库文件就是lib。es2017.string.d.ts
  * 
  */
+//123
+/** */
+type A20 = ('x' | 'y')
+let a20: A20 = 'y'
 
 
+type A22 = ('x' | 'y') extends 'x' ? string : number; // number
 
-
+type P<T> = T extends 'x' ? string : number;
+type A31 = P<'x' | 'y'> // ?
