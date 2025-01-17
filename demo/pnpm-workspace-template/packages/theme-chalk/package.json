@@ -1,0 +1,10 @@
+{
+  "name": "@cursor/theme-chalk",
+  "version": "0.0.1",
+  "description": "theme-chalk for drag-table-plus",
+  "main": "index.scss",
+  "devDependencies": {
+    "sass": "^1.69.0",
+    "@types/node": "^20.0.0"
+  }
+} 

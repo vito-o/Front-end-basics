@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    html,body{
+      margin: 0;
+      padding: 0;
+    }
+    #cesiumContainer{
+      height: 100vh;
+    }
+  </style>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+
+<body>
+  <div id="cesiumContainer" class="fullSize"></div>
+  <div id="loadingOverlay">
+    <h1>Loading...</h1>
+  </div>
+  <div id="toolbar"></div>
+
+  <script type="module">
+
+    // Grant CesiumJS access to your ion assets
+    Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5NjJhMjVmMC00OGFhLTQ4ZmUtOTFiNi1hYWZmYjYzOTc4MDIiLCJpZCI6MTc5NDA4LCJpYXQiOjE3MDA0NDIwMTJ9.5qvGOWqbkxsRzHfZuvYeWiSyFmtk1_4m5NIQHuW0zpE";
+
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      // This is a global 3D Tiles tileset so disable the
+      // globe to prevent it from interfering with the data
+      globe: false,
+      // Disabling the globe means we need to manually
+      // re-enable the atmosphere
+      skyAtmosphere: new Cesium.SkyAtmosphere(),
+      // 2D and Columbus View are not currently supported
+      // for global 3D Tiles tilesets
+      sceneModePicker: false,
+      // Imagery layers are not currently supported for
+      // global 3D Tiles tilesets
+      baseLayerPicker: false,
+    });
+
+    try {
+      const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(2275207);
+      viewer.scene.primitives.add(tileset);
+    } catch (error) {
+      console.log(error);
+    }
+  </script>
+</body>
+
+</html>

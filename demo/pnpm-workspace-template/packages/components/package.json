@@ -1,0 +1,12 @@
+{
+  "name": "@cursor/components",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "module": "index.ts",
+  "unpkg": "index.js",
+  "keywords": [],
+  "peerDependencies": {
+    "vue": "^3.3.0"
+  }
+}
